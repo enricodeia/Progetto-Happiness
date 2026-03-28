@@ -100,7 +100,7 @@ html, body, #root {
   font-family: var(--font-serif);
   font-size: var(--hero-bottom-size, 42px);
   font-weight: 200;
-  fill: var(--hero-bottom-color, #ffffff);
+  fill: var(--color-primary, #FFDD00);
 }
 
 @media (max-width: 768px) {

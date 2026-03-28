@@ -301,6 +301,7 @@ export function initGlobe(canvas) {
       dot.renderOrder = 3;
       dot.userData = { type: 'concept', data: { ...c, id: 100 + i }, baseScale: 1, hoverRingScale: 0 };
       scene.add(dot);
+      dot.userData.basePosition = pos.clone();
       markers.push({ dot, type: 'concept', data: { ...c, id: 100 + i } });
     });
     clickableDots = markers.map((m) => m.dot);
@@ -387,6 +388,7 @@ export function initGlobe(canvas) {
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
   let hoveredMarker = null;
+  let cursorX = 0, cursorY = 0; // track cursor position for pin magnetism
 
   const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
@@ -401,30 +403,38 @@ export function initGlobe(canvas) {
 
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    cursorX = e.clientX;
+    cursorY = e.clientY;
 
     if (isDragging) {
       const dx = e.clientX - prevX, dy = e.clientY - prevY;
       dragDist += Math.abs(dx) + Math.abs(dy);
 
+      // Zoom-dependent drag sensitivity: slower when zoomed in
+      const zoomRatio = camDist / (EARTH_RADIUS * 7); // 1.0 far, ~0.16 close
+      const sens = 0.3 + zoomRatio * 0.7; // range: 0.3 (close) → 1.0 (far)
+
       if (isMobile && (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5)) {
         const angle = Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI;
+
         if (angle >= 65) {
           zoomVelocity += dy * 0.0003;
         } else if (angle <= 25) {
-          targetRotY -= dx * 0.004;
-          targetRotX += dy * 0.001;
+          targetRotY -= dx * 0.004 * sens;
+          targetRotX += dy * 0.001 * sens;
           targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
         } else {
           const rotateWeight = 1 - (angle - 25) / 40;
           const zoomWeight = (angle - 25) / 40;
-          targetRotY -= dx * 0.004 * rotateWeight;
-          targetRotX += dy * 0.001 * rotateWeight;
+          targetRotY -= dx * 0.004 * rotateWeight * sens;
+          targetRotX += dy * 0.001 * rotateWeight * sens;
           targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
           zoomVelocity += dy * 0.0003 * zoomWeight;
         }
       } else {
-        targetRotY -= dx * 0.003;
-        targetRotX += dy * 0.002;
+        // Desktop: drag rotates both axes, scaled by zoom
+        targetRotY -= dx * 0.003 * sens;
+        targetRotX += dy * 0.002 * sens;
         targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
       }
 
@@ -690,7 +700,11 @@ export function initGlobe(canvas) {
         const tipIdx = segCount - 1;
         const tipX = posAttr.getX(tipIdx), tipY = posAttr.getY(tipIdx), tipZ = posAttr.getZ(tipIdx);
         if (s.pin) {
-          s.pin.position.set(tipX, tipY, tipZ);
+          // Store base position for magnetic snap-back (actual position set in marker loop)
+          if (!s.pin.userData.basePosition) s.pin.userData.basePosition = new THREE.Vector3();
+          s.pin.userData.basePosition.set(tipX, tipY, tipZ);
+          // Only set position directly if no magnetic offset is active
+          if (!s.pin.userData.magnetActive) s.pin.position.set(tipX, tipY, tipZ);
           s.pin.scale.setScalar(cfg.pinSize);
         }
         if (s.ring) s.ring.position.set(tipX, tipY, tipZ);
@@ -708,6 +722,7 @@ export function initGlobe(canvas) {
       });
     }
 
+    const magnetScrV = new THREE.Vector3();
     markers.forEach((m) => {
       // Scale lerp
       const ts = m.dot.userData.baseScale || 1;
@@ -721,11 +736,37 @@ export function initGlobe(canvas) {
       const baseOp = m.type === 'episode' ? 1 : 0.6;
       m.dot.material.opacity = baseOp * frontOpacity;
 
+      // Magnetic pin attraction: pins subtly drift toward cursor when nearby
+      m.dot.userData.magnetActive = false;
+      if (!isDragging && frontOpacity > 0.1 && m.dot.userData.basePosition) {
+        magnetScrV.copy(m.dot.userData.basePosition).project(camera);
+        if (magnetScrV.z < 1) {
+          const sx = (magnetScrV.x * 0.5 + 0.5) * window.innerWidth;
+          const sy = (-magnetScrV.y * 0.5 + 0.5) * window.innerHeight;
+          const dist = Math.hypot(cursorX - sx, cursorY - sy);
+          const magnetRadius = 80;
+          if (dist < magnetRadius && dist > 1) {
+            m.dot.userData.magnetActive = true;
+            const strength = (1 - dist / magnetRadius) * 0.08;
+            const offsetX = (cursorX - sx) * strength;
+            const offsetY = (cursorY - sy) * strength;
+            const ndcX = magnetScrV.x + (offsetX / window.innerWidth) * 2;
+            const ndcY = magnetScrV.y - (offsetY / window.innerHeight) * 2;
+            const pullTarget = new THREE.Vector3(ndcX, ndcY, magnetScrV.z).unproject(camera);
+            pullTarget.normalize().multiplyScalar(m.dot.userData.basePosition.length());
+            m.dot.position.lerp(pullTarget, 0.1);
+          } else {
+            m.dot.position.lerp(m.dot.userData.basePosition, 0.08);
+          }
+        }
+      } else if (m.dot.userData.basePosition) {
+        m.dot.position.lerp(m.dot.userData.basePosition, 0.08);
+      }
+
       // Hover ring: scales with zoom level so it stays visible when zoomed out
       if (m.ring) {
         const targetRing = m.dot.userData.hoverRingScale || 0;
         const curRing = m.ring.scale.x;
-        // Ring gets bigger when zoomed out (zoomFactor ~7 at max out, ~1.15 at max in)
         const ringZoomScale = Math.max(1, zoomFactor * 0.6);
         const nextRing = curRing + (targetRing * ringZoomScale * 1.5 - curRing) * 0.12;
         m.ring.scale.setScalar(Math.max(0.01, nextRing));
