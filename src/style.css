@@ -222,6 +222,22 @@ html, body, #root {
 }
 .sidebar--visible { opacity: 1; transform: translateY(0); }
 
+@media (max-width: 768px) {
+  .sidebar {
+    width: calc(100% - 32px);
+    left: 16px;
+    bottom: 16px;
+    max-height: 46px;
+    transition: opacity 0.6s ease 0.3s, transform 0.6s ease 0.3s, max-height 0.4s cubic-bezier(0.33, 1, 0.68, 1);
+  }
+  .sidebar--expanded {
+    max-height: 50vh;
+  }
+  .sidebar__header {
+    cursor: pointer;
+  }
+}
+
 .sidebar__header {
   padding: 14px 16px 12px;
   border-bottom: 1px solid var(--color-border);

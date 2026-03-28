@@ -9,7 +9,7 @@ export const globeState = {
   updateColors: null,
   // Stalk + pin config (live-tunable from control panel)
   stalkConfig: {
-    stalkHeight: 900000,
+    stalkHeight: 1400000,
     pinSize: 150000,
     collapseStart: 0,
     collapseEnd: 90,
@@ -474,8 +474,38 @@ export function initGlobe(canvas) {
   // Smooth zoom with accumulated velocity (like Lenis)
   let zoomVelocity = 0;
   canvas.addEventListener('wheel', (e) => {
-    // Accumulate velocity instead of instant jump
     zoomVelocity += e.deltaY * 0.00015;
+  }, { passive: true });
+
+  // Touch: pinch to zoom, single finger to rotate
+  let lastTouchDist = 0;
+  let touchCount = 0;
+
+  canvas.addEventListener('touchstart', (e) => {
+    touchCount = e.touches.length;
+    if (touchCount === 2) {
+      // Pinch start: don't rotate
+      isDragging = false;
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouchDist = Math.sqrt(dx * dx + dy * dy);
+    }
+  }, { passive: true });
+
+  canvas.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2) {
+      // Pinch zoom
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const delta = lastTouchDist - dist;
+      zoomVelocity += delta * 0.0003;
+      lastTouchDist = dist;
+    }
+  }, { passive: true });
+
+  canvas.addEventListener('touchend', () => {
+    touchCount = 0;
   }, { passive: true });
 
   window.addEventListener('resize', () => {

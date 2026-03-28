@@ -9,6 +9,7 @@ import AboutOverlay from './components/AboutOverlay.jsx';
 import PillNav from './components/PillNav.jsx';
 import PanelCard from './components/PanelCard.jsx';
 import Bacheca from './components/Bacheca.jsx';
+import BubbleMenu from './components/BubbleMenu.jsx';
 // Control panels removed for production
 import HeroTitle from './components/HeroTitle.jsx';
 import { globeState } from './globe-scene.js';
@@ -77,16 +78,26 @@ export default function App() {
     labelShift: 1.0,
     logoSpinDuration: 0.65,
   });
-  const [heroConfig] = useState({
+  const [bubbleConfig, setBubbleConfig] = useState({
+    duration: 0.5,
+    stagger: 0.12,
+    rotation: 8,
+    gap: -20,
+    ease: 'back.out(1.5)',
+    menuBg: '#ffffff',
+    menuContentColor: '#111111',
+  });
+  const [bubblePanelOpen, setBubblePanelOpen] = useState(false);
+  const [heroConfig, setHeroConfig] = useState({
     topY: 13,
     bottomY: 65,
     topSize: 80,
     bottomSize: 41,
-    curveWidth: 530,
-    curveDepth: 245,
+    curveWidth: 500,
+    curveDepth: 285,
     topColor: '#ffffff',
     accentColor: '#FFDD00',
-    bottomColor: '#ffffff',
+    bottomColor: '#F6E3D5',
     topOpacity: 1,
     bottomOpacity: 0.75,
   });
@@ -172,6 +183,31 @@ export default function App() {
         />
       )}
 
+      {/* BubbleMenu — toggle button + fullscreen pill overlay */}
+      {showUI && (
+        <BubbleMenu
+          items={[
+            { label: 'Bacheca', href: '#', ariaLabel: 'Bacheca', rotation: bubbleConfig.rotation, hoverStyles: { bgColor: '#FFDD00', textColor: '#2C2118' }, id: 'bacheca' },
+            { label: 'About', href: '#', ariaLabel: 'About', rotation: -bubbleConfig.rotation, hoverStyles: { bgColor: '#F6E3D5', textColor: '#2C2118' }, id: 'about' },
+            { label: 'Blog', href: '#', ariaLabel: 'Blog', rotation: bubbleConfig.rotation, hoverStyles: { bgColor: '#ef4444', textColor: '#ffffff' }, id: 'blog' },
+          ]}
+          menuAriaLabel="Toggle navigation"
+          menuBg={bubbleConfig.menuBg}
+          menuContentColor={bubbleConfig.menuContentColor}
+          useFixedPosition={true}
+          animationEase={bubbleConfig.ease}
+          animationDuration={bubbleConfig.duration}
+          staggerDelay={bubbleConfig.stagger}
+          pillGap={bubbleConfig.gap}
+          onItemClick={(item) => {
+            const id = item.id;
+            if (id === 'bacheca') setBachecaOpen(true);
+            else if (id === 'about') setAboutOpen(true);
+            else if (id === 'blog') window.open('https://progettohappiness.com/episodi/', '_blank');
+          }}
+        />
+      )}
+
       {/* ---- Globe page (slides left when bacheca opens) ---- */}
       <div className={`page-wrapper ${bachecaOpen ? 'page-wrapper--slide-left' : ''}`}>
         <Globe />
@@ -179,7 +215,7 @@ export default function App() {
 
         {/* Hero title over globe */}
         {showUI && (
-          <HeroTitle config={heroConfig} />
+          <HeroTitle config={heroConfig} onConfigChange={setHeroConfig} />
         )}
 
         <aside
@@ -187,7 +223,7 @@ export default function App() {
           onMouseEnter={() => setSidebarExpanded(true)}
           onMouseLeave={() => setSidebarExpanded(false)}
         >
-          <div className="sidebar__header">
+          <div className="sidebar__header" onClick={() => setSidebarExpanded((p) => !p)}>
             <h3 className="sidebar__title">Episodi</h3>
             <span className="sidebar__badge">{episodes.length}</span>
           </div>
@@ -227,8 +263,76 @@ export default function App() {
       {/* ---- Bacheca (slides in from right) ---- */}
       <Bacheca visible={bachecaOpen} onBack={() => setBachecaOpen(false)} />
 
-      {/* Stalk/Pin controls */}
-      {/* Control panels removed for production */}
+      {/* BubbleMenu control panel */}
+      {showUI && (
+        <>
+          <button
+            className="bubble-ctrl-toggle"
+            onClick={() => setBubblePanelOpen((p) => !p)}
+            style={{
+              position: 'fixed', bottom: 28, left: 28, zIndex: 100,
+              width: 32, height: 32, borderRadius: '50%',
+              border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(12,12,12,0.7)',
+              backdropFilter: 'blur(12px)', color: 'rgba(255,255,255,0.5)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14,
+            }}
+          >
+            B
+          </button>
+          {bubblePanelOpen && (
+            <div style={{
+              position: 'fixed', bottom: 68, left: 28, zIndex: 100,
+              width: 260, background: 'rgba(12,12,12,0.9)', backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 16,
+              fontFamily: 'Inter, system-ui, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.7)',
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,221,0,0.6)' }}>Bubble Menu</div>
+              {[
+                { label: 'Duration', key: 'duration', min: 0.1, max: 1.5, step: 0.05 },
+                { label: 'Stagger', key: 'stagger', min: 0.02, max: 0.4, step: 0.01 },
+                { label: 'Rotation', key: 'rotation', min: 0, max: 20, step: 1 },
+                { label: 'Gap', key: 'gap', min: -60, max: 20, step: 2 },
+              ].map(({ label, key, min, max, step }) => (
+                <div key={key} style={{ marginBottom: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                    <span>{label}</span><span>{bubbleConfig[key]}</span>
+                  </div>
+                  <input type="range" min={min} max={max} step={step} value={bubbleConfig[key]}
+                    onChange={(e) => setBubbleConfig((c) => ({ ...c, [key]: parseFloat(e.target.value) }))}
+                    style={{ width: '100%', accentColor: '#FFDD00' }}
+                  />
+                </div>
+              ))}
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ marginBottom: 4 }}>Ease</div>
+                <select value={bubbleConfig.ease}
+                  onChange={(e) => setBubbleConfig((c) => ({ ...c, ease: e.target.value }))}
+                  style={{ width: '100%', padding: '4px 6px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: 11 }}
+                >
+                  {['back.out(1.5)', 'back.out(2)', 'back.out(3)', 'elastic.out(1, 0.3)', 'power3.out', 'power4.out', 'expo.out', 'circ.out', 'bounce.out'].map((e) => (
+                    <option key={e} value={e}>{e}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ marginBottom: 4 }}>Button BG</div>
+                <input type="color" value={bubbleConfig.menuBg}
+                  onChange={(e) => setBubbleConfig((c) => ({ ...c, menuBg: e.target.value }))}
+                  style={{ width: '100%', height: 28, border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                />
+              </div>
+              <div>
+                <div style={{ marginBottom: 4 }}>Button Lines</div>
+                <input type="color" value={bubbleConfig.menuContentColor}
+                  onChange={(e) => setBubbleConfig((c) => ({ ...c, menuContentColor: e.target.value }))}
+                  style={{ width: '100%', height: 28, border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                />
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* About overlay */}
       <AboutOverlay visible={aboutOpen} onClose={() => { setAboutOpen(false); setActiveNav('globe'); }} />
