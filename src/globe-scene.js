@@ -7,6 +7,19 @@ export const globeState = {
   markers: [],
   flyToMarker: null,
   updateColors: null,
+  // Stalk + pin config (live-tunable from control panel)
+  stalkConfig: {
+    stalkHeight: 900000,
+    pinSize: 150000,
+    collapseStart: 0,
+    collapseEnd: 90,
+    stalkFadeStart: 85,
+    stalkFadeEnd: 92,
+    stalkOpacity: 0.5,
+    stalkColor: '#FFDD00',
+    pinBorderColor: '#FFDD00',
+    lerpSpeed: 0.04,
+  },
 };
 
 export function initGlobe(canvas) {
@@ -23,9 +36,47 @@ export function initGlobe(canvas) {
 
   scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
-  // Opaque dark sphere
-  const sphereMat = new THREE.MeshBasicMaterial({ color: 0x080808 });
-  scene.add(new THREE.Mesh(new THREE.SphereGeometry(EARTH_RADIUS * 0.997, 64, 64), sphereMat));
+  // Globe sphere — standard Three.js SphereGeometry with correct UV mapping
+  // Rotated to align with our ECEF frame swap (geoX→Z, geoY→X, geoZ→Y)
+  //
+  // Three.js SphereGeometry: Y-up, phi goes from top (0) to bottom (pi)
+  //   UV: u = theta / 2pi, v = phi / pi (standard equirectangular)
+  //   At phi=0 (Y=1): north pole. theta=0: positive Z axis.
+  //
+  // Our ECEF: lat 0, lng 0 maps to (geoY=X, geoZ=Y, geoX=Z) = (0, 0, R)
+  //   So lng=0 is at Three.js +Z. Three.js sphere also has theta=0 at +Z.
+  //   But we need to rotate 90 degrees around Y because our frame swap
+  //   puts geoY (east) on X axis, which shifts longitude by 90 degrees.
+  // Inner opaque sphere — blocks backside dots, always visible
+  const innerSphereMat = new THREE.MeshBasicMaterial({ color: 0x080808 });
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(EARTH_RADIUS * 0.995, 64, 64), innerSphereMat));
+
+  // Outer textured sphere — depthWrite false so dots stay visible on top
+  const sphereMat = new THREE.MeshBasicMaterial({
+    color: 0x080808, transparent: true, opacity: 1, depthWrite: false,
+  });
+  const sphereGeo = new THREE.SphereGeometry(EARTH_RADIUS * 0.997, 96, 96);
+  const globeMesh = new THREE.Mesh(sphereGeo, sphereMat);
+  globeMesh.rotation.y = -Math.PI / 2;
+  globeMesh.renderOrder = 0;
+  scene.add(globeMesh);
+
+  // ---- Cloud layer (real texture, additive blending for black bg) ----
+  const cloudGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.003, 64, 64);
+  const cloudMat = new THREE.MeshBasicMaterial({
+    transparent: true, opacity: 0.4, depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const cloudMesh = new THREE.Mesh(cloudGeo, cloudMat);
+  cloudMesh.rotation.y = -Math.PI / 2;
+  scene.add(cloudMesh);
+
+  // Load cloud texture
+  new THREE.TextureLoader().load('/clouds.webp', (tex) => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    cloudMat.map = tex;
+    cloudMat.needsUpdate = true;
+  });
 
   // Stars
   const starGeo = new THREE.BufferGeometry();
@@ -48,8 +99,7 @@ export function initGlobe(canvas) {
   let countryFeatures = null;
   let highlightGroup = null;
   let highlightedCountry = null;
-
-  // No expansion animation — dots placed directly
+  let stalks = [];
 
   // Async load
   (async () => {
@@ -97,11 +147,27 @@ export function initGlobe(canvas) {
       }
     }
 
-    // Place dots directly (no expansion animation)
+    // Create round dot texture (circle instead of square)
+    const dotTexCanvas = document.createElement('canvas');
+    dotTexCanvas.width = 64; dotTexCanvas.height = 64;
+    const dtx = dotTexCanvas.getContext('2d');
+    dtx.beginPath();
+    dtx.arc(32, 32, 30, 0, Math.PI * 2);
+    dtx.fillStyle = '#ffffff';
+    dtx.fill();
+    const dotTexture = new THREE.CanvasTexture(dotTexCanvas);
+
+    // Place dots
     const dotGeoFinal = new THREE.BufferGeometry();
     dotGeoFinal.setAttribute('position', new THREE.Float32BufferAttribute(targetArr, 3));
-    const dotMat = new THREE.PointsMaterial({ color: 0xffffff, size: 20000, transparent: true, opacity: 0.45, depthWrite: false, depthTest: true, sizeAttenuation: true });
-    scene.add(new THREE.Points(dotGeoFinal, dotMat));
+    const dotMat = new THREE.PointsMaterial({
+      color: 0xffffff, size: 20000, transparent: true, opacity: 0.45,
+      depthWrite: false, depthTest: true, sizeAttenuation: true,
+      map: dotTexture, alphaMap: dotTexture,
+    });
+    const dotPoints = new THREE.Points(dotGeoFinal, dotMat);
+    dotPoints.renderOrder = 2; // render on top of textured sphere
+    scene.add(dotPoints);
 
     // ---- Country borders (outline only, no fill) ----
     const borderMat = new THREE.LineBasicMaterial({ color: 0xFFDD00, transparent: true, opacity: 0.06, depthWrite: false });
@@ -117,29 +183,102 @@ export function initGlobe(canvas) {
     highlightGroup = new THREE.Group();
     scene.add(highlightGroup);
 
-    // ---- Markers with hover ring ----
-    episodes.forEach((ep) => {
-      const pos = latLngToECEF(ep.lat, ep.lng, 10000);
-      const dot = new THREE.Mesh(new THREE.SphereGeometry(14000, 14, 14), new THREE.MeshBasicMaterial({ color: 0xFFDD00, transparent: true, opacity: 1, depthWrite: false }));
-      dot.position.copy(pos);
-      dot.userData = { type: 'episode', data: ep, baseScale: 1, hoverRingScale: 0 };
-      scene.add(dot);
+    // ---- Helper: create circular thumbnail texture with yellow border ----
+    const PIN_SIZE = 48; // canvas px
+    const BORDER_W = 3;  // px (renders as ~1.5px at retina)
+    const createPinTexture = (imgUrl) => {
+      const canvas2d = document.createElement('canvas');
+      canvas2d.width = PIN_SIZE * 2;
+      canvas2d.height = PIN_SIZE * 2;
+      const c = canvas2d.getContext('2d');
+      const r = PIN_SIZE; // radius
+      const tex = new THREE.CanvasTexture(canvas2d);
+      tex.colorSpace = THREE.SRGBColorSpace;
 
-      // Hover ring (thin expanding circle)
+      // Draw yellow circle border immediately (visible while thumb loads)
+      c.beginPath(); c.arc(r, r, r, 0, Math.PI * 2);
+      c.fillStyle = '#FFDD00'; c.fill();
+      c.beginPath(); c.arc(r, r, r - BORDER_W, 0, Math.PI * 2);
+      c.fillStyle = '#222'; c.fill();
+      tex.needsUpdate = true;
+
+      // Load thumbnail async
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        // Redraw border
+        c.clearRect(0, 0, PIN_SIZE * 2, PIN_SIZE * 2);
+        c.beginPath(); c.arc(r, r, r, 0, Math.PI * 2);
+        c.fillStyle = '#FFDD00'; c.fill();
+
+        // Clip to inner circle and draw centered/cover thumbnail
+        c.save();
+        c.beginPath(); c.arc(r, r, r - BORDER_W, 0, Math.PI * 2); c.clip();
+        const aspect = img.width / img.height;
+        let sw, sh, sx, sy;
+        if (aspect > 1) { sh = img.height; sw = sh; sx = (img.width - sw) / 2; sy = 0; }
+        else { sw = img.width; sh = sw; sx = 0; sy = (img.height - sh) / 2; }
+        c.drawImage(img, sx, sy, sw, sh, BORDER_W, BORDER_W, (r - BORDER_W) * 2, (r - BORDER_W) * 2);
+        c.restore();
+        tex.needsUpdate = true;
+      };
+      img.src = imgUrl;
+      return tex;
+    };
+
+    // ---- Stalks + Pin markers (episodes) ----
+    const stalkGroup = new THREE.Group();
+    const initCfg = globeState.stalkConfig;
+    const stalkMat = new THREE.LineBasicMaterial({
+      color: new THREE.Color(initCfg.stalkColor), transparent: true, opacity: initCfg.stalkOpacity, depthWrite: false,
+    });
+    stalks = [];
+
+    episodes.forEach((ep) => {
+      const dir = latLngToECEF(ep.lat, ep.lng, 0).normalize();
+      const baseAlt = EARTH_RADIUS + 3000;
+
+      // Stalk line
+      const base = dir.clone().multiplyScalar(baseAlt);
+      const tip = dir.clone().multiplyScalar(baseAlt + initCfg.stalkHeight);
+      const geo = new THREE.BufferGeometry().setFromPoints([base, tip]);
+      const line = new THREE.Line(geo, stalkMat.clone());
+      line.renderOrder = 3;
+      stalkGroup.add(line);
+
+      // Pin sprite at stalk tip
+      const pinTex = createPinTexture(ep.thumb);
+      const pinMat = new THREE.SpriteMaterial({
+        map: pinTex, transparent: true, opacity: 1, depthWrite: false, sizeAttenuation: true,
+      });
+      const pin = new THREE.Sprite(pinMat);
+      pin.scale.setScalar(initCfg.pinSize);
+      pin.position.copy(tip);
+      pin.renderOrder = 4;
+      pin.userData = { type: 'episode', data: ep, baseScale: 1, hoverRingScale: 0 };
+      scene.add(pin);
+
+      // Hover ring (attached to pin)
       const ring = new THREE.Mesh(
         new THREE.RingGeometry(22000, 23500, 32),
         new THREE.MeshBasicMaterial({ color: 0xFFDD00, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false })
       );
-      ring.position.copy(pos);
+      ring.position.copy(tip);
       ring.lookAt(0, 0, 0);
+      ring.renderOrder = 4;
       scene.add(ring);
 
-      markers.push({ dot, ring, type: 'episode', data: ep });
+      markers.push({ dot: pin, ring, type: 'episode', data: ep });
+      stalks.push({ line, dir, heightPct: 1, pin, ring, baseAlt });
     });
+    scene.add(stalkGroup);
+
+    // ---- Concept markers (unchanged, small dots on surface) ----
     happinessConcepts.forEach((c, i) => {
       const pos = latLngToECEF(c.lat, c.lng, 10000);
       const dot = new THREE.Mesh(new THREE.SphereGeometry(10000, 10, 10), new THREE.MeshBasicMaterial({ color: 0xF6E3D5, transparent: true, opacity: 0.6, depthWrite: false }));
       dot.position.copy(pos);
+      dot.renderOrder = 3;
       dot.userData = { type: 'concept', data: { ...c, id: 100 + i }, baseScale: 1, hoverRingScale: 0 };
       scene.add(dot);
       markers.push({ dot, type: 'concept', data: { ...c, id: 100 + i } });
@@ -147,12 +286,18 @@ export function initGlobe(canvas) {
     clickableDots = markers.map((m) => m.dot);
     globeState.markers = markers;
 
-    // Earth texture (loaded once, toggled via control panel)
+    // Earth texture (8k daymap) — enabled by default
     let earthTexture = null;
-    new THREE.TextureLoader().load('/earth-blue-marble.jpg', (tex) => {
+    new THREE.TextureLoader().load('/earth-8k.webp', (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
-      tex.anisotropy = 4;
+      tex.anisotropy = 8;
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
       earthTexture = tex;
+      // Apply immediately
+      sphereMat.map = tex;
+      sphereMat.color.set('#ffffff');
+      sphereMat.needsUpdate = true;
     });
 
     // Control panel update
@@ -166,7 +311,7 @@ export function initGlobe(canvas) {
       markers.forEach((m) => {
         if (m.type === 'episode') {
           m.dot.material.color.set(c.markerColor);
-          const s = (c.pinSize || 14000) / 14000;
+          const s = (c.pinSize || 29000) / 29000;
           m.dot.userData.baseScale = s;
         }
       });
@@ -197,6 +342,9 @@ export function initGlobe(canvas) {
   let rotX = 0, rotY = 0, targetRotX = 0, targetRotY = 0;
   let autoRotate = true, autoTimer = null;
   let camDist = EARTH_RADIUS * 7, targetCamDist = EARTH_RADIUS * 7;
+  let hoveringPin = false;
+  let rotSpeed = 0.00006; // start at target speed immediately
+  let targetRotSpeed = 0.00006;
 
   // No expansion trigger needed
 
@@ -227,6 +375,10 @@ export function initGlobe(canvas) {
   });
 
   window.addEventListener('pointermove', (e) => {
+    // Only process globe interactions when pointer is over the canvas
+    // This prevents re-renders that break nav hover states
+    if (!isDragging && e.target !== canvas) return;
+
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
@@ -262,13 +414,16 @@ export function initGlobe(canvas) {
         hoveredMarker = closestMarker.dot;
         canvas.style.cursor = 'pointer';
       }
+      hoveringPin = true; // pause rotation
+      targetRotSpeed = 0;
       const t = 1 - closestDist / 60;
       hoveredMarker.userData.baseScale = 1 + t * 0.8;
-      hoveredMarker.userData.hoverRingScale = t; // 0→1, drives ring expand
+      hoveredMarker.userData.hoverRingScale = t;
       window.dispatchEvent(new CustomEvent('globe:marker-hover', { detail: { data: closestMarker.data, type: closestMarker.type, x: e.clientX, y: e.clientY } }));
       clearCountryHL();
     } else {
       if (hoveredMarker) { hoveredMarker.userData.baseScale = 1; hoveredMarker.userData.hoverRingScale = 0; hoveredMarker = null; }
+      if (hoveringPin) { hoveringPin = false; targetRotSpeed = 0.00006; } // resume
       canvas.style.cursor = '';
       window.dispatchEvent(new CustomEvent('globe:marker-leave'));
 
@@ -316,9 +471,11 @@ export function initGlobe(canvas) {
     }
   });
 
+  // Smooth zoom with accumulated velocity (like Lenis)
+  let zoomVelocity = 0;
   canvas.addEventListener('wheel', (e) => {
-    targetCamDist *= 1 + e.deltaY * 0.0008;
-    targetCamDist = Math.max(EARTH_RADIUS * 1.15, Math.min(EARTH_RADIUS * 7, targetCamDist));
+    // Accumulate velocity instead of instant jump
+    zoomVelocity += e.deltaY * 0.00015;
   }, { passive: true });
 
   window.addEventListener('resize', () => {
@@ -348,26 +505,115 @@ export function initGlobe(canvas) {
     clearHL();
   }
 
+  // ---- Scroll percentage tracker ----
+  // Zoom range: EARTH_RADIUS * 1.15 (closest, 100%) to EARTH_RADIUS * 7 (farthest, 0%)
+  const ZOOM_MIN = EARTH_RADIUS * 1.15;
+  const ZOOM_MAX = EARTH_RADIUS * 7;
+  let scrollPct = 0; // 0 = zoomed out (far), 100 = zoomed in (close)
+
+  // Dispatch scroll % for UI
+  function updateScrollPct() {
+    scrollPct = Math.round((1 - (camDist - ZOOM_MIN) / (ZOOM_MAX - ZOOM_MIN)) * 100);
+    scrollPct = Math.max(0, Math.min(100, scrollPct));
+    window.dispatchEvent(new CustomEvent('globe:scroll', { detail: { pct: scrollPct } }));
+  }
+
   // ---- Render loop ----
   function animate() {
     requestAnimationFrame(animate);
 
-    if (autoRotate) targetRotY += 0.0003;
+    // Smooth rotation speed (ease on pause/resume)
+    rotSpeed += (targetRotSpeed - rotSpeed) * 0.04;
+    if (autoRotate) targetRotY += rotSpeed;
 
-    // Smooth ease (power4-like lerp)
-    rotX += (targetRotX - rotX) * 0.03;
-    rotY += (targetRotY - rotY) * 0.03;
-    camDist += (targetCamDist - camDist) * 0.03;
+    // More responsive, less momentum
+    rotX += (targetRotX - rotX) * 0.12;
+    rotY += (targetRotY - rotY) * 0.12;
+
+    // Smooth zoom: apply velocity with friction (no jitter)
+    targetCamDist *= 1 - zoomVelocity;
+    targetCamDist = Math.max(EARTH_RADIUS * 1.15, Math.min(EARTH_RADIUS * 7, targetCamDist));
+    zoomVelocity *= 0.85; // friction decay
+    if (Math.abs(zoomVelocity) < 0.000001) zoomVelocity = 0;
+    camDist += (targetCamDist - camDist) * 0.06;
+
+    // Clouds drift very slightly relative to globe surface
+    cloudMesh.rotation.y += 0.000008;
+    globeMesh.rotation.y = -Math.PI / 2;
 
     camera.position.x = camDist * Math.sin(rotY) * Math.cos(rotX);
     camera.position.y = camDist * Math.sin(rotX);
     camera.position.z = camDist * Math.cos(rotY) * Math.cos(rotX);
     camera.lookAt(0, 0, 0);
 
-    // ---- Marker animation: scale, ring (zoom-adaptive), backside culling ----
+    // Update scroll percentage
+    updateScrollPct();
+
+    // ---- Texture opacity based on scroll ----
+    // 0-85%: texture at 100%
+    // 85-93%: ease in-out from 1 to 0.15
+    // 93-100%: texture at 0.15
+    // Texture + clouds fade: 0-75% full, 75-90% ease to 0.15, 90%+ at 0.15
+    if (sphereMat.map) {
+      let texOpacity;
+      if (scrollPct <= 75) {
+        texOpacity = 1;
+      } else if (scrollPct <= 90) {
+        const t = (scrollPct - 75) / 15;
+        const eased = t * t * (3 - 2 * t);
+        texOpacity = 1 - eased * 0.85;
+      } else {
+        texOpacity = 0.15;
+      }
+      sphereMat.opacity = texOpacity;
+      // Clouds fade together with texture
+      cloudMat.opacity = texOpacity * 0.4;
+    }
+
+    // ---- Stalks + pins: scroll-driven collapse ----
     const camDir = camera.position.clone().normalize();
-    // Zoom factor: how far camera is (1 = closest, ~6 = max zoom out)
     const zoomFactor = camDist / EARTH_RADIUS;
+    const cfg = globeState.stalkConfig;
+
+    if (stalks.length > 0) {
+      // Height: 1 at collapseStart, 0 at collapseEnd
+      const collapseRange = Math.max(1, cfg.collapseEnd - cfg.collapseStart);
+      const heightTarget = 1 - Math.min(1, Math.max(0, (scrollPct - cfg.collapseStart) / collapseRange));
+
+      // Stalk opacity: full until stalkFadeStart, 0 at stalkFadeEnd
+      const fadeRange = Math.max(1, cfg.stalkFadeEnd - cfg.stalkFadeStart);
+      const stalkAlphaTarget = 1 - Math.min(1, Math.max(0, (scrollPct - cfg.stalkFadeStart) / fadeRange));
+
+      stalks.forEach((s) => {
+        // Smooth lerp
+        s.heightPct += (heightTarget - s.heightPct) * cfg.lerpSpeed;
+        if (Math.abs(s.heightPct - heightTarget) < 0.001) s.heightPct = heightTarget;
+
+        // Update stalk geometry
+        const h = cfg.stalkHeight * s.heightPct;
+        const base = s.dir.clone().multiplyScalar(s.baseAlt);
+        const tip = s.dir.clone().multiplyScalar(s.baseAlt + h);
+        s.line.geometry.setFromPoints([base, tip]);
+
+        // Pin rides stalk tip
+        if (s.pin) {
+          s.pin.position.copy(tip);
+          s.pin.scale.setScalar(cfg.pinSize);
+        }
+        if (s.ring) s.ring.position.copy(tip);
+
+        // Backside culling
+        const facing = camDir.dot(s.dir);
+        const front = facing > 0.05 ? Math.min(1, (facing - 0.05) * 5) : 0;
+
+        // Stalk: fade out separately from collapse
+        s.line.material.opacity = cfg.stalkOpacity * front * stalkAlphaTarget;
+        s.line.visible = stalkAlphaTarget > 0.001;
+
+        // Pin: always visible when front-facing
+        if (s.pin) s.pin.material.opacity = front;
+      });
+    }
 
     markers.forEach((m) => {
       // Scale lerp

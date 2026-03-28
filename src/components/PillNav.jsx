@@ -8,162 +8,242 @@ const PillNav = ({
   items,
   activeItem,
   className = '',
-  ease = 'power3.easeOut',
-  baseColor = '#fff',
-  pillColor = '#060010',
-  hoveredPillTextColor = '#060010',
-  pillTextColor,
-  initialLoadAnimation = true,
   onItemClick,
+  // Colors
+  pillColor = '#ddd9c0',
+  pillTextColor = '#2C2118',
+  hoverCircleColor = '#FFDD00',
+  hoverTextColor = '#2C2118',
+  navBg = 'rgba(12, 12, 12, 0.6)',
+  navStroke = 'rgba(255, 255, 255, 0.12)',
+  // Motion
+  enterDuration = 0.45,
+  leaveDuration = 0.35,
+  enterEase = 'power3.out',
+  leaveEase = 'power3.inOut',
+  circleScale = 1.2,
+  labelShift = 1.0,
+  logoSpinDuration = 0.35,
 }) => {
-  const resolvedPillTextColor = pillTextColor ?? baseColor;
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const circleRefs = useRef([]);
-  const tlRefs = useRef([]);
-  const activeTweenRefs = useRef([]);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const pillsRef = useRef([]);
+  const circlesRef = useRef([]);
+  const labelsRef = useRef([]);
+  const hoverLabelsRef = useRef([]);
+  const pillDataRef = useRef([]); // cached height per pill
   const logoImgRef = useRef(null);
   const logoTweenRef = useRef(null);
   const hamburgerRef = useRef(null);
   const mobileMenuRef = useRef(null);
-  const navItemsRef = useRef(null);
-  const logoRef = useRef(null);
+  const navRef = useRef(null);
+  const hasAnimated = useRef(false);
 
+  // ─── Intro stagger animation ───
   useEffect(() => {
-    const layout = () => {
-      circleRefs.current.forEach((circle, index) => {
-        if (!circle?.parentElement) return;
-        const pill = circle.parentElement;
+    if (hasAnimated.current) return;
+    hasAnimated.current = true;
+    const nav = navRef.current;
+    if (!nav) return;
+
+    const logoEl = nav.querySelector('.pill-logo');
+    const navItems = nav.querySelector('.pill-nav-items');
+
+    const targets = [logoEl, navItems].filter(Boolean);
+    gsap.to(targets, {
+      opacity: 1, y: 0,
+      duration: 0.6,
+      ease: 'power3.out',
+      stagger: 0.12,
+      delay: 0.1,
+    });
+  }, []);
+
+  // ─── Measure + set initial circle geometry ───
+  useEffect(() => {
+    const measure = () => {
+      pillsRef.current.forEach((pill, i) => {
+        const circle = circlesRef.current[i];
+        const label = labelsRef.current[i];
+        const hoverLabel = hoverLabelsRef.current[i];
+        if (!pill || !circle) return;
+
         const rect = pill.getBoundingClientRect();
-        const { width: w, height: h } = rect;
+        const w = rect.width;
+        const h = rect.height;
+
+        // Store height for hover calculations
+        pillDataRef.current[i] = { h };
+
+        // Size circle to fully cover the rounded pill
         const R = ((w * w) / 4 + h * h) / (2 * h);
         const D = Math.ceil(2 * R) + 2;
         const delta = Math.ceil(R - Math.sqrt(Math.max(0, R * R - (w * w) / 4))) + 1;
-        const originY = D - delta;
 
-        circle.style.width = `${D}px`;
-        circle.style.height = `${D}px`;
-        circle.style.bottom = `-${delta}px`;
+        Object.assign(circle.style, {
+          width: `${D}px`,
+          height: `${D}px`,
+          bottom: `${-delta}px`,
+        });
+        gsap.set(circle, {
+          xPercent: -50,
+          scale: 0,
+          transformOrigin: `50% ${D - delta}px`,
+        });
 
-        gsap.set(circle, { xPercent: -50, scale: 0, transformOrigin: `50% ${originY}px` });
-
-        const label = pill.querySelector('.pill-label');
-        const white = pill.querySelector('.pill-label-hover');
         if (label) gsap.set(label, { y: 0 });
-        if (white) gsap.set(white, { y: h + 12, opacity: 0 });
-
-        tlRefs.current[index]?.kill();
-        const tl = gsap.timeline({ paused: true });
-        tl.to(circle, { scale: 1.2, xPercent: -50, duration: 2, ease, overwrite: 'auto' }, 0);
-        if (label) tl.to(label, { y: -(h + 8), duration: 2, ease, overwrite: 'auto' }, 0);
-        if (white) {
-          gsap.set(white, { y: Math.ceil(h + 100), opacity: 0 });
-          tl.to(white, { y: 0, opacity: 1, duration: 2, ease, overwrite: 'auto' }, 0);
-        }
-        tlRefs.current[index] = tl;
+        if (hoverLabel) gsap.set(hoverLabel, { y: h + 20, opacity: 0 });
       });
     };
 
-    layout();
-    window.addEventListener('resize', layout);
-    if (document.fonts?.ready) document.fonts.ready.then(layout).catch(() => {});
+    measure();
+    window.addEventListener('resize', measure);
+    document.fonts?.ready?.then(measure).catch(() => {});
+    return () => window.removeEventListener('resize', measure);
+  }, [items]);
 
-    const menu = mobileMenuRef.current;
-    if (menu) gsap.set(menu, { visibility: 'hidden', opacity: 0 });
+  // ─── Mobile menu init ───
+  useEffect(() => {
+    const m = mobileMenuRef.current;
+    if (m) gsap.set(m, { autoAlpha: 0, y: 8 });
+  }, []);
 
-    if (initialLoadAnimation) {
-      if (logoRef.current) {
-        gsap.set(logoRef.current, { scale: 0 });
-        gsap.to(logoRef.current, { scale: 1, duration: 0.6, ease });
-      }
-      if (navItemsRef.current) {
-        gsap.set(navItemsRef.current, { width: 0, overflow: 'hidden' });
-        gsap.to(navItemsRef.current, { width: 'auto', duration: 0.6, ease });
-      }
+  // ─── ENTER: three independent gsap.to() calls ───
+  const onEnter = (i) => {
+    const circle = circlesRef.current[i];
+    const label = labelsRef.current[i];
+    const hoverLabel = hoverLabelsRef.current[i];
+    const data = pillDataRef.current[i];
+    if (!circle || !data) return;
+
+    gsap.to(circle, {
+      scale: circleScale,
+      duration: enterDuration,
+      ease: enterEase,
+      overwrite: 'auto',
+    });
+
+    if (label) {
+      gsap.to(label, {
+        y: -(data.h * labelShift + 8),
+        duration: enterDuration,
+        ease: enterEase,
+        overwrite: 'auto',
+      });
     }
 
-    return () => window.removeEventListener('resize', layout);
-  }, [items, ease, initialLoadAnimation]);
-
-  const handleEnter = (i) => {
-    const tl = tlRefs.current[i];
-    if (!tl) return;
-    activeTweenRefs.current[i]?.kill();
-    activeTweenRefs.current[i] = tl.tweenTo(tl.duration(), { duration: 0.35, ease: 'power4.out', overwrite: 'auto' });
+    if (hoverLabel) {
+      gsap.to(hoverLabel, {
+        y: 0,
+        opacity: 1,
+        duration: enterDuration,
+        ease: enterEase,
+        overwrite: 'auto',
+      });
+    }
   };
 
-  const handleLeave = (i) => {
-    const tl = tlRefs.current[i];
-    if (!tl) return;
-    activeTweenRefs.current[i]?.kill();
-    activeTweenRefs.current[i] = tl.tweenTo(0, { duration: 0.4, ease: 'power4.inOut', overwrite: 'auto' });
+  // ─── LEAVE: three independent gsap.to() calls ───
+  const onLeave = (i) => {
+    const circle = circlesRef.current[i];
+    const label = labelsRef.current[i];
+    const hoverLabel = hoverLabelsRef.current[i];
+    const data = pillDataRef.current[i];
+    if (!circle || !data) return;
+
+    gsap.to(circle, {
+      scale: 0,
+      duration: leaveDuration,
+      ease: leaveEase,
+      overwrite: 'auto',
+    });
+
+    if (label) {
+      gsap.to(label, {
+        y: 0,
+        duration: leaveDuration,
+        ease: leaveEase,
+        overwrite: 'auto',
+      });
+    }
+
+    if (hoverLabel) {
+      gsap.to(hoverLabel, {
+        y: data.h + 20,
+        opacity: 0,
+        duration: leaveDuration,
+        ease: leaveEase,
+        overwrite: 'auto',
+      });
+    }
   };
 
-  const handleLogoEnter = () => {
+  // ─── Logo ───
+  const onLogoEnter = () => {
     const img = logoImgRef.current;
     if (!img) return;
     logoTweenRef.current?.kill();
-    gsap.set(img, { rotate: 0 });
-    logoTweenRef.current = gsap.to(img, { rotate: 360, duration: 0.2, ease, overwrite: 'auto' });
+    logoTweenRef.current = gsap.fromTo(
+      img, { rotate: 0 }, { rotate: 360, duration: logoSpinDuration, ease: enterEase }
+    );
   };
 
-  const toggleMobileMenu = () => {
-    const newState = !isMobileMenuOpen;
-    setIsMobileMenuOpen(newState);
-    const hamburger = hamburgerRef.current;
+  // ─── Mobile ───
+  const toggleMobile = () => {
+    const next = !mobileOpen;
+    setMobileOpen(next);
+    const lines = hamburgerRef.current?.querySelectorAll('.hamburger-line');
     const menu = mobileMenuRef.current;
-
-    if (hamburger) {
-      const lines = hamburger.querySelectorAll('.hamburger-line');
-      if (newState) {
-        gsap.to(lines[0], { rotation: 45, y: 3, duration: 0.3, ease });
-        gsap.to(lines[1], { rotation: -45, y: -3, duration: 0.3, ease });
-      } else {
-        gsap.to(lines[0], { rotation: 0, y: 0, duration: 0.3, ease });
-        gsap.to(lines[1], { rotation: 0, y: 0, duration: 0.3, ease });
-      }
+    if (lines) {
+      gsap.to(lines[0], { rotation: next ? 45 : 0, y: next ? 3 : 0, duration: 0.3, ease: enterEase });
+      gsap.to(lines[1], { rotation: next ? -45 : 0, y: next ? -3 : 0, duration: 0.3, ease: enterEase });
     }
-
     if (menu) {
-      if (newState) {
-        gsap.set(menu, { visibility: 'visible' });
-        gsap.fromTo(menu, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease, transformOrigin: 'top center' });
-      } else {
-        gsap.to(menu, { opacity: 0, y: 10, duration: 0.2, ease, onComplete: () => gsap.set(menu, { visibility: 'hidden' }) });
-      }
+      gsap.to(menu, next
+        ? { autoAlpha: 1, y: 0, duration: 0.3, ease: enterEase }
+        : { autoAlpha: 0, y: 8, duration: 0.2, ease: leaveEase }
+      );
     }
   };
 
-  const cssVars = {
-    '--base': baseColor,
+  const vars = {
     '--pill-bg': pillColor,
-    '--hover-text': hoveredPillTextColor,
-    '--pill-text': resolvedPillTextColor,
+    '--pill-text': pillTextColor,
+    '--hover-circle': hoverCircleColor,
+    '--hover-text': hoverTextColor,
+    '--nav-bg': navBg,
+    '--nav-stroke': navStroke,
   };
 
   return (
     <div className="pill-nav-container">
-      <nav className={`pill-nav ${className}`} aria-label="Primary" style={cssVars}>
-        <a className="pill-logo" href="#" aria-label="Home" onMouseEnter={handleLogoEnter} ref={logoRef} onClick={(e) => { e.preventDefault(); onItemClick?.('home'); }}>
+      <nav className={`pill-nav ${className}`} aria-label="Primary" style={vars} ref={navRef}>
+        <a
+          className="pill-logo"
+          href="#"
+          aria-label="Home"
+          onMouseEnter={onLogoEnter}
+          onClick={(e) => { e.preventDefault(); onItemClick?.('home'); }}
+        >
           <img src={logo} alt={logoAlt} ref={logoImgRef} />
         </a>
 
-        <div className="pill-nav-items desktop-only" ref={navItemsRef}>
+        <div className="pill-nav-items desktop-only">
           <ul className="pill-list" role="menubar">
             {items.map((item, i) => (
               <li key={item.id} role="none">
                 <button
                   role="menuitem"
                   className={`pill${activeItem === item.id ? ' is-active' : ''}`}
-                  aria-label={item.label}
-                  onPointerEnter={() => handleEnter(i)}
-                  onPointerLeave={() => handleLeave(i)}
+                  ref={(el) => { pillsRef.current[i] = el; }}
+                  onPointerEnter={() => onEnter(i)}
+                  onPointerLeave={() => onLeave(i)}
                   onClick={() => onItemClick?.(item.id)}
-                  style={{ pointerEvents: 'auto' }}
                 >
-                  <span className="hover-circle" aria-hidden="true" style={{ pointerEvents: 'none' }} ref={(el) => { circleRefs.current[i] = el; }} />
-                  <span className="label-stack" style={{ pointerEvents: 'none' }}>
-                    <span className="pill-label">{item.label}</span>
-                    <span className="pill-label-hover" aria-hidden="true">{item.label}</span>
+                  <span className="hover-circle" ref={(el) => { circlesRef.current[i] = el; }} />
+                  <span className="label-stack">
+                    <span className="pill-label" ref={(el) => { labelsRef.current[i] = el; }}>{item.label}</span>
+                    <span className="pill-label-hover" ref={(el) => { hoverLabelsRef.current[i] = el; }}>{item.label}</span>
                   </span>
                 </button>
               </li>
@@ -171,17 +251,20 @@ const PillNav = ({
           </ul>
         </div>
 
-        <button className="mobile-menu-button mobile-only" onClick={toggleMobileMenu} aria-label="Toggle menu" ref={hamburgerRef}>
+        <button className="mobile-menu-button mobile-only" onClick={toggleMobile} ref={hamburgerRef}>
           <span className="hamburger-line" />
           <span className="hamburger-line" />
         </button>
       </nav>
 
-      <div className="mobile-menu-popover mobile-only" ref={mobileMenuRef} style={cssVars}>
+      <div className="mobile-menu-popover mobile-only" ref={mobileMenuRef} style={vars}>
         <ul className="mobile-menu-list">
           {items.map((item) => (
             <li key={item.id}>
-              <button className={`mobile-menu-link${activeItem === item.id ? ' is-active' : ''}`} onClick={() => { setIsMobileMenuOpen(false); onItemClick?.(item.id); }}>
+              <button
+                className={`mobile-menu-link${activeItem === item.id ? ' is-active' : ''}`}
+                onClick={() => { setMobileOpen(false); onItemClick?.(item.id); }}
+              >
                 {item.label}
               </button>
             </li>

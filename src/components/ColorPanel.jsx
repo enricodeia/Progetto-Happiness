@@ -15,9 +15,9 @@ const ColorPanel = () => {
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState(DEFAULTS);
   const [copied, setCopied] = useState(false);
+  const [fineMode, setFineMode] = useState(false);
   const panelRef = useRef(null);
 
-  // Animate open/close
   useEffect(() => {
     if (!panelRef.current) return;
     if (open) {
@@ -42,7 +42,7 @@ const ColorPanel = () => {
   const handleClose = () => {
     if (!panelRef.current) { setOpen(false); return; }
     gsap.to(panelRef.current, {
-      opacity: 0, scale: 0.92, y: 10, duration: 0.25, ease: 'power3.in',
+      opacity: 0, scale: 0.92, y: 10, duration: 0.25, ease: 'power4.inOut',
       onComplete: () => setOpen(false),
     });
   };
@@ -55,35 +55,46 @@ const ColorPanel = () => {
     </button>
   );
 
+  const f = fineMode;
+
   const rows = [
     { key: 'bg', label: 'Background', type: 'color' },
     { key: 'sphereColor', label: 'Globe', type: 'color' },
-    null, // separator
+    null,
     { key: 'dotColor', label: 'Dot color', type: 'color' },
-    { key: 'dotOpacity', label: 'Dot opacity', type: 'range', min: 0, max: 1, step: 0.05 },
-    { key: 'dotSize', label: 'Dot size', type: 'range', min: 5000, max: 50000, step: 1000 },
+    { key: 'dotOpacity', label: 'Dot opacity', type: 'range', min: 0, max: 1, step: f ? 0.01 : 0.05 },
+    { key: 'dotSize', label: 'Dot size', type: 'range', min: 2000, max: 60000, step: f ? 500 : 2000 },
     null,
     { key: 'borderColor', label: 'Borders', type: 'color' },
-    { key: 'borderOpacity', label: 'Border opacity', type: 'range', min: 0, max: 0.3, step: 0.01 },
+    { key: 'borderOpacity', label: 'Border opacity', type: 'range', min: 0, max: 0.3, step: f ? 0.005 : 0.01 },
     null,
     { key: 'markerColor', label: 'Pin color', type: 'color' },
-    { key: 'pinSize', label: 'Pin size', type: 'range', min: 5000, max: 30000, step: 1000 },
+    { key: 'pinSize', label: 'Pin size', type: 'range', min: 3000, max: 40000, step: f ? 500 : 1000 },
     null,
     { key: 'showTexture', label: 'Earth texture', type: 'toggle' },
-    { key: 'textureOpacity', label: 'Tex opacity', type: 'range', min: 0.1, max: 1, step: 0.05 },
-    { key: 'textureOffsetX', label: 'Tex shift X', type: 'range', min: -1, max: 1, step: 0.01 },
-    { key: 'textureOffsetY', label: 'Tex shift Y', type: 'range', min: -1, max: 1, step: 0.01 },
-    { key: 'textureScale', label: 'Tex scale', type: 'range', min: 0.5, max: 2, step: 0.05 },
-    { key: 'textureRotation', label: 'Tex rotation', type: 'range', min: -180, max: 180, step: 1 },
+    { key: 'textureOpacity', label: 'Tex opacity', type: 'range', min: 0.05, max: 1, step: f ? 0.01 : 0.05 },
+    { key: 'textureOffsetX', label: 'Shift X', type: 'range', min: -0.5, max: 0.5, step: f ? 0.001 : 0.01 },
+    { key: 'textureOffsetY', label: 'Shift Y', type: 'range', min: -0.5, max: 0.5, step: f ? 0.001 : 0.01 },
+    { key: 'textureScale', label: 'Scale', type: 'range', min: 0.8, max: 1.2, step: f ? 0.002 : 0.02 },
+    { key: 'textureRotation', label: 'Rotation', type: 'range', min: -30, max: 30, step: f ? 0.2 : 1 },
   ];
 
   return (
     <div className="color-panel" ref={panelRef}>
       <div className="color-panel__header">
         <span className="color-panel__title">Globe Controls</span>
-        <button className="color-panel__close" onClick={handleClose}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          <button
+            className={`color-panel__toggle-btn ${fineMode ? 'color-panel__toggle-btn--on' : ''}`}
+            onClick={() => setFineMode(!fineMode)}
+            title="Fine tuning mode — smaller steps"
+          >
+            {fineMode ? 'FINE' : 'NORM'}
+          </button>
+          <button className="color-panel__close" onClick={handleClose}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
       </div>
       {rows.map((row, i) => {
         if (!row) return <div className="color-panel__sep" key={`sep-${i}`} />;
@@ -100,7 +111,11 @@ const ColorPanel = () => {
             {type === 'range' && (
               <div className="color-panel__range-wrap">
                 <input type="range" min={min} max={max} step={step} value={values[key]} onChange={(e) => update(key, parseFloat(e.target.value))} />
-                <span className="color-panel__range-val">{typeof values[key] === 'number' ? (values[key] >= 1000 ? Math.round(values[key] / 1000) + 'k' : values[key].toFixed(2)) : values[key]}</span>
+                <span className="color-panel__range-val">
+                  {typeof values[key] === 'number'
+                    ? (Math.abs(values[key]) >= 1000 ? Math.round(values[key] / 1000) + 'k' : values[key].toFixed(f ? 3 : 2))
+                    : values[key]}
+                </span>
               </div>
             )}
             {type === 'toggle' && (

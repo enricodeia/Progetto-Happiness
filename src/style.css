@@ -28,7 +28,7 @@
   --color-bg: #030303;
   --color-surface: #0c0c0c;
   --color-card: rgba(12, 12, 12, 0.88);
-  --color-border: rgba(255, 255, 255, 0.06);
+  --color-border: rgba(255, 255, 255, 0.12);
   --color-border-hover: rgba(255, 221, 0, 0.15);
   --color-text: #FDF4ED;
   --color-text-secondary: rgba(253, 244, 237, 0.50);
@@ -55,6 +55,59 @@ html, body, #root {
 }
 
 /* ============================================
+   Hero title over globe
+   ============================================ */
+.hero-title {
+  position: fixed; inset: 0; z-index: 2;
+  pointer-events: none;
+}
+
+.hero-title__heading {
+  position: absolute;
+  top: var(--hero-top-y, 12vh);
+  left: 50%; transform: translateX(-50%);
+  text-align: center;
+  font-family: var(--font-serif);
+  font-size: var(--hero-top-size, 80px);
+  font-weight: 200;
+  line-height: 0.95;
+  opacity: var(--hero-top-opacity, 0.9);
+}
+
+.hero-title__line1 {
+  display: block;
+  color: var(--hero-top-color, #ffffff);
+}
+
+.hero-title__line2 {
+  display: block;
+  color: var(--hero-accent-color, #FFDD00);
+}
+
+.hero-title__curve {
+  position: absolute;
+  top: var(--hero-bottom-y, 72vh);
+  left: 50%; transform: translateX(-50%);
+  width: var(--hero-curve-width, 550px);
+  height: auto;
+  overflow: visible;
+  opacity: var(--hero-bottom-opacity, 0.85);
+}
+
+.hero-title__curve text {
+  font-family: var(--font-serif);
+  font-size: var(--hero-bottom-size, 42px);
+  font-weight: 200;
+  fill: var(--hero-bottom-color, #ffffff);
+}
+
+@media (max-width: 768px) {
+  .hero-title__heading { font-size: 56px !important; }
+  .hero-title__curve { width: 320px; }
+  .hero-title__curve text { font-size: 52px !important; }
+}
+
+/* ============================================
    Preloader
    ============================================ */
 .preloader {
@@ -70,7 +123,7 @@ html, body, #root {
 }
 
 .preloader__counter {
-  display: flex; align-items: baseline; gap: 3px;
+  display: flex; align-items: baseline; gap: 0;
 }
 
 .preloader__number {
@@ -82,9 +135,9 @@ html, body, #root {
 }
 
 .preloader__percent {
-  font-family: var(--font-sans);
-  font-size: 14px; font-weight: 300;
-  color: var(--color-text-secondary);
+  font-family: var(--font-serif);
+  font-size: 40px; font-weight: 200;
+  color: var(--color-primary);
 }
 
 /* ============================================
@@ -165,7 +218,7 @@ html, body, #root {
   border-radius: 24px;
   overflow: hidden;
   opacity: 0; transform: translateY(12px);
-  transition: opacity 0.6s ease 0.2s, transform 0.6s ease 0.2s;
+  transition: opacity 0.6s ease 0.3s, transform 0.6s ease 0.3s;
 }
 .sidebar--visible { opacity: 1; transform: translateY(0); }
 
@@ -260,10 +313,10 @@ html, body, #root {
   border: 1px solid var(--color-border);
   border-radius: 10px;
   overflow: hidden;
-  animation: hover-card-in 0.2s ease;
+  will-change: transform, opacity;
 }
 
-@keyframes hover-card-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+/* GSAP handles hover-card animation */
 
 .hover-card__thumb {
   position: relative; width: 100%; height: 130px;
@@ -403,8 +456,37 @@ html, body, #root {
   color: var(--color-text-tertiary); pointer-events: none;
   opacity: 0; animation: hint-fade 7s ease 0.5s forwards;
 }
-.hint--visible { animation: hint-fade 7s ease 0.3s forwards; }
+.hint--visible { animation: hint-fade 7s ease 0.7s forwards; }
 @keyframes hint-fade { 0% { opacity: 0; } 15% { opacity: 0.4; } 65% { opacity: 0.4; } 100% { opacity: 0; } }
+
+/* ============================================
+   Scroll indicator (debug)
+   ============================================ */
+.scroll-indicator {
+  position: fixed; bottom: 28px; right: 28px;
+  z-index: 10; pointer-events: none;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+  opacity: 0; transform: translateY(8px);
+  animation: scroll-ind-in 0.6s ease 0.9s forwards;
+}
+@keyframes scroll-ind-in { to { opacity: 1; transform: translateY(0); } }
+.scroll-indicator__value {
+  font-family: var(--font-serif); font-size: 18px; font-weight: 200;
+  color: var(--color-primary); opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+.scroll-indicator__bar {
+  width: 80px; height: 3px;
+  background: var(--color-border); border-radius: 2px; overflow: hidden;
+}
+.scroll-indicator__fill {
+  height: 100%; background: var(--color-primary); border-radius: 2px;
+  transition: width 0.1s ease;
+}
+.scroll-indicator__range {
+  font-size: 8px; font-weight: 300; color: var(--color-text-tertiary);
+  letter-spacing: 0.5px;
+}
 
 /* ============================================
    Credit
@@ -597,6 +679,7 @@ html, body, #root {
    ============================================ */
 .page-wrapper {
   position: fixed; inset: 0;
+  z-index: 1;
   transition: transform 0.7s cubic-bezier(0.33, 1, 0.68, 1);
 }
 .page-wrapper--slide-left { transform: translateX(-100vw); }
@@ -614,7 +697,7 @@ html, body, #root {
   letter-spacing: 0.5px; text-transform: uppercase;
   cursor: pointer;
   opacity: 0; transform: translateY(8px);
-  transition: opacity 0.6s ease 0.4s, transform 0.6s ease 0.4s, border-color 0.2s, color 0.2s;
+  transition: opacity 0.6s ease 0.5s, transform 0.6s ease 0.5s, border-color 0.2s, color 0.2s;
 }
 .bacheca-cta--visible { opacity: 1; transform: translateY(0); }
 .bacheca-cta:hover { border-color: var(--color-primary); color: var(--color-primary); }

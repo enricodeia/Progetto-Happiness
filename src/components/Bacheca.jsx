@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { gsap } from 'gsap';
+import BachecaDots from './BachecaDots';
 
 const MAX_CHARS = 200;
 
@@ -85,7 +86,11 @@ const Bacheca = ({ visible, onBack }) => {
   }, [canvasOffset]);
 
   const onPointerMove = useCallback((e) => {
-    if (panning) setCanvasOffset({ x: panStartOffset.x + (e.clientX - panStart.x), y: panStartOffset.y + (e.clientY - panStart.y) });
+    if (!panning) return;
+    const rawX = panStartOffset.x + (e.clientX - panStart.x);
+    const rawY = panStartOffset.y + (e.clientY - panStart.y);
+    // Clamp to prevent dragging beyond image boundaries
+    setCanvasOffset({ x: Math.min(0, Math.max(rawX, 0)), y: Math.min(0, Math.max(rawY, 0)) });
   }, [panning, panStart, panStartOffset]);
 
   const onPointerUp = useCallback(() => setPanning(false), []);
@@ -99,8 +104,7 @@ const Bacheca = ({ visible, onBack }) => {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         Torna al Globo
       </button>
-      <h1 className="bacheca__question">Per te cosa e' la felicita?</h1>
-      <div className="bacheca__grid" style={{ backgroundPosition: `${canvasOffset.x}px ${canvasOffset.y}px` }} />
+      <BachecaDots offset={canvasOffset} />
 
       {!hasPosted && !loading && (
         <div className="bacheca__compose" onPointerDown={(e) => e.stopPropagation()}>

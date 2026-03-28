@@ -4,43 +4,88 @@ import StickerPeel from './StickerPeel.jsx';
 
 const Preloader = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
-  const [peelPct, setPeelPct] = useState(90); // starts 90% peeled
+  const [peelPct, setPeelPct] = useState(90);
   const containerRef = useRef(null);
   const done = useRef(false);
 
   useEffect(() => {
-    // Simulate loading progress
-    let start = performance.now();
-    const totalDuration = 2400; // ms
+    // Track real asset loading
+    const assets = [
+      '/earth-8k.webp',
+      '/clouds.webp',
+      '/logo.webp',
+      'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json',
+      'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json',
+    ];
 
-    function tick(now) {
-      const elapsed = now - start;
-      const p = Math.min(elapsed / totalDuration, 1);
-      // Ease in-out
-      const eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-      const pct = Math.round(eased * 100);
+    let loaded = 0;
+    let realProgress = 0;
+    let displayProgress = 0;
+    let animFrame = null;
 
+    // Load all assets
+    const promises = assets.map((url) =>
+      fetch(url).then((r) => {
+        loaded++;
+        realProgress = Math.round((loaded / assets.length) * 100);
+      }).catch(() => {
+        loaded++;
+        realProgress = Math.round((loaded / assets.length) * 100);
+      })
+    );
+
+    // Also wait for fonts
+    if (document.fonts?.ready) {
+      promises.push(document.fonts.ready.then(() => {}));
+    }
+
+    // Animate display progress smoothly toward real progress
+    function tick() {
+      if (displayProgress < realProgress) {
+        // Ease toward real progress
+        displayProgress += (realProgress - displayProgress) * 0.08;
+        if (realProgress - displayProgress < 1) displayProgress = realProgress;
+      }
+
+      const pct = Math.round(displayProgress);
       setProgress(pct);
-      // Peel goes from 90% → 0% as progress goes 0% → 100%
-      setPeelPct(Math.round(90 * (1 - eased)));
+      // Peel: 90% → 0% as progress 0% → 100%
+      setPeelPct(Math.round(90 * (1 - pct / 100)));
 
-      if (p < 1) {
-        requestAnimationFrame(tick);
-      } else if (!done.current) {
+      if (pct >= 100 && !done.current) {
         done.current = true;
-        // Hold for a moment, then fade out
         setTimeout(() => {
-          gsap.to(containerRef.current, {
-            opacity: 0,
-            duration: 0.6,
-            ease: 'power2.inOut',
+          const el = containerRef.current;
+          if (!el) return;
+          gsap.to(el, {
+            opacity: 0, duration: 0.7,
+            ease: 'power4.out',
             onComplete,
           });
-        }, 400);
+        }, 300);
+      } else {
+        animFrame = requestAnimationFrame(tick);
       }
     }
 
-    requestAnimationFrame(tick);
+    // Start ticking
+    animFrame = requestAnimationFrame(tick);
+
+    // Ensure minimum display time (at least 1.5s even if assets load instantly)
+    const minTimer = setTimeout(() => {
+      if (realProgress < 100) return;
+    }, 1500);
+
+    // Fallback: if assets take too long, force complete after 8s
+    const fallback = setTimeout(() => {
+      realProgress = 100;
+    }, 8000);
+
+    return () => {
+      cancelAnimationFrame(animFrame);
+      clearTimeout(minTimer);
+      clearTimeout(fallback);
+    };
   }, [onComplete]);
 
   return (

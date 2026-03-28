@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'motion/react';
+import HoverCard from './components/HoverCard.jsx';
 import Preloader from './components/Preloader.jsx';
 import Globe from './components/Globe.jsx';
 // CountUp moved to About overlay
@@ -8,7 +9,8 @@ import AboutOverlay from './components/AboutOverlay.jsx';
 import PillNav from './components/PillNav.jsx';
 import PanelCard from './components/PanelCard.jsx';
 import Bacheca from './components/Bacheca.jsx';
-import ColorPanel from './components/ColorPanel.jsx';
+// Control panels removed for production
+import HeroTitle from './components/HeroTitle.jsx';
 import { globeState } from './globe-scene.js';
 import { episodes, happinessConcepts } from './data.js';
 
@@ -59,6 +61,35 @@ export default function App() {
   const [activeNav, setActiveNav] = useState('globe');
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [bachecaOpen, setBachecaOpen] = useState(false);
+  const [scrollPct, setScrollPct] = useState(0);
+  const [navConfig] = useState({
+    pillColor: '#ddd9c0',
+    pillTextColor: '#2C2118',
+    hoverCircleColor: '#FFDD00',
+    hoverTextColor: '#2C2118',
+    navBg: 'rgba(12, 12, 12, 0.6)',
+    navStroke: 'rgba(255, 255, 255, 0.12)',
+    enterDuration: 0.45,
+    leaveDuration: 0.35,
+    enterEase: 'power3.out',
+    leaveEase: 'power3.inOut',
+    circleScale: 1.2,
+    labelShift: 1.0,
+    logoSpinDuration: 0.65,
+  });
+  const [heroConfig] = useState({
+    topY: 13,
+    bottomY: 65,
+    topSize: 80,
+    bottomSize: 41,
+    curveWidth: 530,
+    curveDepth: 245,
+    topColor: '#ffffff',
+    accentColor: '#FFDD00',
+    bottomColor: '#ffffff',
+    topOpacity: 1,
+    bottomOpacity: 0.75,
+  });
 
   const handlePreloaderComplete = useCallback(() => {
     setLoaded(true);
@@ -69,6 +100,7 @@ export default function App() {
     const onHover = (e) => setHoverCard(e.detail);
     const onLeave = () => setHoverCard(null);
     const onDrag = () => { setHoverCard(null); setCountryName(null); };
+    const onScroll = (e) => setScrollPct(e.detail.pct);
     const onCountry = (e) => { setCountryName(e.detail.name); setCountryPos({ x: e.detail.x, y: e.detail.y }); };
     const onClick = (e) => {
       const m = e.detail.marker;
@@ -82,12 +114,14 @@ export default function App() {
     window.addEventListener('globe:drag', onDrag);
     window.addEventListener('globe:country-hover', onCountry);
     window.addEventListener('globe:marker-click', onClick);
+    window.addEventListener('globe:scroll', onScroll);
     return () => {
       window.removeEventListener('globe:marker-hover', onHover);
       window.removeEventListener('globe:marker-leave', onLeave);
       window.removeEventListener('globe:drag', onDrag);
       window.removeEventListener('globe:country-hover', onCountry);
       window.removeEventListener('globe:marker-click', onClick);
+      window.removeEventListener('globe:scroll', onScroll);
     };
   }, []);
 
@@ -110,37 +144,43 @@ export default function App() {
           logo="/logo.webp"
           logoAlt="Progetto Happiness"
           items={[
-            { id: 'gallery', label: 'Gallery' },
+            { id: 'bacheca', label: 'Bacheca' },
             { id: 'about', label: 'About' },
             { id: 'blog', label: 'Blog' },
           ]}
           activeItem={activeNav}
-          baseColor="#2C2118"
-          pillColor="#FFDD00"
-          hoveredPillTextColor="#FFDD00"
-          pillTextColor="#2C2118"
-          initialLoadAnimation={false}
+          pillColor={navConfig.pillColor}
+          pillTextColor={navConfig.pillTextColor}
+          hoverCircleColor={navConfig.hoverCircleColor}
+          hoverTextColor={navConfig.hoverTextColor}
+          navBg={navConfig.navBg}
+          navStroke={navConfig.navStroke}
+          enterDuration={navConfig.enterDuration}
+          leaveDuration={navConfig.leaveDuration}
+          enterEase={navConfig.enterEase}
+          leaveEase={navConfig.leaveEase}
+          circleScale={navConfig.circleScale}
+          labelShift={navConfig.labelShift}
+          logoSpinDuration={navConfig.logoSpinDuration}
           onItemClick={(id) => {
             if (id === 'home') { setAboutOpen(false); setBachecaOpen(false); setActiveNav('home'); return; }
             setActiveNav(id);
-            if (id === 'about' || id === 'gallery') setAboutOpen(true);
+            if (id === 'bacheca') setBachecaOpen(true);
+            else if (id === 'about') setAboutOpen(true);
             else if (id === 'blog') window.open('https://progettohappiness.com/episodi/', '_blank');
           }}
         />
       )}
 
-      {/* Bacheca CTA — top right */}
-      <button
-        className={`bacheca-cta ${showUI && !bachecaOpen ? 'bacheca-cta--visible' : ''}`}
-        onClick={() => setBachecaOpen(true)}
-      >
-        Bacheca
-      </button>
-
       {/* ---- Globe page (slides left when bacheca opens) ---- */}
       <div className={`page-wrapper ${bachecaOpen ? 'page-wrapper--slide-left' : ''}`}>
         <Globe />
         <Noise patternSize={200} patternAlpha={12} patternRefreshInterval={6} />
+
+        {/* Hero title over globe */}
+        {showUI && (
+          <HeroTitle config={heroConfig} />
+        )}
 
         <aside
           className={`sidebar ${showUI ? 'sidebar--visible' : ''} ${sidebarExpanded ? 'sidebar--expanded' : ''}`}
@@ -162,26 +202,7 @@ export default function App() {
         </aside>
 
         {hoverCard && (
-          <div className="hover-card" style={{ left: hoverCard.x + 20, top: hoverCard.y - 120 }}>
-            {hoverCard.type === 'episode' && hoverCard.data.thumb && (
-              <div className="hover-card__thumb">
-                <img className="hover-card__thumb-img" src={hoverCard.data.thumb} alt="" />
-                <div className="hover-card__thumb-overlay">
-                  <svg className="hover-card__play" width="32" height="32" viewBox="0 0 24 24" fill="white" opacity="0.8"><path d="M8 5v14l11-7z"/></svg>
-                </div>
-              </div>
-            )}
-            <div className="hover-card__body">
-              <span className="hover-card__tag">{hoverCard.type === 'episode' ? `Ep. ${String(hoverCard.data.id).padStart(2, '0')}` : hoverCard.data.country}</span>
-              <h3 className="hover-card__title">{hoverCard.data.title || hoverCard.data.concept}</h3>
-              {hoverCard.data.views && (
-                <div className="hover-card__footer">
-                  <span>{hoverCard.data.views} views</span>
-                  <span>{hoverCard.data.date}</span>
-                </div>
-              )}
-            </div>
-          </div>
+          <HoverCard data={hoverCard.data} type={hoverCard.type} x={hoverCard.x} y={hoverCard.y} />
         )}
 
         {countryName && (
@@ -191,13 +212,23 @@ export default function App() {
         <PanelCard data={panelData} onClose={() => { setPanelData(null); setActiveEp(null); }} />
 
         <div className={`hint ${showUI ? 'hint--visible' : ''}`}>Scroll per esplorare il mondo</div>
+
+        {/* Scroll % indicator — bottom right */}
+        {showUI && (
+          <div className="scroll-indicator">
+            <span className="scroll-indicator__value">{scrollPct}%</span>
+            <div className="scroll-indicator__bar">
+              <div className="scroll-indicator__fill" style={{ width: `${scrollPct}%` }} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ---- Bacheca (slides in from right) ---- */}
       <Bacheca visible={bachecaOpen} onBack={() => setBachecaOpen(false)} />
 
-      {/* Color control panel */}
-      {showUI && !bachecaOpen && <ColorPanel />}
+      {/* Stalk/Pin controls */}
+      {/* Control panels removed for production */}
 
       {/* About overlay */}
       <AboutOverlay visible={aboutOpen} onClose={() => { setAboutOpen(false); setActiveNav('globe'); }} />
