@@ -287,15 +287,55 @@ export default function App() {
               border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 16,
               fontFamily: 'Inter, system-ui, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.7)',
             }}>
-              <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,221,0,0.6)' }}>Bubble Menu</div>
+              <div style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' }}>
+              {/* ── Hero Title ── */}
+              <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,221,0,0.6)' }}>Hero Title</div>
+              {[
+                { label: 'Top Y %', key: 'topY', min: 0, max: 50, step: 1 },
+                { label: 'Bottom Y %', key: 'bottomY', min: 30, max: 90, step: 1 },
+                { label: 'Top Size', key: 'topSize', min: 20, max: 140, step: 1 },
+                { label: 'Bottom Size', key: 'bottomSize', min: 12, max: 80, step: 1 },
+                { label: 'Curve Width', key: 'curveWidth', min: 100, max: 900, step: 10 },
+                { label: 'Curve Depth', key: 'curveDepth', min: 0, max: 500, step: 5 },
+                { label: 'Top Opacity', key: 'topOpacity', min: 0, max: 1, step: 0.05 },
+                { label: 'Bottom Opacity', key: 'bottomOpacity', min: 0, max: 1, step: 0.05 },
+              ].map(({ label, key, min, max, step }) => (
+                <div key={key} style={{ marginBottom: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 1 }}>
+                    <span>{label}</span><span>{heroConfig[key]}</span>
+                  </div>
+                  <input type="range" min={min} max={max} step={step} value={heroConfig[key]}
+                    onChange={(e) => setHeroConfig((c) => ({ ...c, [key]: parseFloat(e.target.value) }))}
+                    style={{ width: '100%', accentColor: '#FFDD00' }}
+                  />
+                </div>
+              ))}
+              {[
+                { label: 'Top Color', key: 'topColor' },
+                { label: 'Accent Color', key: 'accentColor' },
+                { label: 'Bottom Color', key: 'bottomColor' },
+              ].map(({ label, key }) => (
+                <div key={key} style={{ marginBottom: 6 }}>
+                  <div style={{ marginBottom: 2 }}>{label}</div>
+                  <input type="color" value={heroConfig[key]}
+                    onChange={(e) => setHeroConfig((c) => ({ ...c, [key]: e.target.value }))}
+                    style={{ width: '100%', height: 24, border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                  />
+                </div>
+              ))}
+
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '12px 0' }} />
+
+              {/* ── Bubble Menu ── */}
+              <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,221,0,0.6)' }}>Bubble Menu</div>
               {[
                 { label: 'Duration', key: 'duration', min: 0.1, max: 1.5, step: 0.05 },
                 { label: 'Stagger', key: 'stagger', min: 0.02, max: 0.4, step: 0.01 },
                 { label: 'Rotation', key: 'rotation', min: 0, max: 20, step: 1 },
                 { label: 'Gap', key: 'gap', min: -60, max: 20, step: 2 },
               ].map(({ label, key, min, max, step }) => (
-                <div key={key} style={{ marginBottom: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                <div key={key} style={{ marginBottom: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 1 }}>
                     <span>{label}</span><span>{bubbleConfig[key]}</span>
                   </div>
                   <input type="range" min={min} max={max} step={step} value={bubbleConfig[key]}
@@ -304,8 +344,8 @@ export default function App() {
                   />
                 </div>
               ))}
-              <div style={{ marginBottom: 8 }}>
-                <div style={{ marginBottom: 4 }}>Ease</div>
+              <div style={{ marginBottom: 6 }}>
+                <div style={{ marginBottom: 2 }}>Ease</div>
                 <select value={bubbleConfig.ease}
                   onChange={(e) => setBubbleConfig((c) => ({ ...c, ease: e.target.value }))}
                   style={{ width: '100%', padding: '4px 6px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: 11 }}
@@ -315,19 +355,20 @@ export default function App() {
                   ))}
                 </select>
               </div>
-              <div style={{ marginBottom: 8 }}>
-                <div style={{ marginBottom: 4 }}>Button BG</div>
+              <div style={{ marginBottom: 6 }}>
+                <div style={{ marginBottom: 2 }}>Button BG</div>
                 <input type="color" value={bubbleConfig.menuBg}
                   onChange={(e) => setBubbleConfig((c) => ({ ...c, menuBg: e.target.value }))}
-                  style={{ width: '100%', height: 28, border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                  style={{ width: '100%', height: 24, border: 'none', borderRadius: 6, cursor: 'pointer' }}
                 />
               </div>
               <div>
-                <div style={{ marginBottom: 4 }}>Button Lines</div>
+                <div style={{ marginBottom: 2 }}>Button Lines</div>
                 <input type="color" value={bubbleConfig.menuContentColor}
                   onChange={(e) => setBubbleConfig((c) => ({ ...c, menuContentColor: e.target.value }))}
-                  style={{ width: '100%', height: 28, border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                  style={{ width: '100%', height: 24, border: 'none', borderRadius: 6, cursor: 'pointer' }}
                 />
+              </div>
               </div>
             </div>
           )}
