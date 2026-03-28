@@ -230,8 +230,6 @@ export default function App() {
 
         <aside
           className={`sidebar ${showUI ? 'sidebar--visible' : ''} ${sidebarExpanded ? 'sidebar--expanded' : ''}`}
-          onMouseEnter={() => setSidebarExpanded(true)}
-          onMouseLeave={() => setSidebarExpanded(false)}
           style={{ bottom: sidebarConfig.bottom, borderRadius: sidebarConfig.borderRadius, maxHeight: sidebarExpanded ? '55vh' : sidebarConfig.collapsedHeight }}
         >
           <div className="sidebar__header" onClick={() => setSidebarExpanded((p) => !p)}
