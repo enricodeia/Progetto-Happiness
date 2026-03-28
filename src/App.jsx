@@ -100,8 +100,9 @@ export default function App() {
     collapsedHeight: 160,
   });
   const [heroConfig, setHeroConfig] = useState({
-    topY: 20,
-    bottomY: 62,
+    topY: 15,
+    topYMobile: 21,
+    bottomY: 60,
     topSize: 85,
     bottomSize: 41,
     curveWidth: 500,
@@ -306,7 +307,8 @@ export default function App() {
               {/* ── Hero Title ── */}
               <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,221,0,0.6)' }}>Hero Title</div>
               {[
-                { label: 'Top Y %', key: 'topY', min: 0, max: 50, step: 1 },
+                { label: 'Top Y % (desktop)', key: 'topY', min: 0, max: 50, step: 1 },
+                { label: 'Top Y % (mobile)', key: 'topYMobile', min: 0, max: 50, step: 1 },
                 { label: 'Bottom Y %', key: 'bottomY', min: 30, max: 90, step: 1 },
                 { label: 'Top Size', key: 'topSize', min: 20, max: 140, step: 1 },
                 { label: 'Bottom Size', key: 'bottomSize', min: 12, max: 80, step: 1 },

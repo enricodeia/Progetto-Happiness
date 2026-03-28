@@ -102,7 +102,10 @@ html, body, #root {
 }
 
 @media (max-width: 768px) {
-  .hero-title__heading { font-size: 56px !important; }
+  .hero-title__heading {
+    font-size: 56px !important;
+    top: var(--hero-top-y-mobile, 21vh);
+  }
   .hero-title__curve { width: 320px; }
   .hero-title__curve text { font-size: 52px !important; }
 }

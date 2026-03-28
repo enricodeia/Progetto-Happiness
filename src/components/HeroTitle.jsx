@@ -1,13 +1,20 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 
-const SMILE_TEXT = 'What Makes You Happy?';
+const SMILE_WORDS = ['What', 'Makes', 'You', 'Happy?'];
 
-const HeroTitle = ({ config }) => {
+const HeroTitle = ({ config, onConfigChange }) => {
   const line1Ref = useRef(null);
   const line2Ref = useRef(null);
-  const charsRef = useRef([]);
+  const smileWordsRef = useRef([]);
   const hasAnimated = useRef(false);
+  const [scrollPct, setScrollPct] = useState(0);
+
+  useEffect(() => {
+    const onScroll = (e) => setScrollPct(e.detail.pct);
+    window.addEventListener('globe:scroll', onScroll);
+    return () => window.removeEventListener('globe:scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     if (hasAnimated.current) return;
@@ -19,18 +26,30 @@ const HeroTitle = ({ config }) => {
       { y: 0, opacity: 1, duration: 1.2, ease: 'power3.out', stagger: 0.15 }
     );
 
-    const chars = charsRef.current.filter(Boolean);
-    gsap.fromTo(chars,
-      { opacity: 0, y: 100 },
-      { opacity: 1, y: 0, ease: 'circ.out', stagger: 0.13, delay: 1.0 }
+    const smileEls = smileWordsRef.current.filter(Boolean);
+    gsap.fromTo(smileEls,
+      { opacity: 0, attr: { dy: 50 } },
+      { opacity: 1, attr: { dy: 0 }, duration: 1.4, ease: 'circ.out', stagger: 0.13, delay: 0.5 }
     );
   }, []);
 
   const c = config;
 
+  // Fade out on scroll (opacity only)
+  const fade = (start, end) => {
+    if (scrollPct <= start) return 1;
+    if (scrollPct >= end) return 0;
+    return 1 - (scrollPct - start) / (end - start);
+  };
+
+  const happinessOp = fade(35, 45);
+  const progettoOp = fade(50, 63);
+  const smileOp = fade(50, 58);
+
   return (
     <div className="hero-title" style={{
       '--hero-top-y': `${c.topY}vh`,
+      '--hero-top-y-mobile': `${c.topYMobile ?? c.topY}vh`,
       '--hero-bottom-y': `${c.bottomY}vh`,
       '--hero-top-size': `${c.topSize}px`,
       '--hero-bottom-size': `${c.bottomSize}px`,
@@ -38,22 +57,24 @@ const HeroTitle = ({ config }) => {
       '--hero-top-color': c.topColor,
       '--hero-accent-color': c.accentColor,
       '--hero-bottom-color': c.bottomColor,
-      '--hero-top-opacity': c.topOpacity,
-      '--hero-bottom-opacity': c.bottomOpacity,
     }}>
       <h1 className="hero-title__heading">
-        <span className="hero-title__line1" ref={line1Ref} style={{ opacity: 0 }}>Progetto</span>
-        <span className="hero-title__line2" ref={line2Ref} style={{ opacity: 0 }}>Happiness</span>
+        <span className="hero-title__line1" ref={line1Ref} style={{
+          opacity: hasAnimated.current ? progettoOp * c.topOpacity : 0,
+        }}>Progetto</span>
+        <span className="hero-title__line2" ref={line2Ref} style={{
+          opacity: hasAnimated.current ? happinessOp * c.topOpacity : 0,
+        }}>Happiness</span>
       </h1>
       <svg className="hero-title__curve" viewBox={`0 0 600 ${Math.round(c.curveDepth * 1.2)}`} xmlns="http://www.w3.org/2000/svg">
         <defs>
           <path id="smile-curve" d={`M 30,10 Q 300,${c.curveDepth} 570,10`} fill="none" />
         </defs>
-        <text>
+        <text style={{ opacity: smileOp }}>
           <textPath href="#smile-curve" startOffset="50%" textAnchor="middle">
-            {SMILE_TEXT.split('').map((char, i) => (
-              <tspan key={i} ref={(el) => { charsRef.current[i] = el; }} style={{ opacity: 0 }}>
-                {char}
+            {SMILE_WORDS.map((word, i) => (
+              <tspan key={i} ref={(el) => { smileWordsRef.current[i] = el; }} style={{ opacity: 0 }}>
+                {word}{i < SMILE_WORDS.length - 1 ? ' ' : ''}
               </tspan>
             ))}
           </textPath>
