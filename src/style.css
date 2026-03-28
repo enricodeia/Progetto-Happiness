@@ -950,8 +950,17 @@ html, body, #root {
   background: var(--color-card); border: 1px solid var(--color-border);
   border-radius: 16px; backdrop-filter: blur(16px);
 }
-.color-panel__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.color-panel__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .color-panel__title { font-size: 10px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-text-tertiary); }
+.color-panel__tabs { display: flex; gap: 2px; margin-bottom: 12px; }
+.color-panel__tab {
+  flex: 1; padding: 5px 0; border: none; background: rgba(255,255,255,0.04);
+  color: var(--color-text-secondary); font-size: 10px; font-weight: 500;
+  letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
+  border-radius: 4px; transition: all 0.2s;
+}
+.color-panel__tab--active { background: var(--color-primary-20); color: var(--color-primary); }
+.color-panel__tab:hover:not(.color-panel__tab--active) { background: rgba(255,255,255,0.08); }
 .color-panel__close {
   width: 20px; height: 20px; border-radius: 50%;
   border: 1px solid var(--color-border); background: transparent;

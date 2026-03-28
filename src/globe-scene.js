@@ -7,6 +7,7 @@ export const globeState = {
   markers: [],
   flyToMarker: null,
   updateColors: null,
+  updatePinStyle: null, // live pin style updates from panel
   // Stalk + pin config (live-tunable from control panel)
   stalkConfig: {
     stalkHeight: 1400000,
@@ -19,6 +20,20 @@ export const globeState = {
     stalkColor: '#FFDD00',
     pinBorderColor: '#FFDD00',
     lerpSpeed: 0.04,
+  },
+  pinStyle: {
+    borderColor: '#FFDD00',
+    borderWidth: 3,
+    bgColor: '#1a1a1a',
+    bgOpacity: 0.85,
+    glassBlur: true,
+    orbitColor: '#FFDD00',
+    orbitSize: 0.18,
+    orbitSpeed: 1.2,
+    orbitOpacity: 0.6,
+    hoverScale: 1.6,
+    magnetRadius: 120,
+    magnetStrength: 0.18,
   },
 };
 
@@ -183,48 +198,75 @@ export function initGlobe(canvas) {
     highlightGroup = new THREE.Group();
     scene.add(highlightGroup);
 
-    // ---- Helper: create circular thumbnail texture with yellow border ----
-    const PIN_SIZE = 48; // canvas px
-    const BORDER_W = 3;  // px (renders as ~1.5px at retina)
+    // ---- Helper: create circular pin texture with glass effect ----
+    const PIN_SIZE = 64;
     const createPinTexture = (imgUrl) => {
+      const ps = globeState.pinStyle;
       const canvas2d = document.createElement('canvas');
       canvas2d.width = PIN_SIZE * 2;
       canvas2d.height = PIN_SIZE * 2;
       const c = canvas2d.getContext('2d');
-      const r = PIN_SIZE; // radius
+      const r = PIN_SIZE;
       const tex = new THREE.CanvasTexture(canvas2d);
       tex.colorSpace = THREE.SRGBColorSpace;
 
-      // Draw yellow circle border immediately (visible while thumb loads)
-      c.beginPath(); c.arc(r, r, r, 0, Math.PI * 2);
-      c.fillStyle = '#FFDD00'; c.fill();
-      c.beginPath(); c.arc(r, r, r - BORDER_W, 0, Math.PI * 2);
-      c.fillStyle = '#222'; c.fill();
-      tex.needsUpdate = true;
+      let loadedImg = null;
+      const bw = () => ps.borderWidth || 3;
 
-      // Load thumbnail async
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        // Redraw border
+      const drawPin = () => {
         c.clearRect(0, 0, PIN_SIZE * 2, PIN_SIZE * 2);
-        c.beginPath(); c.arc(r, r, r, 0, Math.PI * 2);
-        c.fillStyle = '#FFDD00'; c.fill();
 
-        // Clip to inner circle and draw centered/cover thumbnail
-        c.save();
-        c.beginPath(); c.arc(r, r, r - BORDER_W, 0, Math.PI * 2); c.clip();
-        const aspect = img.width / img.height;
-        let sw, sh, sx, sy;
-        if (aspect > 1) { sh = img.height; sw = sh; sx = (img.width - sw) / 2; sy = 0; }
-        else { sw = img.width; sh = sw; sx = 0; sy = (img.height - sh) / 2; }
-        c.drawImage(img, sx, sy, sw, sh, BORDER_W, BORDER_W, (r - BORDER_W) * 2, (r - BORDER_W) * 2);
-        c.restore();
+        // Glass background
+        c.beginPath(); c.arc(r, r, r - 1, 0, Math.PI * 2);
+        c.fillStyle = ps.bgColor || '#1a1a1a';
+        c.globalAlpha = ps.bgOpacity ?? 0.85;
+        c.fill();
+        c.globalAlpha = 1;
+
+        // Border stroke
+        c.beginPath(); c.arc(r, r, r - bw() / 2 - 1, 0, Math.PI * 2);
+        c.strokeStyle = ps.borderColor || '#FFDD00';
+        c.lineWidth = bw();
+        c.stroke();
+
+        // Thumbnail
+        if (loadedImg) {
+          c.save();
+          const inset = bw() + 2;
+          c.beginPath(); c.arc(r, r, r - inset, 0, Math.PI * 2); c.clip();
+          const aspect = loadedImg.width / loadedImg.height;
+          let sw, sh, sx, sy;
+          if (aspect > 1) { sh = loadedImg.height; sw = sh; sx = (loadedImg.width - sw) / 2; sy = 0; }
+          else { sw = loadedImg.width; sh = sw; sx = 0; sy = (loadedImg.height - sh) / 2; }
+          c.drawImage(loadedImg, sx, sy, sw, sh, inset, inset, (r - inset) * 2, (r - inset) * 2);
+          c.restore();
+        }
         tex.needsUpdate = true;
       };
+
+      drawPin();
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => { loadedImg = img; drawPin(); };
       img.src = imgUrl;
+
+      tex.userData = { redraw: drawPin };
       return tex;
     };
+
+    // ---- Blurred glow texture for orbit sprites ----
+    const glowCanvas = document.createElement('canvas');
+    glowCanvas.width = 64; glowCanvas.height = 64;
+    const gc = glowCanvas.getContext('2d');
+    const grad = gc.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.3, 'rgba(255,255,255,0.6)');
+    grad.addColorStop(0.7, 'rgba(255,255,255,0.15)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    gc.fillStyle = grad;
+    gc.fillRect(0, 0, 64, 64);
+    const glowTex = new THREE.CanvasTexture(glowCanvas);
 
     // ---- Stalks + Pin markers (episodes) ----
     const stalkGroup = new THREE.Group();
@@ -278,18 +320,21 @@ export function initGlobe(canvas) {
       pin.userData = { type: 'episode', data: ep, baseScale: 1, hoverRingScale: 0 };
       scene.add(pin);
 
-      // Hover ring (attached to pin)
-      const ring = new THREE.Mesh(
-        new THREE.RingGeometry(22000, 23500, 32),
-        new THREE.MeshBasicMaterial({ color: 0xFFDD00, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false })
-      );
-      ring.position.copy(tipPos);
-      ring.lookAt(0, 0, 0);
-      ring.renderOrder = 4;
-      scene.add(ring);
+      // Orbiting circles (2 blurred glow sprites that orbit on hover)
+      const orbitGroup = new THREE.Group();
+      orbitGroup.position.copy(tipPos);
+      orbitGroup.renderOrder = 5;
+      const orbitMat1 = new THREE.SpriteMaterial({ map: glowTex, color: 0xFFDD00, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+      const orbitMat2 = new THREE.SpriteMaterial({ map: glowTex, color: 0xFFDD00, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+      const orb1 = new THREE.Sprite(orbitMat1);
+      const orb2 = new THREE.Sprite(orbitMat2);
+      orb1.scale.setScalar(0.01);
+      orb2.scale.setScalar(0.01);
+      orbitGroup.add(orb1, orb2);
+      scene.add(orbitGroup);
 
-      markers.push({ dot: pin, ring, type: 'episode', data: ep });
-      stalks.push({ line, dir, heightPct: 1, pin, ring, baseAlt });
+      markers.push({ dot: pin, orbitGroup, orb1, orb2, type: 'episode', data: ep });
+      stalks.push({ line, dir, heightPct: 1, pin, baseAlt });
     });
     scene.add(stalkGroup);
 
@@ -355,6 +400,16 @@ export function initGlobe(canvas) {
         sphereMat.transparent = false;
       }
       sphereMat.needsUpdate = true;
+    };
+
+    // Live pin style update — redraws all pin textures
+    globeState.updatePinStyle = (newStyle) => {
+      Object.assign(globeState.pinStyle, newStyle);
+      markers.forEach((m) => {
+        if (m.type === 'episode' && m.dot.material.map?.userData?.redraw) {
+          m.dot.material.map.userData.redraw();
+        }
+      });
     };
   })();
 
@@ -460,19 +515,18 @@ export function initGlobe(canvas) {
 
     if (closestMarker && closestDist < 60) {
       if (hoveredMarker !== closestMarker.dot) {
-        if (hoveredMarker) { hoveredMarker.userData.baseScale = 1; hoveredMarker.userData.hoverRingScale = 0; }
+        if (hoveredMarker) { hoveredMarker.userData.hoverRingScale = 0; }
         hoveredMarker = closestMarker.dot;
         canvas.style.cursor = 'pointer';
       }
-      hoveringPin = true; // pause rotation
+      hoveringPin = true;
       targetRotSpeed = 0;
       const t = 1 - closestDist / 60;
-      hoveredMarker.userData.baseScale = 1 + t * 0.8;
       hoveredMarker.userData.hoverRingScale = t;
       window.dispatchEvent(new CustomEvent('globe:marker-hover', { detail: { data: closestMarker.data, type: closestMarker.type, x: e.clientX, y: e.clientY } }));
       clearCountryHL();
     } else {
-      if (hoveredMarker) { hoveredMarker.userData.baseScale = 1; hoveredMarker.userData.hoverRingScale = 0; hoveredMarker = null; }
+      if (hoveredMarker) { hoveredMarker.userData.hoverRingScale = 0; hoveredMarker = null; }
       if (hoveringPin) { hoveringPin = false; targetRotSpeed = 0.00006; } // resume
       canvas.style.cursor = '';
       window.dispatchEvent(new CustomEvent('globe:marker-leave'));
@@ -599,8 +653,10 @@ export function initGlobe(canvas) {
   }
 
   // ---- Render loop ----
+  let animTime = 0;
   function animate() {
     requestAnimationFrame(animate);
+    animTime += 0.016; // ~60fps timestep
 
     // Smooth rotation speed (ease on pause/resume)
     rotSpeed += (targetRotSpeed - rotSpeed) * 0.04;
@@ -707,7 +763,7 @@ export function initGlobe(canvas) {
           if (!s.pin.userData.magnetActive) s.pin.position.set(tipX, tipY, tipZ);
           s.pin.scale.setScalar(cfg.pinSize);
         }
-        if (s.ring) s.ring.position.set(tipX, tipY, tipZ);
+        // orbit group position is updated in the marker loop below
 
         // Backside culling
         const facing = camDir.dot(s.dir);
@@ -723,11 +779,18 @@ export function initGlobe(canvas) {
     }
 
     const magnetScrV = new THREE.Vector3();
+    const ps = globeState.pinStyle;
+
+    // Zoom-aware pin sizing: smaller when zoomed in
+    const pinZoomScale = Math.max(0.4, Math.min(1, zoomFactor / 4));
+
     markers.forEach((m) => {
-      // Scale lerp
-      const ts = m.dot.userData.baseScale || 1;
+      // Target scale: base + hover boost
+      const hoverT = m.dot.userData.hoverRingScale || 0;
+      const hoverBoost = 1 + hoverT * ((ps.hoverScale || 1.6) - 1);
+      const ts = (m.dot.userData.baseScale || 1) * hoverBoost * pinZoomScale;
       const cs = m.dot.scale.x;
-      m.dot.scale.setScalar(cs + (ts - cs) * 0.15);
+      m.dot.scale.setScalar(cs + (ts - cs) * 0.12);
 
       // Back-side culling
       const markerDir = m.dot.position.clone().normalize();
@@ -736,7 +799,9 @@ export function initGlobe(canvas) {
       const baseOp = m.type === 'episode' ? 1 : 0.6;
       m.dot.material.opacity = baseOp * frontOpacity;
 
-      // Magnetic pin attraction: pins subtly drift toward cursor when nearby
+      // Magnetic pin attraction
+      const mRadius = ps.magnetRadius || 120;
+      const mStrength = ps.magnetStrength || 0.18;
       m.dot.userData.magnetActive = false;
       if (!isDragging && frontOpacity > 0.1 && m.dot.userData.basePosition) {
         magnetScrV.copy(m.dot.userData.basePosition).project(camera);
@@ -744,35 +809,52 @@ export function initGlobe(canvas) {
           const sx = (magnetScrV.x * 0.5 + 0.5) * window.innerWidth;
           const sy = (-magnetScrV.y * 0.5 + 0.5) * window.innerHeight;
           const dist = Math.hypot(cursorX - sx, cursorY - sy);
-          const magnetRadius = 80;
-          if (dist < magnetRadius && dist > 1) {
+          if (dist < mRadius && dist > 1) {
             m.dot.userData.magnetActive = true;
-            const strength = (1 - dist / magnetRadius) * 0.08;
+            const strength = (1 - dist / mRadius) * mStrength;
             const offsetX = (cursorX - sx) * strength;
             const offsetY = (cursorY - sy) * strength;
             const ndcX = magnetScrV.x + (offsetX / window.innerWidth) * 2;
             const ndcY = magnetScrV.y - (offsetY / window.innerHeight) * 2;
             const pullTarget = new THREE.Vector3(ndcX, ndcY, magnetScrV.z).unproject(camera);
             pullTarget.normalize().multiplyScalar(m.dot.userData.basePosition.length());
-            m.dot.position.lerp(pullTarget, 0.1);
+            m.dot.position.lerp(pullTarget, 0.15);
           } else {
-            m.dot.position.lerp(m.dot.userData.basePosition, 0.08);
+            m.dot.position.lerp(m.dot.userData.basePosition, 0.1);
           }
         }
       } else if (m.dot.userData.basePosition) {
-        m.dot.position.lerp(m.dot.userData.basePosition, 0.08);
+        m.dot.position.lerp(m.dot.userData.basePosition, 0.1);
       }
 
-      // Hover ring: scales with zoom level so it stays visible when zoomed out
-      if (m.ring) {
-        const targetRing = m.dot.userData.hoverRingScale || 0;
-        const curRing = m.ring.scale.x;
-        const ringZoomScale = Math.max(1, zoomFactor * 0.6);
-        const nextRing = curRing + (targetRing * ringZoomScale * 1.5 - curRing) * 0.12;
-        m.ring.scale.setScalar(Math.max(0.01, nextRing));
-        m.ring.material.opacity = targetRing * 0.5 * frontOpacity;
-        m.ring.position.copy(m.dot.position);
-        m.ring.lookAt(camera.position);
+      // Orbiting circles on hover
+      if (m.orbitGroup) {
+        m.orbitGroup.position.copy(m.dot.position);
+
+        const orbSpeed = (ps.orbitSpeed || 1.2) * animTime;
+        const orbRadius = cfg.pinSize * pinZoomScale * (ps.orbitSize || 0.18);
+        const targetOrbOp = hoverT * (ps.orbitOpacity || 0.6) * frontOpacity;
+
+        // Orbit in camera-local plane
+        const camRight = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0).normalize();
+        const camUp = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1).normalize();
+
+        // Orb 1: orbits at angle
+        const a1 = orbSpeed * 2.5;
+        const r1 = orbRadius * (0.9 + hoverT * 0.4);
+        m.orb1.position.copy(camRight).multiplyScalar(Math.cos(a1) * r1).add(camUp.clone().multiplyScalar(Math.sin(a1) * r1));
+        m.orb1.material.opacity += (targetOrbOp - m.orb1.material.opacity) * 0.08;
+        const orbSpriteSize = orbRadius * 0.5;
+        m.orb1.scale.setScalar(Math.max(0.01, orbSpriteSize));
+        m.orb1.material.color.set(ps.orbitColor || '#FFDD00');
+
+        // Orb 2: opposite phase, slightly different speed
+        const a2 = orbSpeed * 2.5 + Math.PI;
+        const r2 = orbRadius * (1.1 + hoverT * 0.3);
+        m.orb2.position.copy(camRight).multiplyScalar(Math.cos(a2) * r2).add(camUp.clone().multiplyScalar(Math.sin(a2) * r2));
+        m.orb2.material.opacity += (targetOrbOp * 0.7 - m.orb2.material.opacity) * 0.08;
+        m.orb2.scale.setScalar(Math.max(0.01, orbSpriteSize * 0.7));
+        m.orb2.material.color.set(ps.orbitColor || '#FFDD00');
       }
     });
 
