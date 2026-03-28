@@ -237,8 +237,11 @@ export default function App() {
           <div className="sidebar__header" onClick={() => setSidebarExpanded((p) => !p)}
             style={{ padding: `${sidebarConfig.paddingTop}px ${sidebarConfig.paddingX}px ${sidebarConfig.paddingBottom}px`, borderRadius: `${sidebarConfig.borderRadius}px ${sidebarConfig.borderRadius}px 0 0` }}
           >
-            <h3 className="sidebar__title" style={{ fontSize: sidebarConfig.fontSize }}>Episodi</h3>
-            <span className="sidebar__badge" style={{ width: sidebarConfig.badgeSize, height: sidebarConfig.badgeSize }}>{episodes.length}</span>
+            <div className="sidebar__title-group">
+              <h3 className="sidebar__title" style={{ fontSize: sidebarConfig.fontSize }}>Episodi</h3>
+              <span className="sidebar__badge" style={{ width: sidebarConfig.badgeSize, height: sidebarConfig.badgeSize }}>{episodes.length}</span>
+            </div>
+            <svg className={`sidebar__arrow ${sidebarExpanded ? 'sidebar__arrow--up' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 9l6 6 6-6"/></svg>
           </div>
           <div className="sidebar__scroll">
             <ul className="sidebar__list">

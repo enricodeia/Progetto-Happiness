@@ -242,6 +242,7 @@ html, body, #root {
   padding: 14px 16px;
   border-bottom: 1px solid var(--color-border);
   display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer;
   position: sticky; top: 0; z-index: 2;
   background: rgba(6, 6, 6, 0.95);
   border-radius: 24px 24px 0 0;
@@ -252,6 +253,18 @@ html, body, #root {
   width: 22px; height: 22px; border-radius: 50%;
   border: 1px solid var(--color-border);
   font-size: 9px; font-weight: 500; color: var(--color-text-secondary);
+}
+
+.sidebar__title-group {
+  display: flex; align-items: center; gap: 8px;
+}
+.sidebar__arrow {
+  color: var(--color-text-secondary);
+  transition: transform 0.3s cubic-bezier(0.33, 1, 0.68, 1);
+  flex-shrink: 0;
+}
+.sidebar__arrow--up {
+  transform: rotate(180deg);
 }
 
 .sidebar__scroll { position: relative; overflow: hidden; }
