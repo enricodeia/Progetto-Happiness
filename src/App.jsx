@@ -88,6 +88,15 @@ export default function App() {
     menuContentColor: '#111111',
   });
   const [bubblePanelOpen, setBubblePanelOpen] = useState(false);
+  const [sidebarConfig, setSidebarConfig] = useState({
+    paddingTop: 14,
+    paddingBottom: 14,
+    paddingX: 16,
+    fontSize: 20,
+    badgeSize: 22,
+    borderRadius: 24,
+    bottom: 16,
+  });
   const [heroConfig, setHeroConfig] = useState({
     topY: 13,
     bottomY: 65,
@@ -222,10 +231,13 @@ export default function App() {
           className={`sidebar ${showUI ? 'sidebar--visible' : ''} ${sidebarExpanded ? 'sidebar--expanded' : ''}`}
           onMouseEnter={() => setSidebarExpanded(true)}
           onMouseLeave={() => setSidebarExpanded(false)}
+          style={{ bottom: sidebarConfig.bottom, borderRadius: sidebarConfig.borderRadius }}
         >
-          <div className="sidebar__header" onClick={() => setSidebarExpanded((p) => !p)}>
-            <h3 className="sidebar__title">Episodi</h3>
-            <span className="sidebar__badge">{episodes.length}</span>
+          <div className="sidebar__header" onClick={() => setSidebarExpanded((p) => !p)}
+            style={{ padding: `${sidebarConfig.paddingTop}px ${sidebarConfig.paddingX}px ${sidebarConfig.paddingBottom}px`, borderRadius: `${sidebarConfig.borderRadius}px ${sidebarConfig.borderRadius}px 0 0` }}
+          >
+            <h3 className="sidebar__title" style={{ fontSize: sidebarConfig.fontSize }}>Episodi</h3>
+            <span className="sidebar__badge" style={{ width: sidebarConfig.badgeSize, height: sidebarConfig.badgeSize }}>{episodes.length}</span>
           </div>
           <div className="sidebar__scroll">
             <ul className="sidebar__list">
@@ -320,6 +332,30 @@ export default function App() {
                   <input type="color" value={heroConfig[key]}
                     onChange={(e) => setHeroConfig((c) => ({ ...c, [key]: e.target.value }))}
                     style={{ width: '100%', height: 24, border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                  />
+                </div>
+              ))}
+
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '12px 0' }} />
+
+              {/* ── Sidebar ── */}
+              <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,221,0,0.6)' }}>Sidebar</div>
+              {[
+                { label: 'Padding Top', key: 'paddingTop', min: 4, max: 30, step: 1 },
+                { label: 'Padding Bottom', key: 'paddingBottom', min: 4, max: 30, step: 1 },
+                { label: 'Padding X', key: 'paddingX', min: 8, max: 32, step: 1 },
+                { label: 'Font Size', key: 'fontSize', min: 12, max: 32, step: 1 },
+                { label: 'Badge Size', key: 'badgeSize', min: 16, max: 36, step: 1 },
+                { label: 'Border Radius', key: 'borderRadius', min: 8, max: 40, step: 1 },
+                { label: 'Bottom', key: 'bottom', min: 0, max: 40, step: 1 },
+              ].map(({ label, key, min, max, step }) => (
+                <div key={key} style={{ marginBottom: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 1 }}>
+                    <span>{label}</span><span>{sidebarConfig[key]}px</span>
+                  </div>
+                  <input type="range" min={min} max={max} step={step} value={sidebarConfig[key]}
+                    onChange={(e) => setSidebarConfig((c) => ({ ...c, [key]: parseFloat(e.target.value) }))}
+                    style={{ width: '100%', accentColor: '#FFDD00' }}
                   />
                 </div>
               ))}
