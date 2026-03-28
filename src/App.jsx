@@ -96,6 +96,7 @@ export default function App() {
     badgeSize: 22,
     borderRadius: 24,
     bottom: 16,
+    desktopBottom: 28,
     collapsedHeight: 160,
   });
   const [heroConfig, setHeroConfig] = useState({
@@ -230,7 +231,7 @@ export default function App() {
 
         <aside
           className={`sidebar ${showUI ? 'sidebar--visible' : ''} ${sidebarExpanded ? 'sidebar--expanded' : ''}`}
-          style={{ bottom: sidebarConfig.bottom, borderRadius: sidebarConfig.borderRadius, maxHeight: sidebarExpanded ? '55vh' : sidebarConfig.collapsedHeight }}
+          style={{ '--sb-bottom-mobile': `${sidebarConfig.bottom}px`, '--sb-bottom-desktop': `${sidebarConfig.desktopBottom}px`, borderRadius: sidebarConfig.borderRadius, maxHeight: sidebarExpanded ? '55vh' : sidebarConfig.collapsedHeight }}
         >
           <div className="sidebar__header" onClick={() => setSidebarExpanded((p) => !p)}
             style={{ padding: `${sidebarConfig.paddingTop}px ${sidebarConfig.paddingX}px ${sidebarConfig.paddingBottom}px`, borderRadius: `${sidebarConfig.borderRadius}px ${sidebarConfig.borderRadius}px 0 0` }}
@@ -349,7 +350,8 @@ export default function App() {
                 { label: 'Font Size', key: 'fontSize', min: 12, max: 32, step: 1 },
                 { label: 'Badge Size', key: 'badgeSize', min: 16, max: 36, step: 1 },
                 { label: 'Border Radius', key: 'borderRadius', min: 8, max: 40, step: 1 },
-                { label: 'Bottom', key: 'bottom', min: 0, max: 40, step: 1 },
+                { label: 'Bottom (mobile)', key: 'bottom', min: 0, max: 40, step: 1 },
+                { label: 'Bottom (desktop)', key: 'desktopBottom', min: 8, max: 60, step: 1 },
                 { label: 'Collapsed H', key: 'collapsedHeight', min: 46, max: 300, step: 2 },
               ].map(({ label, key, min, max, step }) => (
                 <div key={key} style={{ marginBottom: 6 }}>
