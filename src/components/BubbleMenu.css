@@ -22,7 +22,7 @@
   height: var(--bubble-size);
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;

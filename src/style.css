@@ -235,6 +235,10 @@ html, body, #root {
   }
   .sidebar__header {
     cursor: pointer;
+    border-bottom: none;
+  }
+  .sidebar--expanded .sidebar__header {
+    border-bottom: 1px solid var(--color-border);
   }
 }
 

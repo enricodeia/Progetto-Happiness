@@ -368,6 +368,9 @@ export function initGlobe(canvas) {
   const mouse = new THREE.Vector2();
   let hoveredMarker = null;
 
+  const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const MAX_PITCH = 75 * Math.PI / 180; // 75 degrees in radians
+
   canvas.addEventListener('pointerdown', (e) => {
     isDragging = true; dragDist = 0; prevX = e.clientX; prevY = e.clientY;
     autoRotate = false; clearTimeout(autoTimer);
@@ -385,9 +388,20 @@ export function initGlobe(canvas) {
     if (isDragging) {
       const dx = e.clientX - prevX, dy = e.clientY - prevY;
       dragDist += Math.abs(dx) + Math.abs(dy);
-      targetRotY -= dx * 0.003;
-      targetRotX += dy * 0.002;
-      targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
+
+      if (isMobile) {
+        // Mobile: vertical drag = zoom, horizontal drag = rotate Y only
+        zoomVelocity += dy * 0.0004;
+        targetRotY -= dx * 0.003;
+        // Clamp pitch to +-75 degrees on mobile
+        targetRotX = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, targetRotX));
+      } else {
+        // Desktop: normal drag = rotate both axes
+        targetRotY -= dx * 0.003;
+        targetRotX += dy * 0.002;
+        targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
+      }
+
       prevX = e.clientX; prevY = e.clientY;
       window.dispatchEvent(new CustomEvent('globe:drag'));
       return;
