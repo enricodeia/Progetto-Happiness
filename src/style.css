@@ -77,7 +77,7 @@ html, body, #root {
 
 .hero-title__line1 {
   display: block;
-  color: var(--hero-top-color, #ffffff);
+  color: var(--hero-top-color, #F6E3D5);
 }
 
 .hero-title__line2 {
@@ -472,7 +472,7 @@ html, body, #root {
   padding: 9px 18px; border-radius: 100px; text-decoration: none;
   transition: all 0.25s; flex-shrink: 0;
 }
-.panel__yt:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 4px 16px var(--color-primary-glow); }
+.panel__yt:hover { background: #FDF4ED; transform: translateY(-1px); box-shadow: 0 4px 16px var(--color-primary-glow); }
 .panel__meta-inline {
   display: flex; align-items: center; gap: 6px;
   font-size: 11px; font-weight: 300; color: var(--color-text-tertiary);

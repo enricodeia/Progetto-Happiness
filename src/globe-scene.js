@@ -87,7 +87,7 @@ export function initGlobe(canvas) {
   }
   starGeo.setAttribute('position', new THREE.BufferAttribute(sp, 3));
   scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({
-    color: 0xffffff, size: 600000, transparent: true, opacity: 0.2, depthWrite: false, sizeAttenuation: true,
+    color: 0xFDF4ED, size: 600000, transparent: true, opacity: 0.2, depthWrite: false, sizeAttenuation: true,
   })));
 
   // Hit sphere for raycasting
@@ -153,7 +153,7 @@ export function initGlobe(canvas) {
     const dtx = dotTexCanvas.getContext('2d');
     dtx.beginPath();
     dtx.arc(32, 32, 30, 0, Math.PI * 2);
-    dtx.fillStyle = '#ffffff';
+    dtx.fillStyle = '#FDF4ED';
     dtx.fill();
     const dotTexture = new THREE.CanvasTexture(dotTexCanvas);
 
@@ -161,7 +161,7 @@ export function initGlobe(canvas) {
     const dotGeoFinal = new THREE.BufferGeometry();
     dotGeoFinal.setAttribute('position', new THREE.Float32BufferAttribute(targetArr, 3));
     const dotMat = new THREE.PointsMaterial({
-      color: 0xffffff, size: 20000, transparent: true, opacity: 0.45,
+      color: 0xFDF4ED, size: 20000, transparent: true, opacity: 0.45,
       depthWrite: false, depthTest: true, sizeAttenuation: true,
       map: dotTexture, alphaMap: dotTexture,
     });

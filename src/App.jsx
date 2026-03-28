@@ -107,7 +107,7 @@ export default function App() {
     bottomSize: 41,
     curveWidth: 500,
     curveDepth: 285,
-    topColor: '#ffffff',
+    topColor: '#F6E3D5',
     accentColor: '#FFDD00',
     bottomColor: '#F6E3D5',
     topOpacity: 1,
