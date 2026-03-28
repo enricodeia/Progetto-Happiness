@@ -251,26 +251,7 @@ const PillNav = ({
           </ul>
         </div>
 
-        <button className="mobile-menu-button mobile-only" onClick={toggleMobile} ref={hamburgerRef}>
-          <span className="hamburger-line" />
-          <span className="hamburger-line" />
-        </button>
       </nav>
-
-      <div className="mobile-menu-popover mobile-only" ref={mobileMenuRef} style={vars}>
-        <ul className="mobile-menu-list">
-          {items.map((item) => (
-            <li key={item.id}>
-              <button
-                className={`mobile-menu-link${activeItem === item.id ? ' is-active' : ''}`}
-                onClick={() => { setMobileOpen(false); onItemClick?.(item.id); }}
-              >
-                {item.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
     </div>
   );
 };
