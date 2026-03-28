@@ -1,0 +1,82 @@
+/* StickerPeel — BEM */
+
+.sticker-peel {
+  --sticker-rotate: 0deg;
+  --sticker-p: 10px;
+  --sticker-peelback: 90%;
+  --sticker-start: calc(-1 * var(--sticker-p));
+  --sticker-end: calc(100% + var(--sticker-p));
+  --sticker-shadow-opacity: 0.6;
+  --sticker-lighting-constant: 0.1;
+  --peel-direction: 0deg;
+  display: inline-block;
+}
+
+.sticker-peel__container {
+  position: relative;
+  transform: rotate(var(--peel-direction));
+  transform-origin: center;
+}
+
+.sticker-peel__container * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.sticker-peel__main {
+  clip-path: polygon(
+    var(--sticker-start) var(--sticker-peelback),
+    var(--sticker-end) var(--sticker-peelback),
+    var(--sticker-end) var(--sticker-end),
+    var(--sticker-start) var(--sticker-end)
+  );
+  transition: clip-path 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+  filter: url(#sticker-peel__shadow);
+}
+
+.sticker-peel__main > * {
+  transform: rotate(calc(-1 * var(--peel-direction)));
+}
+
+.sticker-peel__lighting {
+  filter: url(#sticker-peel__point-light);
+}
+
+.sticker-peel__image,
+.sticker-peel__flap-image {
+  width: var(--sticker-width, 200px);
+  display: block;
+}
+
+.sticker-peel__flap {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: calc(-100% + 2 * var(--sticker-peelback) - 1px);
+  clip-path: polygon(
+    var(--sticker-start) var(--sticker-start),
+    var(--sticker-end) var(--sticker-start),
+    var(--sticker-end) var(--sticker-peelback),
+    var(--sticker-start) var(--sticker-peelback)
+  );
+  transform: scaleY(-1);
+  transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.sticker-peel__flap > * {
+  transform: rotate(calc(-1 * var(--peel-direction)));
+}
+
+.sticker-peel__flap-lighting {
+  filter: url(#sticker-peel__point-light-flipped);
+}
+
+.sticker-peel__flap-image {
+  filter: url(#sticker-peel__fill);
+}
+
+.sticker-peel__main,
+.sticker-peel__flap {
+  will-change: clip-path, transform;
+}

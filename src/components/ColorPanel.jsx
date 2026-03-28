@@ -1,0 +1,122 @@
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { gsap } from 'gsap';
+import { globeState } from '../globe-scene.js';
+
+const DEFAULTS = {
+  bg: '#030303', sphereColor: '#080808',
+  dotColor: '#ffffff', dotOpacity: 0.45, dotSize: 20000,
+  borderColor: '#FFDD00', borderOpacity: 0.06,
+  markerColor: '#FFDD00', pinSize: 14000,
+  showTexture: false, textureOpacity: 0.8,
+  textureOffsetX: 0, textureOffsetY: 0, textureScale: 1, textureRotation: 0,
+};
+
+const ColorPanel = () => {
+  const [open, setOpen] = useState(false);
+  const [values, setValues] = useState(DEFAULTS);
+  const [copied, setCopied] = useState(false);
+  const panelRef = useRef(null);
+
+  // Animate open/close
+  useEffect(() => {
+    if (!panelRef.current) return;
+    if (open) {
+      gsap.fromTo(panelRef.current,
+        { opacity: 0, scale: 0.92, y: 10 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.35, ease: 'power3.out' }
+      );
+    }
+  }, [open]);
+
+  const update = useCallback((key, val) => {
+    const next = { ...values, [key]: val };
+    setValues(next);
+    if (globeState.updateColors) globeState.updateColors(next);
+  }, [values]);
+
+  const copyValues = () => {
+    navigator.clipboard.writeText(JSON.stringify(values, null, 2));
+    setCopied(true); setTimeout(() => setCopied(false), 1500);
+  };
+
+  const handleClose = () => {
+    if (!panelRef.current) { setOpen(false); return; }
+    gsap.to(panelRef.current, {
+      opacity: 0, scale: 0.92, y: 10, duration: 0.25, ease: 'power3.in',
+      onComplete: () => setOpen(false),
+    });
+  };
+
+  if (!open) return (
+    <button className="color-panel__toggle" onClick={() => setOpen(true)}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+    </button>
+  );
+
+  const rows = [
+    { key: 'bg', label: 'Background', type: 'color' },
+    { key: 'sphereColor', label: 'Globe', type: 'color' },
+    null, // separator
+    { key: 'dotColor', label: 'Dot color', type: 'color' },
+    { key: 'dotOpacity', label: 'Dot opacity', type: 'range', min: 0, max: 1, step: 0.05 },
+    { key: 'dotSize', label: 'Dot size', type: 'range', min: 5000, max: 50000, step: 1000 },
+    null,
+    { key: 'borderColor', label: 'Borders', type: 'color' },
+    { key: 'borderOpacity', label: 'Border opacity', type: 'range', min: 0, max: 0.3, step: 0.01 },
+    null,
+    { key: 'markerColor', label: 'Pin color', type: 'color' },
+    { key: 'pinSize', label: 'Pin size', type: 'range', min: 5000, max: 30000, step: 1000 },
+    null,
+    { key: 'showTexture', label: 'Earth texture', type: 'toggle' },
+    { key: 'textureOpacity', label: 'Tex opacity', type: 'range', min: 0.1, max: 1, step: 0.05 },
+    { key: 'textureOffsetX', label: 'Tex shift X', type: 'range', min: -1, max: 1, step: 0.01 },
+    { key: 'textureOffsetY', label: 'Tex shift Y', type: 'range', min: -1, max: 1, step: 0.01 },
+    { key: 'textureScale', label: 'Tex scale', type: 'range', min: 0.5, max: 2, step: 0.05 },
+    { key: 'textureRotation', label: 'Tex rotation', type: 'range', min: -180, max: 180, step: 1 },
+  ];
+
+  return (
+    <div className="color-panel" ref={panelRef}>
+      <div className="color-panel__header">
+        <span className="color-panel__title">Globe Controls</span>
+        <button className="color-panel__close" onClick={handleClose}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      {rows.map((row, i) => {
+        if (!row) return <div className="color-panel__sep" key={`sep-${i}`} />;
+        const { key, label, type, min, max, step } = row;
+        return (
+          <label className="color-panel__row" key={key}>
+            <span className="color-panel__label">{label}</span>
+            {type === 'color' && (
+              <div className="color-panel__color-wrap">
+                <input type="color" value={values[key]} onChange={(e) => update(key, e.target.value)} className="color-panel__color-input" />
+                <span className="color-panel__hex">{values[key]}</span>
+              </div>
+            )}
+            {type === 'range' && (
+              <div className="color-panel__range-wrap">
+                <input type="range" min={min} max={max} step={step} value={values[key]} onChange={(e) => update(key, parseFloat(e.target.value))} />
+                <span className="color-panel__range-val">{typeof values[key] === 'number' ? (values[key] >= 1000 ? Math.round(values[key] / 1000) + 'k' : values[key].toFixed(2)) : values[key]}</span>
+              </div>
+            )}
+            {type === 'toggle' && (
+              <button
+                className={`color-panel__toggle-btn ${values[key] ? 'color-panel__toggle-btn--on' : ''}`}
+                onClick={() => update(key, !values[key])}
+              >
+                {values[key] ? 'ON' : 'OFF'}
+              </button>
+            )}
+          </label>
+        );
+      })}
+      <button className="color-panel__copy" onClick={copyValues}>{copied ? 'Copiato!' : 'Copia valori'}</button>
+    </div>
+  );
+};
+
+export default ColorPanel;
