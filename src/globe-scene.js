@@ -229,22 +229,42 @@ export function initGlobe(canvas) {
     // ---- Stalks + Pin markers (episodes) ----
     const stalkGroup = new THREE.Group();
     const initCfg = globeState.stalkConfig;
-    const stalkMat = new THREE.LineBasicMaterial({
-      color: new THREE.Color(initCfg.stalkColor), transparent: true, opacity: initCfg.stalkOpacity, depthWrite: false,
-    });
+    const STALK_SEGMENTS = 12; // segments for gradient
+    const stalkColor = new THREE.Color(initCfg.stalkColor);
     stalks = [];
 
     episodes.forEach((ep) => {
       const dir = latLngToECEF(ep.lat, ep.lng, 0).normalize();
       const baseAlt = EARTH_RADIUS + 3000;
 
-      // Stalk line
-      const base = dir.clone().multiplyScalar(baseAlt);
-      const tip = dir.clone().multiplyScalar(baseAlt + initCfg.stalkHeight);
-      const geo = new THREE.BufferGeometry().setFromPoints([base, tip]);
-      const line = new THREE.Line(geo, stalkMat.clone());
+      // Multi-segment stalk with vertex colors for gradient
+      const positions = new Float32Array(STALK_SEGMENTS * 3);
+      const colors = new Float32Array(STALK_SEGMENTS * 3);
+      for (let j = 0; j < STALK_SEGMENTS; j++) {
+        const t = j / (STALK_SEGMENTS - 1); // 0 = base, 1 = tip
+        const alt = baseAlt + initCfg.stalkHeight * t;
+        const p = dir.clone().multiplyScalar(alt);
+        positions[j * 3] = p.x;
+        positions[j * 3 + 1] = p.y;
+        positions[j * 3 + 2] = p.z;
+        // Gradient: 10% brightness at base, 100% at tip
+        const brightness = 0.1 + 0.9 * t;
+        colors[j * 3] = stalkColor.r * brightness;
+        colors[j * 3 + 1] = stalkColor.g * brightness;
+        colors[j * 3 + 2] = stalkColor.b * brightness;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      const mat = new THREE.LineBasicMaterial({
+        vertexColors: true, transparent: true, opacity: initCfg.stalkOpacity, depthWrite: false,
+      });
+      const line = new THREE.Line(geo, mat);
       line.renderOrder = 3;
       stalkGroup.add(line);
+
+      // Tip position = last segment
+      const tipPos = dir.clone().multiplyScalar(baseAlt + initCfg.stalkHeight);
 
       // Pin sprite at stalk tip
       const pinTex = createPinTexture(ep.thumb);
@@ -253,7 +273,7 @@ export function initGlobe(canvas) {
       });
       const pin = new THREE.Sprite(pinMat);
       pin.scale.setScalar(initCfg.pinSize);
-      pin.position.copy(tip);
+      pin.position.copy(tipPos);
       pin.renderOrder = 4;
       pin.userData = { type: 'episode', data: ep, baseScale: 1, hoverRingScale: 0 };
       scene.add(pin);
@@ -263,7 +283,7 @@ export function initGlobe(canvas) {
         new THREE.RingGeometry(22000, 23500, 32),
         new THREE.MeshBasicMaterial({ color: 0xFFDD00, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false })
       );
-      ring.position.copy(tip);
+      ring.position.copy(tipPos);
       ring.lookAt(0, 0, 0);
       ring.renderOrder = 4;
       scene.add(ring);
@@ -369,7 +389,6 @@ export function initGlobe(canvas) {
   let hoveredMarker = null;
 
   const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  const MAX_PITCH = 75 * Math.PI / 180; // 75 degrees in radians
 
   canvas.addEventListener('pointerdown', (e) => {
     isDragging = true; dragDist = 0; prevX = e.clientX; prevY = e.clientY;
@@ -378,8 +397,6 @@ export function initGlobe(canvas) {
   });
 
   window.addEventListener('pointermove', (e) => {
-    // Only process globe interactions when pointer is over the canvas
-    // This prevents re-renders that break nav hover states
     if (!isDragging && e.target !== canvas) return;
 
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -389,14 +406,23 @@ export function initGlobe(canvas) {
       const dx = e.clientX - prevX, dy = e.clientY - prevY;
       dragDist += Math.abs(dx) + Math.abs(dy);
 
-      if (isMobile) {
-        // Mobile: vertical drag = zoom, horizontal drag = rotate Y only
-        zoomVelocity += dy * 0.0004;
-        targetRotY -= dx * 0.003;
-        // Clamp pitch to +-75 degrees on mobile
-        targetRotX = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, targetRotX));
+      if (isMobile && (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5)) {
+        const angle = Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI;
+        if (angle >= 65) {
+          zoomVelocity += dy * 0.0003;
+        } else if (angle <= 25) {
+          targetRotY -= dx * 0.004;
+          targetRotX += dy * 0.001;
+          targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
+        } else {
+          const rotateWeight = 1 - (angle - 25) / 40;
+          const zoomWeight = (angle - 25) / 40;
+          targetRotY -= dx * 0.004 * rotateWeight;
+          targetRotX += dy * 0.001 * rotateWeight;
+          targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
+          zoomVelocity += dy * 0.0003 * zoomWeight;
+        }
       } else {
-        // Desktop: normal drag = rotate both axes
         targetRotY -= dx * 0.003;
         targetRotX += dy * 0.002;
         targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
@@ -614,47 +640,70 @@ export function initGlobe(canvas) {
       cloudMat.opacity = texOpacity * 0.4;
     }
 
-    // ---- Stalks + pins: scroll-driven collapse ----
+    // ---- Stalks + pins: scroll-driven collapse with smoothstep ----
     const camDir = camera.position.clone().normalize();
     const zoomFactor = camDist / EARTH_RADIUS;
     const cfg = globeState.stalkConfig;
 
     if (stalks.length > 0) {
-      // Height: 1 at collapseStart, 0 at collapseEnd
-      const collapseRange = Math.max(1, cfg.collapseEnd - cfg.collapseStart);
-      const heightTarget = 1 - Math.min(1, Math.max(0, (scrollPct - cfg.collapseStart) / collapseRange));
+      // Smoothstep for better motion feel
+      const smoothstep = (x) => x * x * (3 - 2 * x);
 
-      // Stalk opacity: full until stalkFadeStart, 0 at stalkFadeEnd
+      // Height: 1 at collapseStart, 0 at collapseEnd (eased)
+      const collapseRange = Math.max(1, cfg.collapseEnd - cfg.collapseStart);
+      const rawT = Math.min(1, Math.max(0, (scrollPct - cfg.collapseStart) / collapseRange));
+      const heightTarget = 1 - smoothstep(rawT);
+
+      // Stalk fade: full until stalkFadeStart, 0 at stalkFadeEnd
       const fadeRange = Math.max(1, cfg.stalkFadeEnd - cfg.stalkFadeStart);
-      const stalkAlphaTarget = 1 - Math.min(1, Math.max(0, (scrollPct - cfg.stalkFadeStart) / fadeRange));
+      const rawFade = Math.min(1, Math.max(0, (scrollPct - cfg.stalkFadeStart) / fadeRange));
+      const stalkAlphaTarget = 1 - smoothstep(rawFade);
+
+      const stalkColor = new THREE.Color(cfg.stalkColor || '#FFDD00');
 
       stalks.forEach((s) => {
-        // Smooth lerp
-        s.heightPct += (heightTarget - s.heightPct) * cfg.lerpSpeed;
-        if (Math.abs(s.heightPct - heightTarget) < 0.001) s.heightPct = heightTarget;
+        // Adaptive lerp: faster when far from target, slower near
+        const delta = heightTarget - s.heightPct;
+        const adaptiveSpeed = cfg.lerpSpeed * (1 + Math.abs(delta) * 2);
+        s.heightPct += delta * Math.min(adaptiveSpeed, 0.12);
+        if (Math.abs(delta) < 0.0005) s.heightPct = heightTarget;
 
-        // Update stalk geometry
+        // Update multi-segment stalk geometry + gradient colors
+        const posAttr = s.line.geometry.getAttribute('position');
+        const colAttr = s.line.geometry.getAttribute('color');
+        const segCount = posAttr.count;
         const h = cfg.stalkHeight * s.heightPct;
-        const base = s.dir.clone().multiplyScalar(s.baseAlt);
-        const tip = s.dir.clone().multiplyScalar(s.baseAlt + h);
-        s.line.geometry.setFromPoints([base, tip]);
 
-        // Pin rides stalk tip
+        for (let j = 0; j < segCount; j++) {
+          const t = j / (segCount - 1);
+          const alt = s.baseAlt + h * t;
+          const p = s.dir.clone().multiplyScalar(alt);
+          posAttr.setXYZ(j, p.x, p.y, p.z);
+          // Gradient: 10% at base, 100% at tip
+          const brightness = 0.1 + 0.9 * t;
+          colAttr.setXYZ(j, stalkColor.r * brightness, stalkColor.g * brightness, stalkColor.b * brightness);
+        }
+        posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
+
+        // Pin rides stalk tip (last segment position)
+        const tipIdx = segCount - 1;
+        const tipX = posAttr.getX(tipIdx), tipY = posAttr.getY(tipIdx), tipZ = posAttr.getZ(tipIdx);
         if (s.pin) {
-          s.pin.position.copy(tip);
+          s.pin.position.set(tipX, tipY, tipZ);
           s.pin.scale.setScalar(cfg.pinSize);
         }
-        if (s.ring) s.ring.position.copy(tip);
+        if (s.ring) s.ring.position.set(tipX, tipY, tipZ);
 
         // Backside culling
         const facing = camDir.dot(s.dir);
         const front = facing > 0.05 ? Math.min(1, (facing - 0.05) * 5) : 0;
 
-        // Stalk: fade out separately from collapse
+        // Stalk fade
         s.line.material.opacity = cfg.stalkOpacity * front * stalkAlphaTarget;
         s.line.visible = stalkAlphaTarget > 0.001;
 
-        // Pin: always visible when front-facing
+        // Pin always visible when front-facing
         if (s.pin) s.pin.material.opacity = front;
       });
     }
