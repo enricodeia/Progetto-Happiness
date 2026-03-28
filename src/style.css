@@ -40,7 +40,7 @@
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html, body, #root {
-  width: 100%; height: 100%; overflow: hidden;
+  width: 100%; height: 100dvh; height: 100%; overflow: hidden;
   background: var(--color-bg); color: var(--color-text);
   font-family: var(--font-sans); -webkit-font-smoothing: antialiased;
 }
@@ -65,6 +65,7 @@ html, body, #root {
 .hero-title__heading {
   position: absolute;
   top: var(--hero-top-y, 12vh);
+  top: var(--hero-top-y-dvh);
   left: 50%; transform: translateX(-50%);
   text-align: center;
   font-family: var(--font-serif);
@@ -87,6 +88,7 @@ html, body, #root {
 .hero-title__curve {
   position: absolute;
   top: var(--hero-bottom-y, 72vh);
+  top: var(--hero-bottom-y-dvh);
   left: 50%; transform: translateX(-50%);
   width: var(--hero-curve-width, 550px);
   height: auto;
@@ -105,6 +107,7 @@ html, body, #root {
   .hero-title__heading {
     font-size: 56px !important;
     top: var(--hero-top-y-mobile, 21vh);
+    top: var(--hero-top-y-mobile-dvh);
   }
   .hero-title__curve { width: 320px; }
   .hero-title__curve text { font-size: 52px !important; }
@@ -229,7 +232,7 @@ html, body, #root {
   .sidebar {
     width: calc(100% - 32px);
     left: 16px;
-    bottom: var(--sb-bottom-mobile, 16px);
+    bottom: calc(var(--sb-bottom-mobile, 16px) + env(safe-area-inset-bottom, 0px));
     max-height: 160px !important;
     transition: opacity 0.6s ease 0.3s, transform 0.6s ease 0.3s, max-height 0.65s cubic-bezier(0.075, 0.82, 0.165, 1);
   }

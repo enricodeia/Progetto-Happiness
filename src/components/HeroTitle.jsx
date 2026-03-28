@@ -49,8 +49,11 @@ const HeroTitle = ({ config, onConfigChange }) => {
   return (
     <div className="hero-title" style={{
       '--hero-top-y': `${c.topY}vh`,
+      '--hero-top-y-dvh': `${c.topY}dvh`,
       '--hero-top-y-mobile': `${c.topYMobile ?? c.topY}vh`,
+      '--hero-top-y-mobile-dvh': `${c.topYMobile ?? c.topY}dvh`,
       '--hero-bottom-y': `${c.bottomY}vh`,
+      '--hero-bottom-y-dvh': `${c.bottomY}dvh`,
       '--hero-top-size': `${c.topSize}px`,
       '--hero-bottom-size': `${c.bottomSize}px`,
       '--hero-curve-width': `${c.curveWidth}px`,
