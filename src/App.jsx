@@ -96,11 +96,12 @@ export default function App() {
     badgeSize: 22,
     borderRadius: 24,
     bottom: 16,
+    collapsedHeight: 160,
   });
   const [heroConfig, setHeroConfig] = useState({
-    topY: 13,
-    bottomY: 65,
-    topSize: 80,
+    topY: 20,
+    bottomY: 62,
+    topSize: 85,
     bottomSize: 41,
     curveWidth: 500,
     curveDepth: 285,
@@ -231,7 +232,7 @@ export default function App() {
           className={`sidebar ${showUI ? 'sidebar--visible' : ''} ${sidebarExpanded ? 'sidebar--expanded' : ''}`}
           onMouseEnter={() => setSidebarExpanded(true)}
           onMouseLeave={() => setSidebarExpanded(false)}
-          style={{ bottom: sidebarConfig.bottom, borderRadius: sidebarConfig.borderRadius }}
+          style={{ bottom: sidebarConfig.bottom, borderRadius: sidebarConfig.borderRadius, maxHeight: sidebarExpanded ? '55vh' : sidebarConfig.collapsedHeight }}
         >
           <div className="sidebar__header" onClick={() => setSidebarExpanded((p) => !p)}
             style={{ padding: `${sidebarConfig.paddingTop}px ${sidebarConfig.paddingX}px ${sidebarConfig.paddingBottom}px`, borderRadius: `${sidebarConfig.borderRadius}px ${sidebarConfig.borderRadius}px 0 0` }}
@@ -348,6 +349,7 @@ export default function App() {
                 { label: 'Badge Size', key: 'badgeSize', min: 16, max: 36, step: 1 },
                 { label: 'Border Radius', key: 'borderRadius', min: 8, max: 40, step: 1 },
                 { label: 'Bottom', key: 'bottom', min: 0, max: 40, step: 1 },
+                { label: 'Collapsed H', key: 'collapsedHeight', min: 46, max: 300, step: 2 },
               ].map(({ label, key, min, max, step }) => (
                 <div key={key} style={{ marginBottom: 6 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 1 }}>

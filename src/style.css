@@ -227,18 +227,14 @@ html, body, #root {
     width: calc(100% - 32px);
     left: 16px;
     bottom: 16px;
-    max-height: 46px !important;
+    max-height: 160px !important;
     transition: opacity 0.6s ease 0.3s, transform 0.6s ease 0.3s, max-height 0.4s cubic-bezier(0.33, 1, 0.68, 1);
   }
   .sidebar.sidebar--expanded {
-    max-height: 50vh !important;
+    max-height: 55vh !important;
   }
   .sidebar__header {
     cursor: pointer;
-    border-bottom: none;
-  }
-  .sidebar--expanded .sidebar__header {
-    border-bottom: 1px solid var(--color-border);
   }
 }
 
