@@ -59,7 +59,7 @@ const Preloader = ({ onComplete }) => {
           if (!el) return;
           gsap.to(el, {
             opacity: 0, duration: 1.4,
-            ease: 'power2.inOut',
+            ease: 'circ.inOut',
             onComplete: () => { if (el) el.style.display = 'none'; },
           });
           // Title starts halfway through the fade
