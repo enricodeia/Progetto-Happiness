@@ -57,10 +57,11 @@ const Preloader = ({ onComplete }) => {
         setTimeout(() => {
           const el = containerRef.current;
           if (!el) return;
+          onComplete(); // fire immediately so title starts with the fade
           gsap.to(el, {
             opacity: 0, duration: 0.7,
             ease: 'power4.out',
-            onComplete,
+            onComplete: () => { if (el) el.style.display = 'none'; },
           });
         }, 300);
       } else {
@@ -98,7 +99,7 @@ const Preloader = ({ onComplete }) => {
           peelBackPct={peelPct}
           shadowIntensity={0.4}
           lightingIntensity={0.15}
-          peelDirection={180}
+          peelDirection={0}
         />
         <div className="preloader__counter">
           <span className="preloader__number">{progress}</span>
