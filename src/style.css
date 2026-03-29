@@ -150,19 +150,13 @@ html, body, #root {
    Scroll Path
    ============================================ */
 .scroll-path {
-  position: fixed; right: 24px; top: 50%; transform: translateY(-50%);
+  position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
   z-index: 10; pointer-events: none;
   opacity: 0; animation: fadeInClock 1s ease 1s forwards;
 }
 .scroll-path svg { pointer-events: all; }
-.scroll-path__label {
-  font-family: var(--font-sans); font-size: 8px; font-weight: 400;
-  letter-spacing: 1px; text-transform: uppercase;
-}
 @media (max-width: 768px) {
-  .scroll-path { right: 12px; }
-  .scroll-path svg { width: 40px; height: 350px; }
-  .scroll-path__label { font-size: 0; } /* hide labels on mobile */
+  .scroll-path { right: 10px; }
 }
 
 /* ============================================

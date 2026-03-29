@@ -405,14 +405,20 @@ export function initGlobe(canvas) {
   // No expansion trigger needed
 
   // ---- Fly to marker ----
-  // Set zoom by scroll percentage (0=far, 100=close)
+  // Set zoom by scroll percentage (0=far, 100=close) — animated
+  let zoomTween = null;
   globeState.setZoomPct = (pct) => {
     const p = Math.max(0, Math.min(100, pct)) / 100;
     const ZOOM_MIN_L = EARTH_RADIUS * 1.15;
     const ZOOM_MAX_L = EARTH_RADIUS * 7;
-    targetCamDist = ZOOM_MAX_L - p * (ZOOM_MAX_L - ZOOM_MIN_L);
+    const dest = ZOOM_MAX_L - p * (ZOOM_MAX_L - ZOOM_MIN_L);
     autoRotate = false; clearTimeout(autoTimer);
     autoTimer = setTimeout(() => { autoRotate = true; }, 8000);
+    zoomTween?.kill();
+    zoomTween = gsap.to({ v: targetCamDist }, {
+      v: dest, duration: 1.8, ease: 'circ.inOut',
+      onUpdate() { targetCamDist = this.targets()[0].v; },
+    });
   };
 
   globeState.flyToMarker = (marker) => {
@@ -465,7 +471,7 @@ export function initGlobe(canvas) {
         targetRotY -= dx * 0.004 * sens;
         targetRotX += dy * 0.002 * sens * rotWeight;
         targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
-        zoomVelocity += dy * 0.0003 * zoomWeight;
+        zoomVelocity -= dy * 0.0003 * zoomWeight;
       } else {
         // Desktop: drag rotates both axes, scaled by zoom
         targetRotY -= dx * 0.003 * sens;
