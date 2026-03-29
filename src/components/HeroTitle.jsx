@@ -78,15 +78,15 @@ const HeroTitle = ({ config }) => {
           .map((el, i) => ({ el, dist: Math.abs(i - mid) }))
           .sort((a, b) => a.dist - b.dist)
           .map((o) => o.el);
-        gsap.fromTo(sorted,
-          { y: 10, opacity: 0 },
-          { y: 0, opacity: 1, duration: 1, ease: 'circ.out', stagger: 0.035, delay,
-            onComplete() {
-              // Clear GSAP inline styles so React can take over for scroll-out
-              chars.forEach((el) => gsap.set(el, { clearProps: 'transform,opacity' }));
-            },
-          }
-        );
+        // Set all chars hidden immediately (GSAP controls from here)
+        gsap.set(chars, { opacity: 0, y: 10 });
+        gsap.to(sorted, {
+          y: 0, opacity: 1, duration: 1, ease: 'circ.out', stagger: 0.035, delay,
+          onComplete() {
+            // Only clear transform — leave opacity:1 so no flash when React takes over
+            chars.forEach((el) => gsap.set(el, { clearProps: 'transform' }));
+          },
+        });
       };
 
       animateIn(happinessCharsRef, 0.1);
