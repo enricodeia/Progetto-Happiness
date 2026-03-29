@@ -30,6 +30,14 @@ export const globeState = {
     stickyMinScroll: 0,
   },
   liveConfig: null, // set by panel, read each frame
+  zodiacConfig: {
+    pointSize: 3.0,
+    opacity: 0.8,
+    glowSoftness: 0.3,   // 0 = hard dot, 1 = full glow
+    twinkleAmount: 0.15,
+    warmth: 0.92,         // blue channel (lower = warmer)
+    radius: 50,           // multiplier of EARTH_RADIUS
+  },
 };
 
 export function initGlobe(canvas) {
@@ -104,6 +112,94 @@ export function initGlobe(canvas) {
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
   });
   scene.add(new THREE.Points(starGeo, starMat));
+
+  // ── Zodiac constellations: real star positions (RA/Dec → 3D) ──
+  // Each entry: [RA in decimal hours, Dec in degrees]
+  const zodiacStars = [
+    // Aries
+    [2.12, 23.5], [1.91, 20.8], [1.89, 19.3],
+    // Taurus
+    [4.60, 16.5], [5.44, 28.6], [3.79, 24.1], [5.63, 21.1],
+    // Gemini
+    [7.58, 31.9], [7.76, 28.0], [6.63, 16.4], [6.73, 25.1],
+    // Cancer
+    [8.97, 11.9], [8.28, 9.2], [8.72, 21.5], [8.74, 18.2],
+    // Leo
+    [10.14, 12.0], [11.82, 14.6], [10.33, 19.8], [11.24, 20.5],
+    // Virgo
+    [13.42, -11.2], [11.85, 1.8], [12.69, -1.4], [13.04, 10.9],
+    // Libra
+    [14.85, -16.0], [15.28, -9.4], [15.07, -25.3],
+    // Scorpio
+    [16.49, -26.4], [17.56, -37.1], [17.62, -43.0], [16.01, -22.6], [16.84, -34.3],
+    // Sagittarius
+    [18.40, -34.4], [18.92, -26.3], [19.04, -29.9], [18.35, -29.8], [18.47, -25.4],
+    // Capricorn
+    [21.78, -16.1], [20.35, -14.8], [20.30, -12.5], [21.67, -16.7],
+    // Aquarius
+    [21.53, -5.6], [22.10, -0.3], [22.91, -15.8], [22.88, -7.6],
+    // Pisces
+    [1.52, 15.3], [2.03, 2.8], [23.07, 3.8], [23.29, 3.3],
+  ];
+
+  const ZODIAC_RADIUS = EARTH_RADIUS * 50;
+  const zPos = new Float32Array(zodiacStars.length * 3);
+  const zOpa = new Float32Array(zodiacStars.length);
+
+  zodiacStars.forEach(([ra, dec], i) => {
+    const theta = (ra / 24) * Math.PI * 2;        // RA → angle
+    const phi = ((90 - dec) * Math.PI) / 180;      // Dec → polar
+    zPos[i * 3]     = ZODIAC_RADIUS * Math.sin(phi) * Math.cos(theta);
+    zPos[i * 3 + 1] = ZODIAC_RADIUS * Math.cos(phi);
+    zPos[i * 3 + 2] = ZODIAC_RADIUS * Math.sin(phi) * Math.sin(theta);
+    zOpa[i] = 0.7 + Math.random() * 0.3; // bright stars
+  });
+
+  const zGeo = new THREE.BufferGeometry();
+  zGeo.setAttribute('position', new THREE.BufferAttribute(zPos, 3));
+  zGeo.setAttribute('opacity', new THREE.BufferAttribute(zOpa, 1));
+  const zCfg = globeState.zodiacConfig;
+  const zMat = new THREE.ShaderMaterial({
+    uniforms: {
+      time: { value: 0 },
+      uSize: { value: zCfg.pointSize },
+      uOpacity: { value: zCfg.opacity },
+      uGlow: { value: zCfg.glowSoftness },
+      uTwinkle: { value: zCfg.twinkleAmount },
+      uWarmth: { value: zCfg.warmth },
+    },
+    vertexShader: `
+      attribute float opacity;
+      varying float vOpacity;
+      uniform float uSize;
+      void main() {
+        vOpacity = opacity;
+        gl_PointSize = uSize;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float time;
+      uniform float uOpacity;
+      uniform float uGlow;
+      uniform float uTwinkle;
+      uniform float uWarmth;
+      varying float vOpacity;
+      void main() {
+        float dist = length(gl_PointCoord - vec2(0.5));
+        if (dist > 0.5) discard;
+        float twinkle = sin(time * vOpacity * 2.0 + vOpacity * 8.0) * uTwinkle + (1.0 - uTwinkle);
+        // Mix between hard dot and soft glow
+        float hard = step(dist, 0.2) * 0.8 + (1.0 - smoothstep(0.2, 0.5, dist)) * 0.2;
+        float soft = smoothstep(0.5, 0.0, dist);
+        float shape = mix(hard, soft, uGlow);
+        float alpha = shape * twinkle * vOpacity * uOpacity;
+        gl_FragColor = vec4(1.0, 0.98, uWarmth, alpha);
+      }
+    `,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  });
+  scene.add(new THREE.Points(zGeo, zMat));
 
   // ── Atmosphere glow ──
   const atmosMat = new THREE.ShaderMaterial({
@@ -416,7 +512,7 @@ export function initGlobe(canvas) {
     autoTimer = setTimeout(() => { autoRotate = true; }, 8000);
     zoomTween?.kill();
     zoomTween = gsap.to({ v: targetCamDist }, {
-      v: dest, duration: 1.8, ease: 'circ.inOut',
+      v: dest, duration: 1, ease: 'circ.inOut',
       onUpdate() { targetCamDist = this.targets()[0].v; },
     });
   };
@@ -655,8 +751,15 @@ export function initGlobe(canvas) {
     requestAnimationFrame(animate);
     animTime += 0.016;
 
-    // Stars twinkle + sun position update
+    // Stars twinkle + zodiac + sun position
     starMat.uniforms.time.value = animTime;
+    zMat.uniforms.time.value = animTime;
+    const zc = globeState.zodiacConfig;
+    zMat.uniforms.uSize.value = zc.pointSize;
+    zMat.uniforms.uOpacity.value = zc.opacity;
+    zMat.uniforms.uGlow.value = zc.glowSoftness;
+    zMat.uniforms.uTwinkle.value = zc.twinkleAmount;
+    zMat.uniforms.uWarmth.value = zc.warmth;
     updateSunLight();
 
     // Smooth rotation speed (ease on pause/resume)
