@@ -22,19 +22,19 @@ export const globeState = {
     lerpSpeed: 0.04,
   },
   pinStyle: {
-    borderColor: '#FFDD00',
-    borderWidth: 3,
-    bgColor: '#1a1a1a',
-    bgOpacity: 0.85,
-    strokeExpand: 1.4,
-    strokeOpacity: 0.9,
-    orbitColor: '#FFDD00',
-    orbitSize: 0.18,
-    orbitSpeed: 1.2,
-    orbitOpacity: 0.6,
+    pinColor: '#FFDD00',
+    pinOpacity: 1,
     hoverScale: 1.6,
-    magnetRadius: 120,
-    magnetStrength: 0.18,
+    // Orbits
+    orbitCount: 3,
+    orbitColor: '#FFDD00',
+    orbitSize: 0.15,
+    orbitSpeed: 1.2,
+    orbitRadius: 0.22,
+    orbitIdleOpacity: 0.15,  // visible even without hover
+    orbitHoverOpacity: 0.7,  // full intensity on hover
+    orbitBlur: 0.5,          // glow spread (0=sharp, 1=very blurry)
+    orbitTrail: 0.3,         // trail/smear effect
   },
 };
 
@@ -318,20 +318,7 @@ export function initGlobe(canvas) {
       return tex;
     };
 
-    // ---- Stroke ring texture (yellow circle outline) ----
-    const createStrokeRingTex = () => {
-      const sz = 128;
-      const cv = document.createElement('canvas');
-      cv.width = sz; cv.height = sz;
-      const ctx2 = cv.getContext('2d');
-      ctx2.beginPath();
-      ctx2.arc(sz / 2, sz / 2, sz / 2 - 4, 0, Math.PI * 2);
-      ctx2.strokeStyle = '#ffffff'; // tinted by sprite color
-      ctx2.lineWidth = 6;
-      ctx2.stroke();
-      return new THREE.CanvasTexture(cv);
-    };
-    const strokeRingTex = createStrokeRingTex();
+    // (stroke ring removed)
 
     // ---- Blurred glow texture for orbit sprites ----
     const glowCanvas = document.createElement('canvas');
@@ -386,10 +373,10 @@ export function initGlobe(canvas) {
       // Tip position = last segment
       const tipPos = dir.clone().multiplyScalar(baseAlt + initCfg.stalkHeight);
 
-      // Pin sprite at stalk tip (glass + thumbnail)
+      // Pin sprite at stalk tip — yellow dot
       const pinTex = createPinTexture(ep.thumb);
       const pinMat = new THREE.SpriteMaterial({
-        map: pinTex, transparent: true, opacity: 1, depthWrite: false, sizeAttenuation: true,
+        map: pinTex, color: 0xFFDD00, transparent: true, opacity: 1, depthWrite: false, sizeAttenuation: true,
       });
       const pin = new THREE.Sprite(pinMat);
       pin.scale.setScalar(initCfg.pinSize);
@@ -398,33 +385,23 @@ export function initGlobe(canvas) {
       pin.userData = { type: 'episode', data: ep, baseScale: 1, hoverRingScale: 0 };
       scene.add(pin);
 
-      // Stroke ring sprite (separate, expands on hover)
-      const strokeMat = new THREE.SpriteMaterial({
-        map: strokeRingTex, color: 0xFFDD00, transparent: true, opacity: 0.9,
-        depthWrite: false, sizeAttenuation: true,
-      });
-      const strokeRing = new THREE.Sprite(strokeMat);
-      strokeRing.scale.setScalar(initCfg.pinSize * 1.08);
-      strokeRing.position.copy(tipPos);
-      strokeRing.renderOrder = 3; // behind pin
-      strokeRing.userData = { currentScale: 1.08 };
-      scene.add(strokeRing);
-
-      // Orbiting circles (2 blurred glow sprites that orbit on hover)
+      // Orbiting glow sprites (variable count, up to 6)
+      const MAX_ORBS = 6;
       const orbitGroup = new THREE.Group();
       orbitGroup.position.copy(tipPos);
       orbitGroup.renderOrder = 5;
-      const orbitMat1 = new THREE.SpriteMaterial({ map: glowTex, color: 0xFFDD00, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
-      const orbitMat2 = new THREE.SpriteMaterial({ map: glowTex, color: 0xFFDD00, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
-      const orb1 = new THREE.Sprite(orbitMat1);
-      const orb2 = new THREE.Sprite(orbitMat2);
-      orb1.scale.setScalar(0.01);
-      orb2.scale.setScalar(0.01);
-      orbitGroup.add(orb1, orb2);
+      const orbs = [];
+      for (let oi = 0; oi < MAX_ORBS; oi++) {
+        const om = new THREE.SpriteMaterial({ map: glowTex, color: 0xFFDD00, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+        const orb = new THREE.Sprite(om);
+        orb.scale.setScalar(0.01);
+        orbitGroup.add(orb);
+        orbs.push(orb);
+      }
       scene.add(orbitGroup);
 
-      markers.push({ dot: pin, strokeRing, orbitGroup, orb1, orb2, type: 'episode', data: ep });
-      stalks.push({ line, dir, heightPct: 1, pin, strokeRing, baseAlt });
+      markers.push({ dot: pin, orbitGroup, orbs, type: 'episode', data: ep });
+      stalks.push({ line, dir, heightPct: 1, pin, baseAlt });
     });
     scene.add(stalkGroup);
 
@@ -533,7 +510,6 @@ export function initGlobe(canvas) {
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
   let hoveredMarker = null;
-  let cursorX = 0, cursorY = 0; // track cursor position for pin magnetism
 
   const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
@@ -548,8 +524,6 @@ export function initGlobe(canvas) {
 
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    cursorX = e.clientX;
-    cursorY = e.clientY;
 
     if (isDragging) {
       const dx = e.clientX - prevX, dy = e.clientY - prevY;
@@ -850,14 +824,8 @@ export function initGlobe(canvas) {
         const tipIdx = segCount - 1;
         const tipX = posAttr.getX(tipIdx), tipY = posAttr.getY(tipIdx), tipZ = posAttr.getZ(tipIdx);
         if (s.pin) {
-          if (!s.pin.userData.basePosition) s.pin.userData.basePosition = new THREE.Vector3();
-          s.pin.userData.basePosition.set(tipX, tipY, tipZ);
-          if (!s.pin.userData.magnetActive) s.pin.position.set(tipX, tipY, tipZ);
+          s.pin.position.set(tipX, tipY, tipZ);
           s.pin.scale.setScalar(cfg.pinSize);
-        }
-        // Stroke ring follows pin (position updated in marker loop for magnetic)
-        if (s.strokeRing && !s.pin?.userData.magnetActive) {
-          s.strokeRing.position.set(tipX, tipY, tipZ);
         }
 
         // Backside culling
@@ -873,94 +841,67 @@ export function initGlobe(canvas) {
       });
     }
 
-    const magnetScrV = new THREE.Vector3();
     const ps = globeState.pinStyle;
-
-    // Zoom-aware pin sizing: smaller when zoomed in
     const pinZoomScale = Math.max(0.4, Math.min(1, zoomFactor / 4));
 
     markers.forEach((m) => {
-      // Target scale: base + hover boost
       const hoverT = m.dot.userData.hoverRingScale || 0;
       const hoverBoost = 1 + hoverT * ((ps.hoverScale || 1.6) - 1);
       const ts = (m.dot.userData.baseScale || 1) * hoverBoost * pinZoomScale;
       const cs = m.dot.scale.x;
       m.dot.scale.setScalar(cs + (ts - cs) * 0.12);
 
-      // Back-side culling
+      // Pin color + back-side culling
+      m.dot.material.color.set(ps.pinColor || '#FFDD00');
       const markerDir = m.dot.position.clone().normalize();
       const facing = camDir.dot(markerDir);
       const frontOpacity = facing > 0.05 ? Math.min(1, (facing - 0.05) * 5) : 0;
-      const baseOp = m.type === 'episode' ? 1 : 0.6;
+      const baseOp = m.type === 'episode' ? (ps.pinOpacity ?? 1) : 0.6;
       m.dot.material.opacity = baseOp * frontOpacity;
 
-      // Magnetic pin attraction (only active when zoomed in past 90%)
-      const mRadius = ps.magnetRadius || 120;
-      const mStrength = ps.magnetStrength || 0.18;
-      m.dot.userData.magnetActive = false;
-      if (!isDragging && frontOpacity > 0.1 && m.dot.userData.basePosition && scrollPct >= 90) {
-        magnetScrV.copy(m.dot.userData.basePosition).project(camera);
-        if (magnetScrV.z < 1) {
-          const sx = (magnetScrV.x * 0.5 + 0.5) * window.innerWidth;
-          const sy = (-magnetScrV.y * 0.5 + 0.5) * window.innerHeight;
-          const dist = Math.hypot(cursorX - sx, cursorY - sy);
-          if (dist < mRadius && dist > 1) {
-            m.dot.userData.magnetActive = true;
-            const strength = (1 - dist / mRadius) * mStrength;
-            const offsetX = (cursorX - sx) * strength;
-            const offsetY = (cursorY - sy) * strength;
-            const ndcX = magnetScrV.x + (offsetX / window.innerWidth) * 2;
-            const ndcY = magnetScrV.y - (offsetY / window.innerHeight) * 2;
-            const pullTarget = new THREE.Vector3(ndcX, ndcY, magnetScrV.z).unproject(camera);
-            pullTarget.normalize().multiplyScalar(m.dot.userData.basePosition.length());
-            m.dot.position.lerp(pullTarget, 0.15);
-          } else {
-            m.dot.position.lerp(m.dot.userData.basePosition, 0.1);
-          }
-        }
-      } else if (m.dot.userData.basePosition) {
-        m.dot.position.lerp(m.dot.userData.basePosition, 0.1);
-      }
-
-      // Orbiting circles on hover
-      if (m.orbitGroup) {
+      // Orbiting glow balls — variable count, idle + hover intensity
+      if (m.orbitGroup && m.orbs) {
         m.orbitGroup.position.copy(m.dot.position);
 
-        const orbSpeed = (ps.orbitSpeed || 1.2) * animTime;
-        const orbRadius = cfg.pinSize * pinZoomScale * (ps.orbitSize || 0.18);
-        const targetOrbOp = hoverT * (ps.orbitOpacity || 0.6) * frontOpacity;
+        const count = Math.min(m.orbs.length, Math.round(ps.orbitCount || 3));
+        const speed = (ps.orbitSpeed || 1.2) * animTime;
+        const radius = cfg.pinSize * pinZoomScale * (ps.orbitRadius || 0.22);
+        const idleOp = (ps.orbitIdleOpacity ?? 0.15) * frontOpacity;
+        const hoverOp = (ps.orbitHoverOpacity ?? 0.7) * frontOpacity;
+        const targetOp = idleOp + hoverT * (hoverOp - idleOp);
+        const spriteSize = cfg.pinSize * pinZoomScale * (ps.orbitSize || 0.15);
+        const blur = ps.orbitBlur ?? 0.5;
+        const trail = ps.orbitTrail ?? 0.3;
 
-        // Orbit in camera-local plane
         const camRight = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0).normalize();
         const camUp = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1).normalize();
 
-        // Orb 1: orbits at angle
-        const a1 = orbSpeed * 2.5;
-        const r1 = orbRadius * (0.9 + hoverT * 0.4);
-        m.orb1.position.copy(camRight).multiplyScalar(Math.cos(a1) * r1).add(camUp.clone().multiplyScalar(Math.sin(a1) * r1));
-        m.orb1.material.opacity += (targetOrbOp - m.orb1.material.opacity) * 0.08;
-        const orbSpriteSize = orbRadius * 0.5;
-        m.orb1.scale.setScalar(Math.max(0.01, orbSpriteSize));
-        m.orb1.material.color.set(ps.orbitColor || '#FFDD00');
+        for (let oi = 0; oi < m.orbs.length; oi++) {
+          const orb = m.orbs[oi];
+          if (oi >= count) {
+            // Hide unused orbs
+            orb.material.opacity += (0 - orb.material.opacity) * 0.1;
+            continue;
+          }
 
-        // Orb 2: opposite phase, slightly different speed
-        const a2 = orbSpeed * 2.5 + Math.PI;
-        const r2 = orbRadius * (1.1 + hoverT * 0.3);
-        m.orb2.position.copy(camRight).multiplyScalar(Math.cos(a2) * r2).add(camUp.clone().multiplyScalar(Math.sin(a2) * r2));
-        m.orb2.material.opacity += (targetOrbOp * 0.7 - m.orb2.material.opacity) * 0.08;
-        m.orb2.scale.setScalar(Math.max(0.01, orbSpriteSize * 0.7));
-        m.orb2.material.color.set(ps.orbitColor || '#FFDD00');
-      }
+          // Each orb at evenly spaced phase, slightly different speed
+          const phase = (oi / count) * Math.PI * 2;
+          const speedMult = 1 + oi * 0.15; // each orb slightly faster
+          const angle = speed * 2.5 * speedMult + phase;
+          const r = radius * (0.85 + oi * 0.08 + hoverT * 0.3);
 
-      // Stroke ring: follows pin, expands on hover
-      if (m.strokeRing) {
-        m.strokeRing.position.copy(m.dot.position);
-        const expand = ps.strokeExpand || 1.4;
-        const targetStrokeScale = cfg.pinSize * pinZoomScale * (1 + hoverT * (expand - 1)) * 1.08;
-        const curStroke = m.strokeRing.scale.x;
-        m.strokeRing.scale.setScalar(curStroke + (targetStrokeScale - curStroke) * 0.12);
-        m.strokeRing.material.color.set(ps.borderColor || '#FFDD00');
-        m.strokeRing.material.opacity = (ps.strokeOpacity ?? 0.9) * frontOpacity;
+          orb.position.copy(camRight).multiplyScalar(Math.cos(angle) * r)
+            .add(camUp.clone().multiplyScalar(Math.sin(angle) * r));
+
+          // Size: larger with more blur
+          const sz = spriteSize * (0.4 + blur * 0.8) * (1 - oi * 0.06);
+          orb.scale.setScalar(Math.max(0.01, sz));
+
+          // Opacity: slight variation per orb, trail reduces rear orbs
+          const orbOp = targetOp * (1 - oi * trail * 0.15);
+          orb.material.opacity += (orbOp - orb.material.opacity) * 0.08;
+          orb.material.color.set(ps.orbitColor || '#FFDD00');
+        }
       }
     });
 

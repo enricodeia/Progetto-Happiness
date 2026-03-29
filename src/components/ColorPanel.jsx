@@ -3,19 +3,18 @@ import { gsap } from 'gsap';
 import { globeState } from '../globe-scene.js';
 
 const DEFAULTS = {
-  bgColor: '#1a1a1a',
-  bgOpacity: 0.85,
-  strokeColor: '#FFDD00',
-  strokeWidth: 3,
-  strokeExpand: 1.4,
-  strokeOpacity: 0.9,
+  pinColor: '#FFDD00',
+  pinOpacity: 1,
   hoverScale: 1.6,
-  magnetRadius: 120,
-  magnetStrength: 0.18,
+  orbitCount: 3,
   orbitColor: '#FFDD00',
-  orbitSize: 0.18,
+  orbitSize: 0.15,
   orbitSpeed: 1.2,
-  orbitOpacity: 0.6,
+  orbitRadius: 0.22,
+  orbitIdleOpacity: 0.15,
+  orbitHoverOpacity: 0.7,
+  orbitBlur: 0.5,
+  orbitTrail: 0.3,
 };
 
 const PinTuner = () => {
@@ -38,22 +37,7 @@ const PinTuner = () => {
   const update = useCallback((key, val) => {
     const next = { ...values, [key]: val };
     setValues(next);
-    const mapped = {
-      borderColor: next.strokeColor,
-      borderWidth: next.strokeWidth,
-      bgColor: next.bgColor,
-      bgOpacity: next.bgOpacity,
-      hoverScale: next.hoverScale,
-      magnetRadius: next.magnetRadius,
-      magnetStrength: next.magnetStrength,
-      orbitColor: next.orbitColor,
-      orbitSize: next.orbitSize,
-      orbitSpeed: next.orbitSpeed,
-      orbitOpacity: next.orbitOpacity,
-      strokeExpand: next.strokeExpand,
-      strokeOpacity: next.strokeOpacity,
-    };
-    if (globeState.updatePinStyle) globeState.updatePinStyle(mapped);
+    if (globeState.updatePinStyle) globeState.updatePinStyle(next);
   }, [values]);
 
   const copyValues = () => {
@@ -81,26 +65,23 @@ const PinTuner = () => {
   const f = fineMode;
 
   const rows = [
-    { section: 'Glass' },
-    { key: 'bgColor', label: 'Background', type: 'color' },
-    { key: 'bgOpacity', label: 'Opacity', type: 'range', min: 0.1, max: 1, step: f ? 0.01 : 0.05 },
-    null,
-    { section: 'Stroke' },
-    { key: 'strokeColor', label: 'Color', type: 'color' },
-    { key: 'strokeWidth', label: 'Width', type: 'range', min: 1, max: 8, step: f ? 0.5 : 1 },
-    { key: 'strokeExpand', label: 'Expand', type: 'range', min: 1, max: 2.5, step: f ? 0.05 : 0.1 },
-    { key: 'strokeOpacity', label: 'Opacity', type: 'range', min: 0.1, max: 1, step: f ? 0.01 : 0.05 },
-    null,
-    { section: 'Hover' },
-    { key: 'hoverScale', label: 'Scale', type: 'range', min: 1, max: 2.5, step: f ? 0.05 : 0.1 },
-    { key: 'magnetRadius', label: 'Radius', type: 'range', min: 40, max: 200, step: f ? 5 : 10 },
-    { key: 'magnetStrength', label: 'Force', type: 'range', min: 0.02, max: 0.4, step: f ? 0.01 : 0.02 },
+    { section: 'Pin' },
+    { key: 'pinColor', label: 'Color', type: 'color' },
+    { key: 'pinOpacity', label: 'Opacity', type: 'range', min: 0.1, max: 1, step: f ? 0.01 : 0.05 },
+    { key: 'hoverScale', label: 'Hover scale', type: 'range', min: 1, max: 2.5, step: f ? 0.05 : 0.1 },
     null,
     { section: 'Orbits' },
+    { key: 'orbitCount', label: 'Count', type: 'range', min: 1, max: 6, step: 1 },
     { key: 'orbitColor', label: 'Color', type: 'color' },
-    { key: 'orbitSize', label: 'Size', type: 'range', min: 0.05, max: 0.5, step: f ? 0.01 : 0.02 },
-    { key: 'orbitSpeed', label: 'Speed', type: 'range', min: 0.2, max: 3, step: f ? 0.05 : 0.1 },
-    { key: 'orbitOpacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: f ? 0.01 : 0.05 },
+    { key: 'orbitSize', label: 'Ball size', type: 'range', min: 0.03, max: 0.5, step: f ? 0.01 : 0.02 },
+    { key: 'orbitRadius', label: 'Orbit radius', type: 'range', min: 0.08, max: 0.6, step: f ? 0.01 : 0.02 },
+    { key: 'orbitSpeed', label: 'Speed', type: 'range', min: 0.1, max: 4, step: f ? 0.05 : 0.1 },
+    null,
+    { section: 'Intensity' },
+    { key: 'orbitIdleOpacity', label: 'Idle', type: 'range', min: 0, max: 0.5, step: f ? 0.01 : 0.02 },
+    { key: 'orbitHoverOpacity', label: 'Hover', type: 'range', min: 0.1, max: 1, step: f ? 0.01 : 0.05 },
+    { key: 'orbitBlur', label: 'Blur', type: 'range', min: 0, max: 1, step: f ? 0.01 : 0.05 },
+    { key: 'orbitTrail', label: 'Trail', type: 'range', min: 0, max: 1, step: f ? 0.01 : 0.05 },
   ];
 
   return (
