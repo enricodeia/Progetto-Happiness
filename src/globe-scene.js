@@ -26,7 +26,8 @@ export const globeState = {
     borderWidth: 3,
     bgColor: '#1a1a1a',
     bgOpacity: 0.85,
-    glassBlur: true,
+    strokeExpand: 1.4,
+    strokeOpacity: 0.9,
     orbitColor: '#FFDD00',
     orbitSize: 0.18,
     orbitSpeed: 1.2,
@@ -198,7 +199,8 @@ export function initGlobe(canvas) {
     highlightGroup = new THREE.Group();
     scene.add(highlightGroup);
 
-    // ---- Helper: create circular pin texture with glass effect ----
+    // ---- Helper: create circular pin texture (glass bg + thumbnail, NO border) ----
+    // The yellow stroke is a separate sprite that expands on hover
     const PIN_SIZE = 64;
     const createPinTexture = (imgUrl) => {
       const ps = globeState.pinStyle;
@@ -211,28 +213,21 @@ export function initGlobe(canvas) {
       tex.colorSpace = THREE.SRGBColorSpace;
 
       let loadedImg = null;
-      const bw = () => ps.borderWidth || 3;
 
       const drawPin = () => {
         c.clearRect(0, 0, PIN_SIZE * 2, PIN_SIZE * 2);
 
-        // Glass background
-        c.beginPath(); c.arc(r, r, r - 1, 0, Math.PI * 2);
+        // Glass background circle
+        c.beginPath(); c.arc(r, r, r - 2, 0, Math.PI * 2);
         c.fillStyle = ps.bgColor || '#1a1a1a';
         c.globalAlpha = ps.bgOpacity ?? 0.85;
         c.fill();
         c.globalAlpha = 1;
 
-        // Border stroke
-        c.beginPath(); c.arc(r, r, r - bw() / 2 - 1, 0, Math.PI * 2);
-        c.strokeStyle = ps.borderColor || '#FFDD00';
-        c.lineWidth = bw();
-        c.stroke();
-
         // Thumbnail
         if (loadedImg) {
           c.save();
-          const inset = bw() + 2;
+          const inset = 4;
           c.beginPath(); c.arc(r, r, r - inset, 0, Math.PI * 2); c.clip();
           const aspect = loadedImg.width / loadedImg.height;
           let sw, sh, sx, sy;
@@ -254,6 +249,21 @@ export function initGlobe(canvas) {
       tex.userData = { redraw: drawPin };
       return tex;
     };
+
+    // ---- Stroke ring texture (yellow circle outline) ----
+    const createStrokeRingTex = () => {
+      const sz = 128;
+      const cv = document.createElement('canvas');
+      cv.width = sz; cv.height = sz;
+      const ctx2 = cv.getContext('2d');
+      ctx2.beginPath();
+      ctx2.arc(sz / 2, sz / 2, sz / 2 - 4, 0, Math.PI * 2);
+      ctx2.strokeStyle = '#ffffff'; // tinted by sprite color
+      ctx2.lineWidth = 6;
+      ctx2.stroke();
+      return new THREE.CanvasTexture(cv);
+    };
+    const strokeRingTex = createStrokeRingTex();
 
     // ---- Blurred glow texture for orbit sprites ----
     const glowCanvas = document.createElement('canvas');
@@ -308,7 +318,7 @@ export function initGlobe(canvas) {
       // Tip position = last segment
       const tipPos = dir.clone().multiplyScalar(baseAlt + initCfg.stalkHeight);
 
-      // Pin sprite at stalk tip
+      // Pin sprite at stalk tip (glass + thumbnail)
       const pinTex = createPinTexture(ep.thumb);
       const pinMat = new THREE.SpriteMaterial({
         map: pinTex, transparent: true, opacity: 1, depthWrite: false, sizeAttenuation: true,
@@ -319,6 +329,18 @@ export function initGlobe(canvas) {
       pin.renderOrder = 4;
       pin.userData = { type: 'episode', data: ep, baseScale: 1, hoverRingScale: 0 };
       scene.add(pin);
+
+      // Stroke ring sprite (separate, expands on hover)
+      const strokeMat = new THREE.SpriteMaterial({
+        map: strokeRingTex, color: 0xFFDD00, transparent: true, opacity: 0.9,
+        depthWrite: false, sizeAttenuation: true,
+      });
+      const strokeRing = new THREE.Sprite(strokeMat);
+      strokeRing.scale.setScalar(initCfg.pinSize * 1.08);
+      strokeRing.position.copy(tipPos);
+      strokeRing.renderOrder = 3; // behind pin
+      strokeRing.userData = { currentScale: 1.08 };
+      scene.add(strokeRing);
 
       // Orbiting circles (2 blurred glow sprites that orbit on hover)
       const orbitGroup = new THREE.Group();
@@ -333,8 +355,8 @@ export function initGlobe(canvas) {
       orbitGroup.add(orb1, orb2);
       scene.add(orbitGroup);
 
-      markers.push({ dot: pin, orbitGroup, orb1, orb2, type: 'episode', data: ep });
-      stalks.push({ line, dir, heightPct: 1, pin, baseAlt });
+      markers.push({ dot: pin, strokeRing, orbitGroup, orb1, orb2, type: 'episode', data: ep });
+      stalks.push({ line, dir, heightPct: 1, pin, strokeRing, baseAlt });
     });
     scene.add(stalkGroup);
 
@@ -756,14 +778,15 @@ export function initGlobe(canvas) {
         const tipIdx = segCount - 1;
         const tipX = posAttr.getX(tipIdx), tipY = posAttr.getY(tipIdx), tipZ = posAttr.getZ(tipIdx);
         if (s.pin) {
-          // Store base position for magnetic snap-back (actual position set in marker loop)
           if (!s.pin.userData.basePosition) s.pin.userData.basePosition = new THREE.Vector3();
           s.pin.userData.basePosition.set(tipX, tipY, tipZ);
-          // Only set position directly if no magnetic offset is active
           if (!s.pin.userData.magnetActive) s.pin.position.set(tipX, tipY, tipZ);
           s.pin.scale.setScalar(cfg.pinSize);
         }
-        // orbit group position is updated in the marker loop below
+        // Stroke ring follows pin (position updated in marker loop for magnetic)
+        if (s.strokeRing && !s.pin?.userData.magnetActive) {
+          s.strokeRing.position.set(tipX, tipY, tipZ);
+        }
 
         // Backside culling
         const facing = camDir.dot(s.dir);
@@ -855,6 +878,17 @@ export function initGlobe(canvas) {
         m.orb2.material.opacity += (targetOrbOp * 0.7 - m.orb2.material.opacity) * 0.08;
         m.orb2.scale.setScalar(Math.max(0.01, orbSpriteSize * 0.7));
         m.orb2.material.color.set(ps.orbitColor || '#FFDD00');
+      }
+
+      // Stroke ring: follows pin, expands on hover
+      if (m.strokeRing) {
+        m.strokeRing.position.copy(m.dot.position);
+        const expand = ps.strokeExpand || 1.4;
+        const targetStrokeScale = cfg.pinSize * pinZoomScale * (1 + hoverT * (expand - 1)) * 1.08;
+        const curStroke = m.strokeRing.scale.x;
+        m.strokeRing.scale.setScalar(curStroke + (targetStrokeScale - curStroke) * 0.12);
+        m.strokeRing.material.color.set(ps.borderColor || '#FFDD00');
+        m.strokeRing.material.opacity = (ps.strokeOpacity ?? 0.9) * frontOpacity;
       }
     });
 

@@ -2,34 +2,30 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
 import { globeState } from '../globe-scene.js';
 
-const DEFAULTS = {
-  bg: '#030303', sphereColor: '#080808',
-  dotColor: '#FDF4ED', dotOpacity: 0.45, dotSize: 20000,
-  borderColor: '#FFDD00', borderOpacity: 0.06,
-  markerColor: '#FFDD00', pinSize: 14000,
-  showTexture: false, textureOpacity: 0.8,
-  textureOffsetX: 0, textureOffsetY: 0, textureScale: 1, textureRotation: 0,
-};
-
 const PIN_DEFAULTS = {
-  borderColor: '#FFDD00',
-  borderWidth: 3,
+  // Glass effect
   bgColor: '#1a1a1a',
   bgOpacity: 0.85,
+  // Expanding stroke ring
+  strokeColor: '#FFDD00',
+  strokeWidth: 3,
+  strokeExpand: 1.4, // how much the stroke ring expands on hover (1 = no expand)
+  strokeOpacity: 0.9,
+  // Hover
+  hoverScale: 1.6,
+  // Magnetic
+  magnetRadius: 120,
+  magnetStrength: 0.18,
+  // Orbiting balls
   orbitColor: '#FFDD00',
   orbitSize: 0.18,
   orbitSpeed: 1.2,
   orbitOpacity: 0.6,
-  hoverScale: 1.6,
-  magnetRadius: 120,
-  magnetStrength: 0.18,
 };
 
 const ColorPanel = () => {
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState('globe'); // 'globe' | 'pin'
-  const [values, setValues] = useState(DEFAULTS);
-  const [pinValues, setPinValues] = useState(PIN_DEFAULTS);
+  const [values, setValues] = useState(PIN_DEFAULTS);
   const [copied, setCopied] = useState(false);
   const [fineMode, setFineMode] = useState(false);
   const panelRef = useRef(null);
@@ -47,18 +43,27 @@ const ColorPanel = () => {
   const update = useCallback((key, val) => {
     const next = { ...values, [key]: val };
     setValues(next);
-    if (globeState.updateColors) globeState.updateColors(next);
+    // Map to pinStyle keys
+    const mapped = {
+      borderColor: next.strokeColor,
+      borderWidth: next.strokeWidth,
+      bgColor: next.bgColor,
+      bgOpacity: next.bgOpacity,
+      hoverScale: next.hoverScale,
+      magnetRadius: next.magnetRadius,
+      magnetStrength: next.magnetStrength,
+      orbitColor: next.orbitColor,
+      orbitSize: next.orbitSize,
+      orbitSpeed: next.orbitSpeed,
+      orbitOpacity: next.orbitOpacity,
+      strokeExpand: next.strokeExpand,
+      strokeOpacity: next.strokeOpacity,
+    };
+    if (globeState.updatePinStyle) globeState.updatePinStyle(mapped);
   }, [values]);
 
-  const updatePin = useCallback((key, val) => {
-    const next = { ...pinValues, [key]: val };
-    setPinValues(next);
-    if (globeState.updatePinStyle) globeState.updatePinStyle(next);
-  }, [pinValues]);
-
   const copyValues = () => {
-    const data = tab === 'globe' ? values : pinValues;
-    navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+    navigator.clipboard.writeText(JSON.stringify(values, null, 2));
     setCopied(true); setTimeout(() => setCopied(false), 1500);
   };
 
@@ -80,57 +85,38 @@ const ColorPanel = () => {
 
   const f = fineMode;
 
-  const globeRows = [
-    { key: 'bg', label: 'Background', type: 'color' },
-    { key: 'sphereColor', label: 'Globe', type: 'color' },
-    null,
-    { key: 'dotColor', label: 'Dot color', type: 'color' },
-    { key: 'dotOpacity', label: 'Dot opacity', type: 'range', min: 0, max: 1, step: f ? 0.01 : 0.05 },
-    { key: 'dotSize', label: 'Dot size', type: 'range', min: 2000, max: 60000, step: f ? 500 : 2000 },
-    null,
-    { key: 'borderColor', label: 'Borders', type: 'color' },
-    { key: 'borderOpacity', label: 'Border opacity', type: 'range', min: 0, max: 0.3, step: f ? 0.005 : 0.01 },
-    null,
-    { key: 'markerColor', label: 'Pin tint', type: 'color' },
-    { key: 'pinSize', label: 'Pin size', type: 'range', min: 3000, max: 40000, step: f ? 500 : 1000 },
-    null,
-    { key: 'showTexture', label: 'Earth texture', type: 'toggle' },
-    { key: 'textureOpacity', label: 'Tex opacity', type: 'range', min: 0.05, max: 1, step: f ? 0.01 : 0.05 },
-    { key: 'textureOffsetX', label: 'Shift X', type: 'range', min: -0.5, max: 0.5, step: f ? 0.001 : 0.01 },
-    { key: 'textureOffsetY', label: 'Shift Y', type: 'range', min: -0.5, max: 0.5, step: f ? 0.001 : 0.01 },
-    { key: 'textureScale', label: 'Scale', type: 'range', min: 0.8, max: 1.2, step: f ? 0.002 : 0.02 },
-    { key: 'textureRotation', label: 'Rotation', type: 'range', min: -30, max: 30, step: f ? 0.2 : 1 },
-  ];
-
-  const pinRows = [
-    { key: 'borderColor', label: 'Border', type: 'color' },
-    { key: 'borderWidth', label: 'Border width', type: 'range', min: 1, max: 8, step: f ? 0.5 : 1 },
+  const rows = [
+    { section: 'Glass' },
     { key: 'bgColor', label: 'Background', type: 'color' },
     { key: 'bgOpacity', label: 'Bg opacity', type: 'range', min: 0.1, max: 1, step: f ? 0.01 : 0.05 },
     null,
-    { key: 'hoverScale', label: 'Hover scale', type: 'range', min: 1, max: 2.5, step: f ? 0.05 : 0.1 },
+    { section: 'Stroke Ring' },
+    { key: 'strokeColor', label: 'Color', type: 'color' },
+    { key: 'strokeWidth', label: 'Width', type: 'range', min: 1, max: 8, step: f ? 0.5 : 1 },
+    { key: 'strokeExpand', label: 'Hover expand', type: 'range', min: 1, max: 2.5, step: f ? 0.05 : 0.1 },
+    { key: 'strokeOpacity', label: 'Opacity', type: 'range', min: 0.1, max: 1, step: f ? 0.01 : 0.05 },
+    null,
+    { section: 'Hover' },
+    { key: 'hoverScale', label: 'Scale', type: 'range', min: 1, max: 2.5, step: f ? 0.05 : 0.1 },
     { key: 'magnetRadius', label: 'Magnet radius', type: 'range', min: 40, max: 200, step: f ? 5 : 10 },
     { key: 'magnetStrength', label: 'Magnet force', type: 'range', min: 0.02, max: 0.4, step: f ? 0.01 : 0.02 },
     null,
-    { key: 'orbitColor', label: 'Orbit color', type: 'color' },
-    { key: 'orbitSize', label: 'Orbit size', type: 'range', min: 0.05, max: 0.5, step: f ? 0.01 : 0.02 },
-    { key: 'orbitSpeed', label: 'Orbit speed', type: 'range', min: 0.2, max: 3, step: f ? 0.05 : 0.1 },
-    { key: 'orbitOpacity', label: 'Orbit opacity', type: 'range', min: 0, max: 1, step: f ? 0.01 : 0.05 },
+    { section: 'Orbit Balls' },
+    { key: 'orbitColor', label: 'Color', type: 'color' },
+    { key: 'orbitSize', label: 'Size', type: 'range', min: 0.05, max: 0.5, step: f ? 0.01 : 0.02 },
+    { key: 'orbitSpeed', label: 'Speed', type: 'range', min: 0.2, max: 3, step: f ? 0.05 : 0.1 },
+    { key: 'orbitOpacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: f ? 0.01 : 0.05 },
   ];
-
-  const rows = tab === 'globe' ? globeRows : pinRows;
-  const currentValues = tab === 'globe' ? values : pinValues;
-  const currentUpdate = tab === 'globe' ? update : updatePin;
 
   return (
     <div className="color-panel" ref={panelRef}>
       <div className="color-panel__header">
-        <span className="color-panel__title">Controls</span>
+        <span className="color-panel__title">Pin Controls</span>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           <button
             className={`color-panel__toggle-btn ${fineMode ? 'color-panel__toggle-btn--on' : ''}`}
             onClick={() => setFineMode(!fineMode)}
-            title="Fine tuning mode — smaller steps"
+            title="Fine tuning mode"
           >
             {fineMode ? 'FINE' : 'NORM'}
           </button>
@@ -139,39 +125,28 @@ const ColorPanel = () => {
           </button>
         </div>
       </div>
-      <div className="color-panel__tabs">
-        <button className={`color-panel__tab ${tab === 'globe' ? 'color-panel__tab--active' : ''}`} onClick={() => setTab('globe')}>Globe</button>
-        <button className={`color-panel__tab ${tab === 'pin' ? 'color-panel__tab--active' : ''}`} onClick={() => setTab('pin')}>Pin</button>
-      </div>
       {rows.map((row, i) => {
         if (!row) return <div className="color-panel__sep" key={`sep-${i}`} />;
+        if (row.section) return <div className="color-panel__section" key={row.section}>{row.section}</div>;
         const { key, label, type, min, max, step } = row;
         return (
           <label className="color-panel__row" key={key}>
             <span className="color-panel__label">{label}</span>
             {type === 'color' && (
               <div className="color-panel__color-wrap">
-                <input type="color" value={currentValues[key]} onChange={(e) => currentUpdate(key, e.target.value)} className="color-panel__color-input" />
-                <span className="color-panel__hex">{currentValues[key]}</span>
+                <input type="color" value={values[key]} onChange={(e) => update(key, e.target.value)} className="color-panel__color-input" />
+                <span className="color-panel__hex">{values[key]}</span>
               </div>
             )}
             {type === 'range' && (
               <div className="color-panel__range-wrap">
-                <input type="range" min={min} max={max} step={step} value={currentValues[key]} onChange={(e) => currentUpdate(key, parseFloat(e.target.value))} />
+                <input type="range" min={min} max={max} step={step} value={values[key]} onChange={(e) => update(key, parseFloat(e.target.value))} />
                 <span className="color-panel__range-val">
-                  {typeof currentValues[key] === 'number'
-                    ? (Math.abs(currentValues[key]) >= 1000 ? Math.round(currentValues[key] / 1000) + 'k' : currentValues[key].toFixed(f ? 3 : 2))
-                    : currentValues[key]}
+                  {typeof values[key] === 'number'
+                    ? (Math.abs(values[key]) >= 1000 ? Math.round(values[key] / 1000) + 'k' : values[key].toFixed(f ? 3 : 2))
+                    : values[key]}
                 </span>
               </div>
-            )}
-            {type === 'toggle' && (
-              <button
-                className={`color-panel__toggle-btn ${currentValues[key] ? 'color-panel__toggle-btn--on' : ''}`}
-                onClick={() => currentUpdate(key, !currentValues[key])}
-              >
-                {currentValues[key] ? 'ON' : 'OFF'}
-              </button>
             )}
           </label>
         );

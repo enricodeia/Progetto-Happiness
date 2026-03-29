@@ -1,34 +1,35 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
+import { episodeDescriptions } from '../descriptions.js';
 
 const PanelCard = ({ data, onClose }) => {
   const panelRef = useRef(null);
   const itemsRef = useRef([]);
   const [visible, setVisible] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const prevDataRef = useRef(null);
+  const descRef = useRef(null);
 
   // Open animation
   useEffect(() => {
     if (data && data !== prevDataRef.current) {
       prevDataRef.current = data;
       setVisible(true);
+      setExpanded(false);
 
       requestAnimationFrame(() => {
         const el = panelRef.current;
         if (!el) return;
         const items = itemsRef.current.filter(Boolean);
 
-        // Kill any existing tweens
         gsap.killTweensOf(el);
         gsap.killTweensOf(items);
 
-        // Panel: grow from bottom
         gsap.fromTo(el,
           { height: 0, opacity: 0 },
           { height: 'auto', opacity: 1, duration: 0.5, ease: 'power4.out' }
         );
 
-        // Stagger children
         gsap.fromTo(items,
           { y: 16, opacity: 0 },
           { y: 0, opacity: 1, duration: 0.4, ease: 'power4.out', stagger: 0.06, delay: 0.15 }
@@ -37,12 +38,25 @@ const PanelCard = ({ data, onClose }) => {
     }
   }, [data]);
 
+  // Expand/collapse animation
+  useEffect(() => {
+    if (!descRef.current) return;
+    if (expanded) {
+      gsap.to(descRef.current, {
+        maxHeight: 600, duration: 0.5, ease: 'power3.out',
+      });
+    } else {
+      gsap.to(descRef.current, {
+        maxHeight: 60, duration: 0.35, ease: 'power3.inOut',
+      });
+    }
+  }, [expanded]);
+
   const handleClose = () => {
     const el = panelRef.current;
     const items = itemsRef.current.filter(Boolean);
     if (!el) { onClose(); return; }
 
-    // Reverse: stagger out then shrink
     gsap.to(items.reverse(), {
       y: 12, opacity: 0, duration: 0.25, ease: 'power4.in', stagger: 0.04,
       onComplete: () => {
@@ -60,6 +74,11 @@ const PanelCard = ({ data, onClose }) => {
   const isEp = data.type === 'episode';
   const hiddenStyle = { opacity: 0 };
 
+  // Get full description from scraped data, fallback to short description
+  const fullDesc = (isEp && d.id && episodeDescriptions[d.id]) || null;
+  const shortDesc = d.description || d.meaning || '';
+  const hasMore = fullDesc && fullDesc.length > shortDesc.length;
+
   return (
     <div className="panel" ref={panelRef} style={{ overflow: 'hidden', height: 0, opacity: 0 }}>
       {d.thumb && (
@@ -73,7 +92,24 @@ const PanelCard = ({ data, onClose }) => {
       </div>
       <h2 className="panel__title" ref={(el) => { itemsRef.current[2] = el; }} style={hiddenStyle}>{d.title || d.concept}</h2>
       <div className="panel__divider" ref={(el) => { itemsRef.current[3] = el; }} style={hiddenStyle} />
-      <p className="panel__desc" ref={(el) => { itemsRef.current[4] = el; }} style={hiddenStyle}>{d.description || d.meaning}</p>
+      <div
+        className={`panel__desc-wrap ${expanded ? 'panel__desc-wrap--expanded' : ''}`}
+        ref={(el) => { itemsRef.current[4] = el; }}
+        style={hiddenStyle}
+      >
+        <div className="panel__desc-inner" ref={descRef} style={{ maxHeight: 60, overflow: 'hidden' }}>
+          <p className="panel__desc">{expanded && fullDesc ? fullDesc : shortDesc}</p>
+        </div>
+        {hasMore && (
+          <button className="panel__expand-btn" onClick={() => setExpanded(!expanded)}>
+            {expanded ? 'Mostra meno' : 'Leggi tutto'}
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }}>
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
+        )}
+      </div>
       {d.youtubeSearch && (
         <div className="panel__actions" ref={(el) => { itemsRef.current[5] = el; }} style={hiddenStyle}>
           <a className="panel__yt" href={`https://www.youtube.com/results?search_query=${encodeURIComponent(d.youtubeSearch)}`} target="_blank" rel="noopener">
