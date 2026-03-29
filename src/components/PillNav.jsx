@@ -238,6 +238,7 @@ const PillNav = ({
                   ref={(el) => { pillsRef.current[i] = el; }}
                   onPointerEnter={() => onEnter(i)}
                   onPointerLeave={() => onLeave(i)}
+                  onMouseLeave={() => onLeave(i)}
                   onClick={() => onItemClick?.(item.id)}
                 >
                   <span className="hover-circle" ref={(el) => { circlesRef.current[i] = el; }} />

@@ -12,7 +12,6 @@ import PanelCard from './components/PanelCard.jsx';
 import Bacheca from './components/Bacheca.jsx';
 import BubbleMenu from './components/BubbleMenu.jsx';
 import ScrollPath from './components/ScrollPath.jsx';
-import SmilePanel from './components/SmilePanel.jsx';
 import HeroTitle from './components/HeroTitle.jsx';
 import { globeState } from './globe-scene.js';
 import { episodes, happinessConcepts } from './data.js';
@@ -137,7 +136,11 @@ export default function App() {
     topOpacity: 1,
     bottomOpacity: 0.75,
   });
-  const [smileConfig, setSmileConfig] = useState({});
+  const [smileConfig] = useState({
+    fontSize: 52, width: 500, viewW: 620, curveDepth: 200, posY: 80,
+    revealStart: 59, revealEnd: 69, fadeStart: 77, fadeEnd: 81,
+    mFontSize: 38, mWidth: 300, mViewW: 470, mCurveDepth: 120, mPosY: 77,
+  });
 
   const sidebarRef = useRef(null);
   const sidebarShown = useRef(false);
@@ -289,7 +292,6 @@ export default function App() {
       <div className={`page-wrapper ${bachecaOpen ? 'page-wrapper--slide-left' : ''}`}>
         <Globe />
         <Noise patternSize={200} patternAlpha={12} patternRefreshInterval={6} />
-        {showUI && <SmilePanel onChange={(c) => setSmileConfig(c)} />}
         {showUI && <LocalClock />}
         {showUI && <ScrollPath />}
 
