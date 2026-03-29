@@ -7,11 +7,10 @@ const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd }) => {
   const chars = text.split('');
   const mid = (chars.length - 1) / 2;
 
-  // circ.in easing function
   const circIn = (t) => 1 - Math.sqrt(1 - t * t);
 
   return (
-    <span style={{ display: 'inline-flex', justifyContent: 'center' }}>
+    <span style={{ display: 'inline' }}>
       {chars.map((char, i) => {
         const distFromCenter = Math.abs(i - mid) / mid;
         const charDelay = distFromCenter * 0.6;
@@ -24,15 +23,16 @@ const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd }) => {
         else if (scrollPct > charStart) t = (scrollPct - charStart) / (charEnd - charStart);
 
         const eased = circIn(t);
+        const animating = t > 0;
         const op = 1 - eased;
         const y = -10 * eased;
 
         return (
-          <span key={i} style={{
+          <span key={i} style={animating ? {
             display: 'inline-block',
             opacity: op,
             transform: `translateY(${y}px)`,
-          }}>
+          } : undefined}>
             {char === ' ' ? '\u00A0' : char}
           </span>
         );
