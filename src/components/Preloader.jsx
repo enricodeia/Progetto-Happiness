@@ -95,7 +95,7 @@ const Preloader = ({ onComplete }) => {
       <div className="preloader__content">
         <StickerPeel
           imageSrc="/logo.webp"
-          width={270}
+          width={230}
           rotate={0}
           peelBackPct={peelPct}
           shadowIntensity={0.4}
