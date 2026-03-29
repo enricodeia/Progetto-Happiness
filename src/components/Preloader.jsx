@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { gsap } from 'gsap';
+import { Howl, Howler } from 'howler';
 import StickerPeel from './StickerPeel.jsx';
 
-// Audio context singleton — unlocked on user gesture
-let audioCtx = null;
+// Audio system — Howler.js based
 let audioEnabled = false;
-export const getAudioContext = () => audioCtx;
+let bgMusic = null;
 export const isAudioEnabled = () => audioEnabled;
+export const getBgMusic = () => bgMusic;
 
 const Preloader = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
@@ -84,10 +85,13 @@ const Preloader = ({ onComplete }) => {
 
   const launchSite = useCallback((withAudio) => {
     if (withAudio) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       audioEnabled = true;
-      // Resume in case it's suspended (mobile)
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+      Howler.autoUnlock = true;
+      // Background music — ready for when you provide the file
+      // bgMusic = new Howl({ src: ['/audio/ambient.mp3'], loop: true, volume: 0.3 });
+      // bgMusic.play();
+    } else {
+      Howler.mute(true);
     }
 
     const el = containerRef.current;
