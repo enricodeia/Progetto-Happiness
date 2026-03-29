@@ -22,9 +22,11 @@ export const globeState = {
     lerpSpeed: 0.04,
   },
   pinStyle: {
-    pinColor: '#FFDD00',
-    pinOpacity: 1,
-    hoverScale: 1.6,
+    pinSize: 150000,
+    hoverScale: 1.4,
+    stickyRadius: 100,
+    stickyStrength: 0.15,
+    stickyMinScroll: 0,
   },
 };
 
@@ -785,7 +787,7 @@ export function initGlobe(canvas) {
         const tipX = posAttr.getX(tipIdx), tipY = posAttr.getY(tipIdx), tipZ = posAttr.getZ(tipIdx);
         if (s.pin) {
           s.pin.position.set(tipX, tipY, tipZ);
-          s.pin.scale.setScalar(cfg.pinSize);
+          // scale is handled in the marker loop below (zoom-aware)
         }
 
         // Backside culling
@@ -802,16 +804,14 @@ export function initGlobe(canvas) {
     }
 
     const ps = globeState.pinStyle;
-    // Uniform zoom scaling: zoomFactor ~7 (far) → ~1.15 (close)
-    // Scale pins proportionally to distance so they look the same relative size
-    const pinZoomScale = zoomFactor / 7; // 1.0 at far, ~0.16 at closest
+    const pSize = ps.pinSize || cfg.pinSize;
+    const pinZoomScale = zoomFactor / 7;
+    const stickyV = new THREE.Vector3();
 
     markers.forEach((m) => {
       const hoverT = m.dot.userData.hoverRingScale || 0;
       const hoverBoost = 1 + hoverT * ((ps.hoverScale || 1.4) - 1);
-      const ts = (m.dot.userData.baseScale || 1) * hoverBoost * pinZoomScale;
-      const cs = m.dot.scale.x;
-      m.dot.scale.setScalar(cs + (ts - cs) * 0.12);
+      m.dot.scale.setScalar(pSize * pinZoomScale * hoverBoost);
 
       // Back-side culling
       const markerDir = m.dot.position.clone().normalize();
@@ -820,6 +820,27 @@ export function initGlobe(canvas) {
       const baseOp = m.type === 'episode' ? 1 : 0.6;
       m.dot.material.opacity = baseOp * frontOpacity;
 
+      // Sticky: pin drifts toward cursor when nearby
+      const sRadius = ps.stickyRadius || 100;
+      const sStrength = ps.stickyStrength || 0.15;
+      const sMin = ps.stickyMinScroll ?? 0;
+      if (!isDragging && frontOpacity > 0.1 && scrollPct >= sMin && m.type === 'episode') {
+        stickyV.copy(m.dot.position).project(camera);
+        if (stickyV.z < 1) {
+          const sx = (stickyV.x * 0.5 + 0.5) * window.innerWidth;
+          const sy = (-stickyV.y * 0.5 + 0.5) * window.innerHeight;
+          const dist = Math.hypot(mouse.x * window.innerWidth / 2 + window.innerWidth / 2 - sx,
+                                  -mouse.y * window.innerHeight / 2 + window.innerHeight / 2 - sy);
+          if (dist < sRadius && dist > 1) {
+            const t = (1 - dist / sRadius) * sStrength;
+            const ndcOffX = ((mouse.x * window.innerWidth / 2 + window.innerWidth / 2 - sx) * t / window.innerWidth) * 2;
+            const ndcOffY = (-(- mouse.y * window.innerHeight / 2 + window.innerHeight / 2 - sy) * t / window.innerHeight) * 2;
+            const pullTarget = new THREE.Vector3(stickyV.x + ndcOffX, stickyV.y + ndcOffY, stickyV.z).unproject(camera);
+            pullTarget.normalize().multiplyScalar(m.dot.position.length());
+            m.dot.position.lerp(pullTarget, 0.12);
+          }
+        }
+      }
     });
 
     renderer.render(scene, camera);
