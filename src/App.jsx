@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { gsap } from 'gsap';
 import { motion } from 'motion/react';
 import HoverCard from './components/HoverCard.jsx';
 import Preloader from './components/Preloader.jsx';
@@ -138,6 +139,10 @@ export default function App() {
     bottomOpacity: 0.75,
   });
 
+  const sidebarRef = useRef(null);
+  const sidebarShown = useRef(false);
+  const isMobile = () => window.innerWidth <= 768;
+
   const handlePreloaderComplete = useCallback(() => {
     setLoaded(true);
     setTimeout(() => setShowUI(true), 300);
@@ -150,11 +155,7 @@ export default function App() {
     const onScroll = (e) => setScrollPct(e.detail.pct);
     const onCountry = (e) => { setCountryName(e.detail.name); setCountryPos({ x: e.detail.x, y: e.detail.y }); };
     const onClick = (e) => {
-      const m = e.detail.marker;
-      setPanelData(m);
-      setActiveEp(m.data.id);
-      setHoverCard(null);
-      if (globeState.flyToMarker) globeState.flyToMarker(m);
+      openEpisodePanel(e.detail.marker);
     };
     window.addEventListener('globe:marker-hover', onHover);
     window.addEventListener('globe:marker-leave', onLeave);
@@ -172,13 +173,53 @@ export default function App() {
     };
   }, []);
 
+  // Open episode: animate sidebar out on mobile, fly to pin offset upward
+  // Show sidebar at 64% scroll
+  useEffect(() => {
+    const el = sidebarRef.current;
+    if (!el || !showUI) return;
+
+    if (scrollPct >= 64 && !sidebarShown.current) {
+      sidebarShown.current = true;
+      gsap.fromTo(el,
+        { y: 100, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.7, ease: 'circ.out' }
+      );
+    } else if (scrollPct < 60 && sidebarShown.current) {
+      sidebarShown.current = false;
+      gsap.to(el, { y: 100, opacity: 0, duration: 0.4, ease: 'circ.in' });
+    }
+  }, [scrollPct, showUI]);
+
+  const openEpisodePanel = useCallback((m) => {
+    setPanelData(m);
+    setActiveEp(m.data.id);
+    setHoverCard(null);
+
+    // Fly to marker — on mobile offset upward so card doesn't cover pin
+    if (globeState.flyToMarker) {
+      globeState.flyToMarker(m, isMobile() ? 0.25 : 0);
+    }
+
+    // Mobile: slide sidebar left
+    if (isMobile() && sidebarRef.current) {
+      gsap.to(sidebarRef.current, { x: '-100vw', duration: 0.6, ease: 'circ.out', overwrite: true });
+    }
+  }, []);
+
+  // Close episode panel: bring sidebar back on mobile
+  const closeEpisodePanel = useCallback(() => {
+    setPanelData(null);
+    setActiveEp(null);
+
+    if (isMobile() && sidebarRef.current) {
+      gsap.to(sidebarRef.current, { x: 0, duration: 0.6, ease: 'circ.out', overwrite: true });
+    }
+  }, []);
+
   const selectEpisode = (ep) => {
     const m = globeState.markers.find((x) => x.data.id === ep.id);
-    if (m) {
-      setPanelData(m);
-      setActiveEp(ep.id);
-      if (globeState.flyToMarker) globeState.flyToMarker(m);
-    }
+    if (m) openEpisodePanel(m);
   };
 
   return (
@@ -252,13 +293,14 @@ export default function App() {
         {showUI && <LocalClock />}
         {showUI && <ScrollPath />}
 
-        {/* Hero title over globe */}
-        {showUI && (
-          <HeroTitle config={heroConfig} onConfigChange={setHeroConfig} />
+        {/* Hero title — mounts early, animates before other UI */}
+        {loaded && (
+          <HeroTitle config={heroConfig} startAnim={loaded} />
         )}
 
         <aside
-          className={`sidebar ${showUI ? 'sidebar--visible' : ''} ${sidebarExpanded ? 'sidebar--expanded' : ''}`}
+          ref={sidebarRef}
+          className={`sidebar ${sidebarExpanded ? 'sidebar--expanded' : ''}`}
           style={{ '--sb-bottom-mobile': `${sidebarConfig.bottom}px`, '--sb-bottom-desktop': `${sidebarConfig.desktopBottom}px`, borderRadius: sidebarConfig.borderRadius, maxHeight: sidebarExpanded ? '55vh' : sidebarConfig.collapsedHeight }}
         >
           <div className="sidebar__header" onClick={() => setSidebarExpanded((p) => !p)}
@@ -288,7 +330,7 @@ export default function App() {
           <div className="country-label" style={{ left: countryPos.x, top: countryPos.y - 28 }}>{countryName}</div>
         )}
 
-        <PanelCard data={panelData} onClose={() => { setPanelData(null); setActiveEp(null); }} />
+        <PanelCard data={panelData} onClose={closeEpisodePanel} />
 
         <div className={`hint ${showUI ? 'hint--visible' : ''}`}>Scroll per esplorare il mondo</div>
 

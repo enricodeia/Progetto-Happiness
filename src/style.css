@@ -84,7 +84,7 @@ html, body, #root {
   font-kerning: auto;
   text-rendering: optimizeLegibility;
   will-change: transform, opacity;
-  opacity: 0;
+  visibility: hidden; /* GSAP autoAlpha reveals */
 }
 
 .hero-title__line2 {
