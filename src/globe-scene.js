@@ -446,23 +446,11 @@ export function initGlobe(canvas) {
       const zoomRatio = camDist / (EARTH_RADIUS * 7); // 1.0 far, ~0.16 close
       const sens = 0.3 + zoomRatio * 0.7; // range: 0.3 (close) → 1.0 (far)
 
-      if (isMobile && (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5)) {
-        const angle = Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI;
-
-        if (angle >= 65) {
-          zoomVelocity += dy * 0.0003;
-        } else if (angle <= 25) {
-          targetRotY -= dx * 0.004 * sens;
-          targetRotX += dy * 0.001 * sens;
-          targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
-        } else {
-          const rotateWeight = 1 - (angle - 25) / 40;
-          const zoomWeight = (angle - 25) / 40;
-          targetRotY -= dx * 0.004 * rotateWeight * sens;
-          targetRotX += dy * 0.001 * rotateWeight * sens;
-          targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
-          zoomVelocity += dy * 0.0003 * zoomWeight;
-        }
+      if (isMobile) {
+        // Free rotation in all directions — horizontal, vertical, diagonal
+        targetRotY -= dx * 0.004 * sens;
+        targetRotX += dy * 0.003 * sens;
+        targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
       } else {
         // Desktop: drag rotates both axes, scaled by zoom
         targetRotY -= dx * 0.003 * sens;
@@ -699,15 +687,15 @@ export function initGlobe(canvas) {
       }
     }
 
-    // ---- Cloud fade: GSAP at 79% scroll ----
-    if (scrollPct >= 79 && !cloudFadeActive) {
+    // ---- Cloud fade: GSAP at 90% scroll ----
+    if (scrollPct >= 90 && !cloudFadeActive) {
       cloudFadeActive = true;
       gsapCloudTween?.kill();
       gsapCloudTween = gsap.to(cloudState, {
         opacity: 0, duration: 1.2, ease: 'cubic.out',
         onUpdate: () => { cloudMat.opacity = cloudState.opacity; },
       });
-    } else if (scrollPct < 79 && cloudFadeActive) {
+    } else if (scrollPct < 90 && cloudFadeActive) {
       cloudFadeActive = false;
       gsapCloudTween?.kill();
       gsapCloudTween = gsap.to(cloudState, {

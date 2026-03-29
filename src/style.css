@@ -147,6 +147,31 @@ html, body, #root {
 }
 
 /* ============================================
+   Local Clock
+   ============================================ */
+.local-clock {
+  position: fixed; top: 28px; right: 28px;
+  z-index: 10; pointer-events: none;
+  display: flex; flex-direction: column; align-items: flex-end;
+  opacity: 0; animation: fadeInClock 0.8s ease 0.5s forwards;
+}
+@keyframes fadeInClock { to { opacity: 1; } }
+.local-clock__time {
+  font-family: var(--font-serif); font-weight: 200;
+  font-size: 22px; color: var(--color-text);
+  letter-spacing: 1px; line-height: 1;
+}
+.local-clock__zone {
+  font-family: var(--font-sans); font-size: 9px; font-weight: 300;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--color-text-tertiary); margin-top: 3px;
+}
+@media (max-width: 768px) {
+  .local-clock { top: 16px; right: 16px; }
+  .local-clock__time { font-size: 16px; }
+}
+
+/* ============================================
    Brand
    ============================================ */
 .brand {
@@ -410,12 +435,10 @@ html, body, #root {
    ============================================ */
 .panel {
   position: fixed; bottom: 28px; right: 28px;
-  width: 340px; z-index: 100;
+  width: 340px; max-height: 62vh; z-index: 100;
   background: var(--color-card); border: 1px solid var(--color-border);
   border-radius: 24px; padding: 22px;
   backdrop-filter: blur(24px);
-  overflow-y: auto;
-  overflow-x: hidden;
 }
 
 .panel__close {
@@ -465,7 +488,21 @@ html, body, #root {
   font-size: 13px; font-weight: 300; line-height: 1.7; color: var(--color-text); opacity: 0.7;
   white-space: pre-line;
 }
-.panel__desc-wrap { position: relative; margin-bottom: 14px; }
+.panel__desc-wrap { position: relative; margin-bottom: 14px; display: flex; flex-direction: column; }
+.panel__desc-inner { transition: max-height 0.4s ease; }
+.panel__desc-wrap:not(.panel__desc-wrap--expanded) .panel__desc-inner {
+  -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 40%, transparent 100%);
+}
+.panel__expand-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font-sans); font-size: 11px; font-weight: 400;
+  color: var(--color-primary); padding: 4px 0; margin-top: 4px;
+  opacity: 0.65; transition: opacity 0.25s ease;
+  margin-left: auto;
+}
+.panel__expand-btn:hover { opacity: 1; }
 .panel__actions {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
 }
@@ -991,6 +1028,6 @@ html, body, #root {
   .stats__value { font-size: 18px; }
   .stats__divider { display: none; }
   .sidebar { width: calc(100% - 32px); left: 16px; bottom: 16px; max-height: 40vh; }
-  .panel { bottom: 16px; right: 16px; left: 16px; width: auto; }
+  .panel { bottom: 16px; right: 16px; left: 16px; width: auto; max-height: 42vh; }
   .credit { display: none; }
 }

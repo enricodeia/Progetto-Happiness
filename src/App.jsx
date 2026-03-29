@@ -15,6 +15,28 @@ import HeroTitle from './components/HeroTitle.jsx';
 import { globeState } from './globe-scene.js';
 import { episodes, happinessConcepts } from './data.js';
 
+function LocalClock() {
+  const [time, setTime] = useState('');
+  const [zone, setZone] = useState('');
+  useEffect(() => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    setZone(tz.split('/').pop().replace(/_/g, ' '));
+    const tick = () => {
+      const now = new Date();
+      setTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div className="local-clock">
+      <span className="local-clock__time">{time}</span>
+      <span className="local-clock__zone">{zone}</span>
+    </div>
+  );
+}
+
 function SidebarItem({ ep, isActive, onClick, index }) {
   const ref = useRef(null);
   const [inView, setInView] = useState(false);
@@ -225,6 +247,7 @@ export default function App() {
         <Globe />
         <Noise patternSize={200} patternAlpha={12} patternRefreshInterval={6} />
         {showUI && <PinPanel />}
+        {showUI && <LocalClock />}
 
         {/* Hero title over globe */}
         {showUI && (
