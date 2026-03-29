@@ -123,10 +123,10 @@ export default function App() {
     collapsedHeight: 160,
   });
   const [heroConfig, setHeroConfig] = useState({
-    topY: 15,
+    topY: 12,
     topYMobile: 21,
     bottomY: 60,
-    topSize: 85,
+    topSize: 92,
     bottomSize: 41,
     curveWidth: 500,
     curveDepth: 285,
