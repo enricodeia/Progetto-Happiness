@@ -351,7 +351,7 @@ export function initGlobe(canvas) {
       // Pin sprite at stalk tip — yellow dot
       const pinTex = createPinTexture(ep.thumb);
       const pinMat = new THREE.SpriteMaterial({
-        map: pinTex, color: 0xFFDD00, transparent: true, opacity: 1, depthWrite: false, sizeAttenuation: true,
+        map: pinTex, transparent: true, opacity: 1, depthWrite: false, sizeAttenuation: true,
       });
       const pin = new THREE.Sprite(pinMat);
       pin.scale.setScalar(initCfg.pinSize);
@@ -802,21 +802,22 @@ export function initGlobe(canvas) {
     }
 
     const ps = globeState.pinStyle;
-    const pinZoomScale = Math.max(0.4, Math.min(1, zoomFactor / 4));
+    // Uniform zoom scaling: zoomFactor ~7 (far) → ~1.15 (close)
+    // Scale pins proportionally to distance so they look the same relative size
+    const pinZoomScale = zoomFactor / 7; // 1.0 at far, ~0.16 at closest
 
     markers.forEach((m) => {
       const hoverT = m.dot.userData.hoverRingScale || 0;
-      const hoverBoost = 1 + hoverT * ((ps.hoverScale || 1.6) - 1);
+      const hoverBoost = 1 + hoverT * ((ps.hoverScale || 1.4) - 1);
       const ts = (m.dot.userData.baseScale || 1) * hoverBoost * pinZoomScale;
       const cs = m.dot.scale.x;
       m.dot.scale.setScalar(cs + (ts - cs) * 0.12);
 
-      // Pin color + back-side culling
-      m.dot.material.color.set(ps.pinColor || '#FFDD00');
+      // Back-side culling
       const markerDir = m.dot.position.clone().normalize();
       const facing = camDir.dot(markerDir);
       const frontOpacity = facing > 0.05 ? Math.min(1, (facing - 0.05) * 5) : 0;
-      const baseOp = m.type === 'episode' ? (ps.pinOpacity ?? 1) : 0.6;
+      const baseOp = m.type === 'episode' ? 1 : 0.6;
       m.dot.material.opacity = baseOp * frontOpacity;
 
     });
