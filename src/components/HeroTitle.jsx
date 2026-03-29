@@ -47,11 +47,26 @@ const HeroTitle = ({ config, onConfigChange }) => {
   const smileWordsRef = useRef([]);
   const hasAnimated = useRef(false);
   const [scrollPct, setScrollPct] = useState(0);
+  const targetScroll = useRef(0);
+  const smoothScroll = useRef(0);
+  const rafId = useRef(null);
 
   useEffect(() => {
-    const onScroll = (e) => setScrollPct(e.detail.pct);
+    const onScroll = (e) => { targetScroll.current = e.detail.pct; };
     window.addEventListener('globe:scroll', onScroll);
-    return () => window.removeEventListener('globe:scroll', onScroll);
+
+    // Smooth lerp loop for buttery animation
+    const tick = () => {
+      smoothScroll.current += (targetScroll.current - smoothScroll.current) * 0.12;
+      setScrollPct(smoothScroll.current);
+      rafId.current = requestAnimationFrame(tick);
+    };
+    rafId.current = requestAnimationFrame(tick);
+
+    return () => {
+      window.removeEventListener('globe:scroll', onScroll);
+      cancelAnimationFrame(rafId.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -92,12 +107,12 @@ const HeroTitle = ({ config, onConfigChange }) => {
       <h1 className="hero-title__heading">
         <span className="hero-title__line1" ref={line1Ref} style={{ opacity: hasAnimated.current ? 1 : 0 }}>
           {hasAnimated.current
-            ? <SplitChars text="Progetto" scrollPct={scrollPct} fadeStart={50} fadeEnd={63} />
+            ? <SplitChars text="Progetto" scrollPct={scrollPct} fadeStart={20} fadeEnd={67} />
             : 'Progetto'}
         </span>
         <span className="hero-title__line2" ref={line2Ref} style={{ opacity: hasAnimated.current ? 1 : 0 }}>
           {hasAnimated.current
-            ? <SplitChars text="Happiness" scrollPct={scrollPct} fadeStart={35} fadeEnd={45} />
+            ? <SplitChars text="Happiness" scrollPct={scrollPct} fadeStart={20} fadeEnd={48} />
             : 'Happiness'}
         </span>
       </h1>

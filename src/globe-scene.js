@@ -729,7 +729,7 @@ export function initGlobe(canvas) {
 
   // Dispatch scroll % for UI
   function updateScrollPct() {
-    scrollPct = Math.round((1 - (camDist - ZOOM_MIN) / (ZOOM_MAX - ZOOM_MIN)) * 100);
+    scrollPct = (1 - (camDist - ZOOM_MIN) / (ZOOM_MAX - ZOOM_MIN)) * 100;
     scrollPct = Math.max(0, Math.min(100, scrollPct));
     window.dispatchEvent(new CustomEvent('globe:scroll', { detail: { pct: scrollPct } }));
   }
