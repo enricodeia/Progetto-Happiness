@@ -3,25 +3,25 @@ import { gsap } from 'gsap';
 
 const SMILE_WORDS = ['What', 'Makes', 'You', 'Happy?'];
 
+const charBase = { display: 'inline-block', fontKerning: 'auto', textRendering: 'optimizeLegibility' };
+
 const SplitChars = ({ text, charsRef, scrollPct, fadeStart, fadeEnd, introComplete }) => {
   const chars = text.split('');
   const mid = (chars.length - 1) / 2;
   const circIn = (t) => 1 - Math.sqrt(1 - t * t);
 
   return (
-    <span style={{ display: 'inline' }}>
+    <span>
       {chars.map((char, i) => {
-        // Before intro completes, GSAP controls style — just set initial hidden state
         if (!introComplete) {
           return (
             <span key={i} ref={(el) => { charsRef.current[i] = el; }}
-              style={{ display: 'inline-block', opacity: 0, transform: 'translateY(10px)' }}>
+              style={{ ...charBase, opacity: 0, transform: 'translateY(10px)' }}>
               {char === ' ' ? '\u00A0' : char}
             </span>
           );
         }
 
-        // After intro: scroll-driven animation
         const distFromCenter = Math.abs(i - mid) / mid;
         const charDelay = distFromCenter * 0.6;
         const range = fadeEnd - fadeStart;
@@ -33,15 +33,10 @@ const SplitChars = ({ text, charsRef, scrollPct, fadeStart, fadeEnd, introComple
         else if (scrollPct > charStart) t = (scrollPct - charStart) / (charEnd - charStart);
 
         const eased = circIn(t);
-        const animating = t > 0;
 
         return (
           <span key={i} ref={(el) => { charsRef.current[i] = el; }}
-            style={animating ? {
-              display: 'inline-block',
-              opacity: 1 - eased,
-              transform: `translateY(${-10 * eased}px)`,
-            } : undefined}>
+            style={{ ...charBase, opacity: 1 - eased, transform: `translateY(${-10 * eased}px)` }}>
             {char === ' ' ? '\u00A0' : char}
           </span>
         );
