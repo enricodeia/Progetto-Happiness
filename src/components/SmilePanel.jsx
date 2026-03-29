@@ -14,11 +14,11 @@ const DESKTOP = {
 };
 
 const MOBILE = {
-  mFontSize: 32,
+  mFontSize: 38,
   mWidth: 300,
-  mViewW: 400,
-  mCurveDepth: 140,
-  mPosY: 82,
+  mViewW: 470,
+  mCurveDepth: 120,
+  mPosY: 77,
 };
 
 const SmilePanel = ({ onChange }) => {
