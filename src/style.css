@@ -118,13 +118,14 @@ html, body, #root {
 
 @media (max-width: 768px) {
   .hero-title__heading {
-    font-size: 56px !important;
+    font-size: clamp(36px, 12vw, 56px) !important;
     top: var(--hero-top-y-mobile, 21vh);
     top: var(--hero-top-y-mobile-dvh);
+    white-space: nowrap;
   }
-  .hero-title__subtitle { font-size: 13px; top: 68vh; top: 68dvh; }
-  .hero-title__curve { width: 320px; }
-  .hero-title__curve text { font-size: 52px !important; }
+  .hero-title__subtitle { font-size: 13px; top: 65vh; top: 65dvh; white-space: nowrap; }
+  .hero-title__curve { width: 280px; }
+  .hero-title__curve text { font-size: 40px !important; }
 }
 
 /* ============================================
