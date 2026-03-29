@@ -10,7 +10,7 @@ import PillNav from './components/PillNav.jsx';
 import PanelCard from './components/PanelCard.jsx';
 import Bacheca from './components/Bacheca.jsx';
 import BubbleMenu from './components/BubbleMenu.jsx';
-// Control panels removed for production
+import PinTuner from './components/ColorPanel.jsx';
 import HeroTitle from './components/HeroTitle.jsx';
 import { globeState } from './globe-scene.js';
 import { episodes, happinessConcepts } from './data.js';
@@ -224,6 +224,7 @@ export default function App() {
       <div className={`page-wrapper ${bachecaOpen ? 'page-wrapper--slide-left' : ''}`}>
         <Globe />
         <Noise patternSize={200} patternAlpha={12} patternRefreshInterval={6} />
+        {showUI && <PinTuner />}
 
         {/* Hero title over globe */}
         {showUI && (

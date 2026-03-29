@@ -44,13 +44,93 @@ export function initGlobe(canvas) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x030303);
+  scene.background = new THREE.Color(0x000000);
 
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 100, 1e9);
   camera.position.set(0, 0, EARTH_RADIUS * 7);
   camera.lookAt(0, 0, 0);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  // ── Lighting: ambient (night side) + directional (sun for day/night) ──
+  const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+  scene.add(ambientLight);
+  const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+  scene.add(sunLight);
+
+  function getSunPosition() {
+    const now = new Date();
+    const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + 1;
+    const declination = 23.45 * Math.sin((2 * Math.PI / 365.25) * (dayOfYear - 81));
+    const utcH = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
+    return { lat: declination, lng: (12 - utcH) * 15 };
+  }
+  function updateSunLight() {
+    const s = getSunPosition();
+    sunLight.position.copy(latLngToECEF(s.lat, s.lng, EARTH_RADIUS * 3));
+  }
+  updateSunLight();
+
+  // ── Stars: twinkling starfield ──
+  const STAR_COUNT = 6000;
+  const _sp = new Float32Array(STAR_COUNT * 3);
+  const _so = new Float32Array(STAR_COUNT);
+  for (let i = 0; i < STAR_COUNT; i++) {
+    const r = EARTH_RADIUS * 40 + Math.random() * EARTH_RADIUS * 60;
+    const th = Math.random() * Math.PI * 2;
+    const ph = Math.acos(2 * Math.random() - 1);
+    _sp[i*3] = r * Math.sin(ph) * Math.cos(th);
+    _sp[i*3+1] = r * Math.sin(ph) * Math.sin(th);
+    _sp[i*3+2] = r * Math.cos(ph);
+    _so[i] = Math.random();
+  }
+  const starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute('position', new THREE.BufferAttribute(_sp, 3));
+  starGeo.setAttribute('opacity', new THREE.BufferAttribute(_so, 1));
+  const starMat = new THREE.ShaderMaterial({
+    uniforms: { time: { value: 0 } },
+    vertexShader: `
+      attribute float opacity;
+      varying float vOpacity;
+      void main() {
+        vOpacity = opacity;
+        gl_PointSize = 2.5;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float time;
+      varying float vOpacity;
+      void main() {
+        float dist = length(gl_PointCoord - vec2(0.5));
+        if (dist > 0.5) discard;
+        float twinkle = sin(time * vOpacity * 3.0 + vOpacity * 10.0) * 0.3 + 0.7;
+        float alpha = (1.0 - dist * 2.0) * twinkle * vOpacity;
+        gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);
+      }
+    `,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  });
+  scene.add(new THREE.Points(starGeo, starMat));
+
+  // ── Atmosphere glow ──
+  const atmosMat = new THREE.ShaderMaterial({
+    vertexShader: `
+      varying vec3 vNormal;
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vNormal;
+      void main() {
+        float intensity = pow(0.55 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
+        gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity;
+      }
+    `,
+    blending: THREE.AdditiveBlending, side: THREE.BackSide,
+    transparent: true, depthWrite: false,
+  });
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(EARTH_RADIUS * 1.12, 64, 32), atmosMat));
 
   // Globe sphere — standard Three.js SphereGeometry with correct UV mapping
   // Rotated to align with our ECEF frame swap (geoX→Z, geoY→X, geoZ→Y)
@@ -67,9 +147,9 @@ export function initGlobe(canvas) {
   const innerSphereMat = new THREE.MeshBasicMaterial({ color: 0x080808 });
   scene.add(new THREE.Mesh(new THREE.SphereGeometry(EARTH_RADIUS * 0.995, 64, 64), innerSphereMat));
 
-  // Outer textured sphere — depthWrite false so dots stay visible on top
-  const sphereMat = new THREE.MeshBasicMaterial({
-    color: 0x080808, transparent: true, opacity: 1, depthWrite: false,
+  // Outer textured sphere — Phong for day/night lighting, depthWrite false so dots stay on top
+  const sphereMat = new THREE.MeshPhongMaterial({
+    color: 0xffffff, transparent: true, opacity: 1, depthWrite: false, shininess: 5,
   });
   const sphereGeo = new THREE.SphereGeometry(EARTH_RADIUS * 0.997, 96, 96);
   const globeMesh = new THREE.Mesh(sphereGeo, sphereMat);
@@ -93,18 +173,6 @@ export function initGlobe(canvas) {
     cloudMat.map = tex;
     cloudMat.needsUpdate = true;
   });
-
-  // Stars
-  const starGeo = new THREE.BufferGeometry();
-  const sp = new Float32Array(400 * 3);
-  for (let i = 0; i < 400; i++) {
-    const v = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize().multiplyScalar(4e8);
-    sp[i * 3] = v.x; sp[i * 3 + 1] = v.y; sp[i * 3 + 2] = v.z;
-  }
-  starGeo.setAttribute('position', new THREE.BufferAttribute(sp, 3));
-  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({
-    color: 0xFDF4ED, size: 600000, transparent: true, opacity: 0.2, depthWrite: false, sizeAttenuation: true,
-  })));
 
   // Hit sphere for raycasting
   const hitMesh = new THREE.Mesh(new THREE.SphereGeometry(EARTH_RADIUS, 48, 48), new THREE.MeshBasicMaterial({ visible: false }));
@@ -678,7 +746,11 @@ export function initGlobe(canvas) {
   let animTime = 0;
   function animate() {
     requestAnimationFrame(animate);
-    animTime += 0.016; // ~60fps timestep
+    animTime += 0.016;
+
+    // Stars twinkle + sun position update
+    starMat.uniforms.time.value = animTime;
+    updateSunLight();
 
     // Smooth rotation speed (ease on pause/resume)
     rotSpeed += (targetRotSpeed - rotSpeed) * 0.04;
@@ -822,11 +894,11 @@ export function initGlobe(canvas) {
       const baseOp = m.type === 'episode' ? 1 : 0.6;
       m.dot.material.opacity = baseOp * frontOpacity;
 
-      // Magnetic pin attraction
+      // Magnetic pin attraction (only active when zoomed in past 90%)
       const mRadius = ps.magnetRadius || 120;
       const mStrength = ps.magnetStrength || 0.18;
       m.dot.userData.magnetActive = false;
-      if (!isDragging && frontOpacity > 0.1 && m.dot.userData.basePosition) {
+      if (!isDragging && frontOpacity > 0.1 && m.dot.userData.basePosition && scrollPct >= 90) {
         magnetScrV.copy(m.dot.userData.basePosition).project(camera);
         if (magnetScrV.z < 1) {
           const sx = (magnetScrV.x * 0.5 + 0.5) * window.innerWidth;

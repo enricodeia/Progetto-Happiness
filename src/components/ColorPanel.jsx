@@ -2,30 +2,25 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
 import { globeState } from '../globe-scene.js';
 
-const PIN_DEFAULTS = {
-  // Glass effect
+const DEFAULTS = {
   bgColor: '#1a1a1a',
   bgOpacity: 0.85,
-  // Expanding stroke ring
   strokeColor: '#FFDD00',
   strokeWidth: 3,
-  strokeExpand: 1.4, // how much the stroke ring expands on hover (1 = no expand)
+  strokeExpand: 1.4,
   strokeOpacity: 0.9,
-  // Hover
   hoverScale: 1.6,
-  // Magnetic
   magnetRadius: 120,
   magnetStrength: 0.18,
-  // Orbiting balls
   orbitColor: '#FFDD00',
   orbitSize: 0.18,
   orbitSpeed: 1.2,
   orbitOpacity: 0.6,
 };
 
-const ColorPanel = () => {
+const PinTuner = () => {
   const [open, setOpen] = useState(false);
-  const [values, setValues] = useState(PIN_DEFAULTS);
+  const [values, setValues] = useState(DEFAULTS);
   const [copied, setCopied] = useState(false);
   const [fineMode, setFineMode] = useState(false);
   const panelRef = useRef(null);
@@ -43,7 +38,6 @@ const ColorPanel = () => {
   const update = useCallback((key, val) => {
     const next = { ...values, [key]: val };
     setValues(next);
-    // Map to pinStyle keys
     const mapped = {
       borderColor: next.strokeColor,
       borderWidth: next.strokeWidth,
@@ -76,9 +70,10 @@ const ColorPanel = () => {
   };
 
   if (!open) return (
-    <button className="color-panel__toggle" onClick={() => setOpen(true)}>
+    <button className="pin-tuner__toggle" onClick={() => setOpen(true)} title="Pin Tuner">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>
+        <circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="10" cy="18" r="2" fill="currentColor"/>
       </svg>
     </button>
   );
@@ -88,20 +83,20 @@ const ColorPanel = () => {
   const rows = [
     { section: 'Glass' },
     { key: 'bgColor', label: 'Background', type: 'color' },
-    { key: 'bgOpacity', label: 'Bg opacity', type: 'range', min: 0.1, max: 1, step: f ? 0.01 : 0.05 },
+    { key: 'bgOpacity', label: 'Opacity', type: 'range', min: 0.1, max: 1, step: f ? 0.01 : 0.05 },
     null,
-    { section: 'Stroke Ring' },
+    { section: 'Stroke' },
     { key: 'strokeColor', label: 'Color', type: 'color' },
     { key: 'strokeWidth', label: 'Width', type: 'range', min: 1, max: 8, step: f ? 0.5 : 1 },
-    { key: 'strokeExpand', label: 'Hover expand', type: 'range', min: 1, max: 2.5, step: f ? 0.05 : 0.1 },
+    { key: 'strokeExpand', label: 'Expand', type: 'range', min: 1, max: 2.5, step: f ? 0.05 : 0.1 },
     { key: 'strokeOpacity', label: 'Opacity', type: 'range', min: 0.1, max: 1, step: f ? 0.01 : 0.05 },
     null,
     { section: 'Hover' },
     { key: 'hoverScale', label: 'Scale', type: 'range', min: 1, max: 2.5, step: f ? 0.05 : 0.1 },
-    { key: 'magnetRadius', label: 'Magnet radius', type: 'range', min: 40, max: 200, step: f ? 5 : 10 },
-    { key: 'magnetStrength', label: 'Magnet force', type: 'range', min: 0.02, max: 0.4, step: f ? 0.01 : 0.02 },
+    { key: 'magnetRadius', label: 'Radius', type: 'range', min: 40, max: 200, step: f ? 5 : 10 },
+    { key: 'magnetStrength', label: 'Force', type: 'range', min: 0.02, max: 0.4, step: f ? 0.01 : 0.02 },
     null,
-    { section: 'Orbit Balls' },
+    { section: 'Orbits' },
     { key: 'orbitColor', label: 'Color', type: 'color' },
     { key: 'orbitSize', label: 'Size', type: 'range', min: 0.05, max: 0.5, step: f ? 0.01 : 0.02 },
     { key: 'orbitSpeed', label: 'Speed', type: 'range', min: 0.2, max: 3, step: f ? 0.05 : 0.1 },
@@ -109,39 +104,38 @@ const ColorPanel = () => {
   ];
 
   return (
-    <div className="color-panel" ref={panelRef}>
-      <div className="color-panel__header">
-        <span className="color-panel__title">Pin Controls</span>
+    <div className="pin-tuner" ref={panelRef}>
+      <div className="pin-tuner__header">
+        <span className="pin-tuner__title">Pin Tuner</span>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           <button
-            className={`color-panel__toggle-btn ${fineMode ? 'color-panel__toggle-btn--on' : ''}`}
+            className={`pin-tuner__mode ${fineMode ? 'pin-tuner__mode--on' : ''}`}
             onClick={() => setFineMode(!fineMode)}
-            title="Fine tuning mode"
           >
-            {fineMode ? 'FINE' : 'NORM'}
+            {fineMode ? 'fine' : 'norm'}
           </button>
-          <button className="color-panel__close" onClick={handleClose}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          <button className="pin-tuner__close" onClick={handleClose}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
       </div>
       {rows.map((row, i) => {
-        if (!row) return <div className="color-panel__sep" key={`sep-${i}`} />;
-        if (row.section) return <div className="color-panel__section" key={row.section}>{row.section}</div>;
+        if (!row) return <div className="pin-tuner__sep" key={`sep-${i}`} />;
+        if (row.section) return <div className="pin-tuner__section" key={row.section}>{row.section}</div>;
         const { key, label, type, min, max, step } = row;
         return (
-          <label className="color-panel__row" key={key}>
-            <span className="color-panel__label">{label}</span>
+          <label className="pin-tuner__row" key={key}>
+            <span className="pin-tuner__label">{label}</span>
             {type === 'color' && (
-              <div className="color-panel__color-wrap">
-                <input type="color" value={values[key]} onChange={(e) => update(key, e.target.value)} className="color-panel__color-input" />
-                <span className="color-panel__hex">{values[key]}</span>
+              <div className="pin-tuner__color-wrap">
+                <input type="color" value={values[key]} onChange={(e) => update(key, e.target.value)} className="pin-tuner__swatch" />
+                <span className="pin-tuner__hex">{values[key]}</span>
               </div>
             )}
             {type === 'range' && (
-              <div className="color-panel__range-wrap">
+              <div className="pin-tuner__range-wrap">
                 <input type="range" min={min} max={max} step={step} value={values[key]} onChange={(e) => update(key, parseFloat(e.target.value))} />
-                <span className="color-panel__range-val">
+                <span className="pin-tuner__val">
                   {typeof values[key] === 'number'
                     ? (Math.abs(values[key]) >= 1000 ? Math.round(values[key] / 1000) + 'k' : values[key].toFixed(f ? 3 : 2))
                     : values[key]}
@@ -151,9 +145,9 @@ const ColorPanel = () => {
           </label>
         );
       })}
-      <button className="color-panel__copy" onClick={copyValues}>{copied ? 'Copiato!' : 'Copia valori'}</button>
+      <button className="pin-tuner__copy" onClick={copyValues}>{copied ? 'copiato!' : 'copia valori'}</button>
     </div>
   );
 };
 
-export default ColorPanel;
+export default PinTuner;

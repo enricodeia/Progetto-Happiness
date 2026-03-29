@@ -43,11 +43,11 @@ const PanelCard = ({ data, onClose }) => {
     if (!descRef.current) return;
     if (expanded) {
       gsap.to(descRef.current, {
-        maxHeight: 600, duration: 0.5, ease: 'power3.out',
+        maxHeight: 600, duration: 0.45, ease: 'circ.out',
       });
     } else {
       gsap.to(descRef.current, {
-        maxHeight: 60, duration: 0.35, ease: 'power3.inOut',
+        maxHeight: 60, duration: 0.4, ease: 'circ.out',
       });
     }
   }, [expanded]);
@@ -102,7 +102,7 @@ const PanelCard = ({ data, onClose }) => {
         </div>
         {hasMore && (
           <button className="panel__expand-btn" onClick={() => setExpanded(!expanded)}>
-            {expanded ? 'Mostra meno' : 'Leggi tutto'}
+            {expanded ? 'mostra meno' : 'leggi tutto'}
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
               style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }}>
               <path d="M6 9l6 6 6-6"/>
