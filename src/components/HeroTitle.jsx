@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 
 const SMILE_WORDS = ['What', 'Makes', 'You', 'Happy?'];
@@ -7,60 +7,29 @@ const HeroTitle = ({ config }) => {
   const smileWordsRef = useRef([]);
   const progettoCharsRef = useRef([]);
   const happinessCharsRef = useRef([]);
-  const smileWrapRef = useRef(null);
-  const introDone = useRef(false);
-  const scrollVal = useRef(0);
-  const smoothVal = useRef(0);
+  const [introComplete, setIntroComplete] = useState(false);
+  const [scrollPct, setScrollPct] = useState(0);
+  const targetScroll = useRef(0);
+  const smoothScroll = useRef(0);
+  const rafId = useRef(null);
 
-  // Scroll listener + smooth rAF loop — updates GSAP directly, no React state
+  // Smooth scroll lerp
   useEffect(() => {
-    const onScroll = (e) => { scrollVal.current = e.detail.pct; };
+    const onScroll = (e) => { targetScroll.current = e.detail.pct; };
     window.addEventListener('globe:scroll', onScroll);
-
-    const circIn = (t) => 1 - Math.sqrt(1 - t * t);
-
-    const updateChars = (charsRef, fadeStart, fadeEnd) => {
-      const chars = charsRef.current.filter(Boolean);
-      if (!chars.length || !introDone.current) return;
-      const mid = (chars.length - 1) / 2;
-      const range = fadeEnd - fadeStart;
-      const pct = smoothVal.current;
-
-      chars.forEach((el, i) => {
-        const distFromCenter = Math.abs(i - mid) / mid;
-        const charDelay = distFromCenter * 0.6;
-        const charStart = fadeStart + charDelay * range * 0.3;
-        const charEnd = fadeStart + range * 0.5 + charDelay * range * 0.5;
-
-        let t = 0;
-        if (pct >= charEnd) t = 1;
-        else if (pct > charStart) t = (pct - charStart) / (charEnd - charStart);
-
-        const eased = circIn(t);
-        gsap.set(el, { y: -10 * eased, opacity: 1 - eased });
-      });
-    };
-
     const tick = () => {
-      smoothVal.current += (scrollVal.current - smoothVal.current) * 0.12;
-      updateChars(happinessCharsRef, 18, 46);
-      updateChars(progettoCharsRef, 50, 60);
-
-      // Smile fade
-      if (smileWrapRef.current && introDone.current) {
-        const p = smoothVal.current;
-        const op = p <= 30 ? 1 : p >= 40 ? 0 : 1 - (p - 30) / 10;
-        gsap.set(smileWrapRef.current, { opacity: op });
-      }
-
-      requestAnimationFrame(tick);
+      smoothScroll.current += (targetScroll.current - smoothScroll.current) * 0.12;
+      setScrollPct(smoothScroll.current);
+      rafId.current = requestAnimationFrame(tick);
     };
-    requestAnimationFrame(tick);
-
-    return () => window.removeEventListener('globe:scroll', onScroll);
+    rafId.current = requestAnimationFrame(tick);
+    return () => {
+      window.removeEventListener('globe:scroll', onScroll);
+      cancelAnimationFrame(rafId.current);
+    };
   }, []);
 
-  // Intro animation — GSAP only
+  // Intro: GSAP per-char from center
   useEffect(() => {
     const timer = setTimeout(() => {
       const animateIn = (charsRef, delay) => {
@@ -71,13 +40,11 @@ const HeroTitle = ({ config }) => {
           .map((el, i) => ({ el, dist: Math.abs(i - mid) }))
           .sort((a, b) => a.dist - b.dist)
           .map((o) => o.el);
-
         gsap.fromTo(sorted,
           { y: 10, opacity: 0 },
           { y: 0, opacity: 1, duration: 1, ease: 'circ.out', stagger: 0.035, delay }
         );
       };
-
       animateIn(happinessCharsRef, 0.3);
       animateIn(progettoCharsRef, 0.7);
 
@@ -87,14 +54,31 @@ const HeroTitle = ({ config }) => {
         { opacity: 1, attr: { dy: 0 }, duration: 1.4, ease: 'circ.out', stagger: 0.13, delay: 1.2 }
       );
 
-      // Mark intro done after animations complete
-      setTimeout(() => { introDone.current = true; }, 2200);
+      setTimeout(() => setIntroComplete(true), 2200);
     }, 100);
-
     return () => clearTimeout(timer);
   }, []);
 
   const c = config;
+  const circIn = (t) => 1 - Math.sqrt(1 - t * t);
+
+  const charStyle = (i, total, fadeStart, fadeEnd) => {
+    if (!introComplete) return undefined; // GSAP controls during intro
+    const mid = (total - 1) / 2;
+    const dist = Math.abs(i - mid) / mid;
+    const delay = dist * 0.6;
+    const range = fadeEnd - fadeStart;
+    const start = fadeStart + delay * range * 0.3;
+    const end = fadeStart + range * 0.5 + delay * range * 0.5;
+    let t = 0;
+    if (scrollPct >= end) t = 1;
+    else if (scrollPct > start) t = (scrollPct - start) / (end - start);
+    const eased = circIn(t);
+    if (t === 0) return undefined; // no style override when not animating
+    return { opacity: 1 - eased, transform: `translateY(${-10 * eased}px)` };
+  };
+
+  const smileFade = scrollPct <= 30 ? 1 : scrollPct >= 40 ? 0 : 1 - (scrollPct - 30) / 10;
 
   return (
     <div className="hero-title" style={{
@@ -115,7 +99,7 @@ const HeroTitle = ({ config }) => {
         <span className="hero-title__line1">
           {'Progetto'.split('').map((char, i) => (
             <span key={i} ref={(el) => { progettoCharsRef.current[i] = el; }}
-              className="hero-char">
+              className="hero-char" style={charStyle(i, 8, 50, 60)}>
               {char}
             </span>
           ))}
@@ -123,7 +107,7 @@ const HeroTitle = ({ config }) => {
         <span className="hero-title__line2">
           {'Happiness'.split('').map((char, i) => (
             <span key={i} ref={(el) => { happinessCharsRef.current[i] = el; }}
-              className="hero-char">
+              className="hero-char" style={charStyle(i, 9, 18, 46)}>
               {char}
             </span>
           ))}
@@ -133,7 +117,7 @@ const HeroTitle = ({ config }) => {
         <defs>
           <path id="smile-curve" d={`M 30,10 Q 300,${c.curveDepth} 570,10`} fill="none" />
         </defs>
-        <text ref={smileWrapRef}>
+        <text style={introComplete ? { opacity: smileFade } : undefined}>
           <textPath href="#smile-curve" startOffset="50%" textAnchor="middle">
             {SMILE_WORDS.map((word, i) => (
               <tspan key={i} ref={(el) => { smileWordsRef.current[i] = el; }} style={{ opacity: 0 }}>
