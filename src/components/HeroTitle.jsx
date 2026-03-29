@@ -95,8 +95,8 @@ const HeroTitle = ({ config, onConfigChange }) => {
         });
       };
 
-      animateIn(progettoCharsRef, 0.3);
-      animateIn(happinessCharsRef, 0.7);
+      animateIn(happinessCharsRef, 0.3);
+      animateIn(progettoCharsRef, 0.7);
 
       // Mark intro done after both animations complete
       setTimeout(() => setIntroComplete(true), 2000);
