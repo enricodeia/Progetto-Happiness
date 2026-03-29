@@ -456,11 +456,16 @@ export function initGlobe(canvas) {
       const zoomRatio = camDist / (EARTH_RADIUS * 7); // 1.0 far, ~0.16 close
       const sens = 0.3 + zoomRatio * 0.7; // range: 0.3 (close) → 1.0 (far)
 
-      if (isMobile) {
-        // Free rotation in all directions — horizontal, vertical, diagonal
+      if (isMobile && (Math.abs(dx) > 0.3 || Math.abs(dy) > 0.3)) {
+        // Angle-aware: always rotate both axes, blend in zoom for vertical gestures
+        const angle = Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI;
+        // Rotation: full strength horizontal, reduced for pure vertical
+        const rotWeight = Math.min(1, 1 - Math.max(0, angle - 50) / 40); // 1 at 0-50°, fades to 0 at 90°
+        const zoomWeight = Math.max(0, (angle - 40) / 50); // 0 at 0-40°, ramps to 1 at 90°
         targetRotY -= dx * 0.004 * sens;
-        targetRotX += dy * 0.003 * sens;
+        targetRotX += dy * 0.002 * sens * rotWeight;
         targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
+        zoomVelocity += dy * 0.0003 * zoomWeight;
       } else {
         // Desktop: drag rotates both axes, scaled by zoom
         targetRotY -= dx * 0.003 * sens;
