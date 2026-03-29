@@ -79,12 +79,7 @@ html, body, #root {
   display: block;
   color: var(--hero-top-color, #F6E3D5);
 }
-.hero-char {
-  display: inline-block;
-  font-kerning: auto;
-  text-rendering: optimizeLegibility;
-  will-change: transform, opacity;
-}
+.hero-char { display: inline-block; will-change: transform, opacity; }
 
 .hero-title__line2 {
   display: block;

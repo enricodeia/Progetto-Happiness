@@ -293,9 +293,9 @@ export default function App() {
         {showUI && <LocalClock />}
         {showUI && <ScrollPath />}
 
-        {/* Hero title — mounts early, animates before other UI */}
-        {loaded && (
-          <HeroTitle config={heroConfig} startAnim={loaded} />
+        {/* Hero title over globe */}
+        {showUI && (
+          <HeroTitle config={heroConfig} />
         )}
 
         <aside
