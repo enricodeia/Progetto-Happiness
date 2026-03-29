@@ -4,15 +4,30 @@ import { globeState } from '../globe-scene.js';
 
 // pct = zoom target, pos = visual position along the curve (0-100)
 const STEPS = [
-  { pct: 0, pos: 5 },
+  { pct: 0, pos: 0 },
   { pct: 64, pos: 33 },
-  { pct: 90, pos: 63 },
-  { pct: 97, pos: 93 },
+  { pct: 90, pos: 66 },
+  { pct: 97, pos: 100 },
 ];
 
 const SVG_W = 68;
 const SVG_H = 622;
 const PATH_D = 'M0.769531 0C14.1893 28.8865 29.0413 69.7802 41.2871 118.76C74.759 252.638 88.7837 447.025 0.763672 621.822';
+
+// Map scroll percentage to visual position on path
+// Interpolates between step pct→pos pairs
+function scrollToPathPos(scrollPct) {
+  if (scrollPct <= STEPS[0].pct) return STEPS[0].pos;
+  if (scrollPct >= STEPS[STEPS.length - 1].pct) return STEPS[STEPS.length - 1].pos;
+  for (let i = 0; i < STEPS.length - 1; i++) {
+    const a = STEPS[i], b = STEPS[i + 1];
+    if (scrollPct >= a.pct && scrollPct <= b.pct) {
+      const t = (scrollPct - a.pct) / (b.pct - a.pct);
+      return a.pos + t * (b.pos - a.pos);
+    }
+  }
+  return 0;
+}
 
 const ScrollPath = () => {
   const [scrollPct, setScrollPct] = useState(0);
@@ -64,13 +79,14 @@ const ScrollPath = () => {
     });
   }, [dotPositions]);
 
-  // Update progress stroke
+  // Update progress stroke — mapped to visual path position
   useEffect(() => {
     const progress = progressRef.current;
     const path = pathRef.current;
     if (!progress || !path) return;
     const len = path.getTotalLength();
-    const offset = len * (1 - scrollPct / 100);
+    const visualPos = scrollToPathPos(scrollPct);
+    const offset = len * (1 - visualPos / 100);
     gsap.to(progress, {
       strokeDashoffset: offset, duration: 0.3, ease: 'power2.out',
     });
@@ -83,12 +99,9 @@ const ScrollPath = () => {
   return (
     <div className="scroll-path">
       <svg width={SVG_W} height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`} fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Background track */}
         <path ref={pathRef} d={PATH_D} stroke="rgba(255,255,255,0.08)" strokeWidth="1" fill="none" strokeLinecap="round" />
-        {/* Progress overlay */}
         <path ref={progressRef} d={PATH_D} stroke="rgba(255,221,0,0.4)" strokeWidth="1" fill="none" strokeLinecap="round" />
 
-        {/* Step dots */}
         {dotPositions.map((pos, i) => {
           const step = STEPS[i];
           const isActive = scrollPct >= step.pct - 2;
