@@ -3,7 +3,7 @@ import { gsap } from 'gsap';
 
 const SMILE_WORDS = ['What', 'Makes', 'You', 'Happy?'];
 
-const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd }) => {
+const SplitChars = ({ text, charsRef, scrollPct, fadeStart, fadeEnd }) => {
   const chars = text.split('');
   const mid = (chars.length - 1) / 2;
 
@@ -28,11 +28,17 @@ const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd }) => {
         const y = -10 * eased;
 
         return (
-          <span key={i} style={animating ? {
-            display: 'inline-block',
-            opacity: op,
-            transform: `translateY(${y}px)`,
-          } : undefined}>
+          <span key={i}
+            ref={(el) => { charsRef.current[i] = el; }}
+            style={animating ? {
+              display: 'inline-block',
+              opacity: op,
+              transform: `translateY(${y}px)`,
+            } : {
+              display: 'inline-block',
+              opacity: 0, // hidden until intro animation runs
+            }}
+          >
             {char === ' ' ? '\u00A0' : char}
           </span>
         );
@@ -42,9 +48,9 @@ const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd }) => {
 };
 
 const HeroTitle = ({ config, onConfigChange }) => {
-  const line1Ref = useRef(null);
-  const line2Ref = useRef(null);
   const smileWordsRef = useRef([]);
+  const progettoCharsRef = useRef([]);
+  const happinessCharsRef = useRef([]);
   const hasAnimated = useRef(false);
   const [scrollPct, setScrollPct] = useState(0);
   const targetScroll = useRef(0);
@@ -55,7 +61,6 @@ const HeroTitle = ({ config, onConfigChange }) => {
     const onScroll = (e) => { targetScroll.current = e.detail.pct; };
     window.addEventListener('globe:scroll', onScroll);
 
-    // Smooth lerp loop for buttery animation
     const tick = () => {
       smoothScroll.current += (targetScroll.current - smoothScroll.current) * 0.12;
       setScrollPct(smoothScroll.current);
@@ -69,21 +74,42 @@ const HeroTitle = ({ config, onConfigChange }) => {
     };
   }, []);
 
+  // Intro: per-char from center, Progetto first then Happiness
   useEffect(() => {
     if (hasAnimated.current) return;
-    hasAnimated.current = true;
+    // Wait a tick for refs to populate
+    const timer = setTimeout(() => {
+      hasAnimated.current = true;
 
-    const words = [line1Ref.current, line2Ref.current].filter(Boolean);
-    gsap.fromTo(words,
-      { y: 50, opacity: 0 },
-      { y: 0, opacity: 1, duration: 1.2, ease: 'power3.out', stagger: 0.15 }
-    );
+      const animateIn = (charsRef, delay) => {
+        const chars = charsRef.current.filter(Boolean);
+        if (!chars.length) return;
+        const mid = (chars.length - 1) / 2;
+        // Sort from center outward
+        const sorted = chars
+          .map((el, i) => ({ el, dist: Math.abs(i - mid) }))
+          .sort((a, b) => a.dist - b.dist)
+          .map((o) => o.el);
 
-    const smileEls = smileWordsRef.current.filter(Boolean);
-    gsap.fromTo(smileEls,
-      { opacity: 0, attr: { dy: 50 } },
-      { opacity: 1, attr: { dy: 0 }, duration: 1.4, ease: 'circ.out', stagger: 0.13, delay: 0.5 }
-    );
+        gsap.fromTo(sorted,
+          { y: 10, opacity: 0 },
+          { y: 0, opacity: 1, duration: 1, ease: 'circ.out', stagger: 0.035, delay }
+        );
+      };
+
+      // Progetto first, then Happiness
+      animateIn(progettoCharsRef, 0.3);
+      animateIn(happinessCharsRef, 0.7);
+
+      // Smile words after
+      const smileEls = smileWordsRef.current.filter(Boolean);
+      gsap.fromTo(smileEls,
+        { opacity: 0, attr: { dy: 50 } },
+        { opacity: 1, attr: { dy: 0 }, duration: 1.4, ease: 'circ.out', stagger: 0.13, delay: 1.2 }
+      );
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const c = config;
@@ -105,15 +131,11 @@ const HeroTitle = ({ config, onConfigChange }) => {
       '--hero-bottom-color': c.bottomColor,
     }}>
       <h1 className="hero-title__heading">
-        <span className="hero-title__line1" ref={line1Ref} style={{ opacity: hasAnimated.current ? 1 : 0 }}>
-          {hasAnimated.current
-            ? <SplitChars text="Progetto" scrollPct={scrollPct} fadeStart={50} fadeEnd={60} />
-            : 'Progetto'}
+        <span className="hero-title__line1">
+          <SplitChars text="Progetto" charsRef={progettoCharsRef} scrollPct={scrollPct} fadeStart={50} fadeEnd={60} />
         </span>
-        <span className="hero-title__line2" ref={line2Ref} style={{ opacity: hasAnimated.current ? 1 : 0 }}>
-          {hasAnimated.current
-            ? <SplitChars text="Happiness" scrollPct={scrollPct} fadeStart={18} fadeEnd={46} />
-            : 'Happiness'}
+        <span className="hero-title__line2">
+          <SplitChars text="Happiness" charsRef={happinessCharsRef} scrollPct={scrollPct} fadeStart={18} fadeEnd={46} />
         </span>
       </h1>
       <svg className="hero-title__curve" viewBox={`0 0 600 ${Math.round(c.curveDepth * 1.2)}`} xmlns="http://www.w3.org/2000/svg">
