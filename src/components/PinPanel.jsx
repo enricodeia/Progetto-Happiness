@@ -9,19 +9,20 @@ const DEFAULTS = {
   // Dots
   dotColor: '#FDF4ED',
   dotOpacity: 0.45,
-  dotSize: 20000,
+  dotSize: 15000,
   // Borders
   borderColor: '#FFDD00',
-  borderOpacity: 0.06,
+  borderOpacity: 0.11,
   // Stalks
   stalkColor: '#FFDD00',
-  stalkOpacity: 0.5,
+  stalkOpacity: 0.90,
   // Clouds
   cloudOpacity: 0.4,
   // Texture fade
-  texFadeStart: 98,
-  texFadeEnd: 100,
+  texFadeStart: 96,
+  texFadeEnd: 0.3,
   // Pins
+  pinColor: '#ffffff',
   pinSize: 150000,
   hoverScale: 1.4,
   // Sticky
@@ -89,10 +90,11 @@ const PinPanel = () => {
     { key: 'stalkOpacity', label: 'Opacity', min: 0, max: 1, step: 0.05 },
     null,
     { t: S, label: 'Texture' },
-    { key: 'texFadeStart', label: 'Fade start %', min: 50, max: 100, step: 1 },
-    { key: 'texFadeEnd', label: 'Fade end %', min: 50, max: 100, step: 1 },
+    { key: 'texFadeStart', label: 'Trigger %', min: 50, max: 100, step: 1 },
+    { key: 'texFadeEnd', label: 'Min opacity', min: 0, max: 1, step: 0.05 },
     null,
     { t: S, label: 'Pins' },
+    { key: 'pinColor', label: 'Color', type: 'color' },
     { key: 'pinSize', label: 'Size', min: 50000, max: 400000, step: 10000 },
     { key: 'hoverScale', label: 'Hover scale', min: 1, max: 3, step: 0.1 },
     null,

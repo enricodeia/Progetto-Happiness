@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { gsap } from 'gsap';
 import { feature } from 'topojson-client';
 import { latLngToECEF, EARTH_RADIUS } from './tiles-globe.js';
 import { episodes, happinessConcepts } from './data.js';
@@ -16,7 +17,7 @@ export const globeState = {
     collapseEnd: 90,
     stalkFadeStart: 85,
     stalkFadeEnd: 92,
-    stalkOpacity: 0.5,
+    stalkOpacity: 0.90,
     stalkColor: '#FFDD00',
     pinBorderColor: '#FFDD00',
     lerpSpeed: 0.04,
@@ -238,7 +239,7 @@ export function initGlobe(canvas) {
     const dotGeoFinal = new THREE.BufferGeometry();
     dotGeoFinal.setAttribute('position', new THREE.Float32BufferAttribute(targetArr, 3));
     const dotMat = new THREE.PointsMaterial({
-      color: 0xFDF4ED, size: 20000, transparent: true, opacity: 0.45,
+      color: 0xFDF4ED, size: 15000, transparent: true, opacity: 0.45,
       depthWrite: false, depthTest: true, sizeAttenuation: true,
       map: dotTexture, alphaMap: dotTexture,
     });
@@ -247,7 +248,7 @@ export function initGlobe(canvas) {
     scene.add(dotPoints);
 
     // ---- Country borders (outline only, no fill) ----
-    const borderMat = new THREE.LineBasicMaterial({ color: 0xFFDD00, transparent: true, opacity: 0.06, depthWrite: false });
+    const borderMat = new THREE.LineBasicMaterial({ color: 0xFFDD00, transparent: true, opacity: 0.11, depthWrite: false });
     const borderGroup = new THREE.Group();
     features110.forEach((f) => {
       const { type, coordinates } = f.geometry;
@@ -411,6 +412,7 @@ export function initGlobe(canvas) {
       // Pin style
       Object.assign(globeState.pinStyle, {
         pinSize: c.pinSize ?? 150000,
+        pinColor: c.pinColor || null,
         hoverScale: c.hoverScale ?? 1.4,
         stickyRadius: c.stickyRadius ?? 100,
         stickyStrength: c.stickyStrength ?? 0.15,
@@ -671,6 +673,12 @@ export function initGlobe(canvas) {
   }
 
   // ---- Render loop ----
+  // Texture fade state (GSAP-driven)
+  let texFadeActive = false;
+  let texFadeDir = 'none';
+  let gsapTexTween = null;
+  const texState = { opacity: 1 };
+
   let animTime = 0;
   function animate() {
     requestAnimationFrame(animate);
@@ -707,24 +715,34 @@ export function initGlobe(canvas) {
     // Update scroll percentage
     updateScrollPct();
 
-    // ---- Texture opacity based on scroll ----
-    // Read fade range from liveConfig or use defaults
+    // ---- Texture fade: GSAP-driven at scroll trigger ----
     const lc = globeState.liveConfig;
-    const texFadeStart = lc?.texFadeStart ?? 98;
-    const texFadeEnd = lc?.texFadeEnd ?? 100;
+    const texTrigger = lc?.texFadeStart ?? 96;
+    const texTarget = lc?.texFadeEnd ?? 0.3; // target opacity
     if (sphereMat.map) {
-      let texOpacity;
-      if (scrollPct <= texFadeStart) {
-        texOpacity = 1;
-      } else if (scrollPct <= texFadeEnd) {
-        const t = (scrollPct - texFadeStart) / Math.max(1, texFadeEnd - texFadeStart);
-        const eased = t * t * (3 - 2 * t);
-        texOpacity = 1 - eased * 0.85;
-      } else {
-        texOpacity = 0.15;
+      if (scrollPct >= texTrigger && !texFadeActive) {
+        texFadeActive = true;
+        texFadeDir = 'out';
+        gsapTexTween?.kill();
+        gsapTexTween = gsap.to(texState, {
+          opacity: texTarget, duration: 1.3, ease: 'cubic.out',
+          onUpdate: () => {
+            sphereMat.opacity = texState.opacity;
+            cloudMat.opacity = texState.opacity * 0.4;
+          },
+        });
+      } else if (scrollPct < texTrigger && texFadeActive) {
+        texFadeActive = false;
+        texFadeDir = 'in';
+        gsapTexTween?.kill();
+        gsapTexTween = gsap.to(texState, {
+          opacity: 1, duration: 0.8, ease: 'cubic.out',
+          onUpdate: () => {
+            sphereMat.opacity = texState.opacity;
+            cloudMat.opacity = texState.opacity * 0.4;
+          },
+        });
       }
-      sphereMat.opacity = texOpacity;
-      cloudMat.opacity = texOpacity * 0.4;
     }
 
     // ---- Stalks + pins: scroll-driven collapse with smoothstep ----
@@ -803,6 +821,11 @@ export function initGlobe(canvas) {
       const hoverT = m.dot.userData.hoverRingScale || 0;
       const hoverBoost = 1 + hoverT * ((ps.hoverScale || 1.4) - 1);
       m.dot.scale.setScalar(pSize * pinZoomScale * hoverBoost);
+
+      // Pin color (episode pins tinted, concept markers stay cream)
+      if (m.type === 'episode' && ps.pinColor) {
+        m.dot.material.color.set(ps.pinColor);
+      }
 
       // Back-side culling
       const markerDir = m.dot.position.clone().normalize();
