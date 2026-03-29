@@ -247,6 +247,24 @@ export function initGlobe(canvas) {
   globeMesh.renderOrder = 0;
   scene.add(globeMesh);
 
+  // ---- Night lights layer (visible only on dark side via additive blending) ----
+  const nightGeo = new THREE.SphereGeometry(EARTH_RADIUS * 0.998, 96, 96);
+  const nightMat = new THREE.MeshBasicMaterial({
+    transparent: true, opacity: 0.8, depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const nightMesh = new THREE.Mesh(nightGeo, nightMat);
+  nightMesh.rotation.y = -Math.PI / 2;
+  nightMesh.renderOrder = 0;
+  scene.add(nightMesh);
+
+  // Load night texture
+  new THREE.TextureLoader().load('/nightmap.webp', (tex) => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    nightMat.map = tex;
+    nightMat.needsUpdate = true;
+  });
+
   // ---- Cloud layer (real texture, additive blending for black bg) ----
   const cloudGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.003, 64, 64);
   const cloudMat = new THREE.MeshBasicMaterial({
@@ -517,11 +535,12 @@ export function initGlobe(canvas) {
     });
   };
 
-  globeState.flyToMarker = (marker) => {
+  globeState.flyToMarker = (marker, verticalOffset = 0) => {
     const d = marker.data;
     const pos = latLngToECEF(d.lat, d.lng, 0).normalize();
     targetRotY = Math.atan2(pos.x, pos.z);
-    targetRotX = Math.asin(Math.max(-0.99, Math.min(0.99, pos.y)));
+    // verticalOffset shifts pin upward in viewport (0 = center, 0.25 = upper third)
+    targetRotX = Math.asin(Math.max(-0.99, Math.min(0.99, pos.y))) - verticalOffset;
     targetCamDist = EARTH_RADIUS * 2.2;
     autoRotate = false; clearTimeout(autoTimer);
     autoTimer = setTimeout(() => { autoRotate = true; }, 10000);
@@ -650,10 +669,33 @@ export function initGlobe(canvas) {
 
   window.addEventListener('click', (e) => {
     if (dragDist > 5) return;
-    if (e.target.closest('.sidebar, .panel, .filters, .hover-card')) return;
+    if (e.target.closest('.sidebar, .panel, .filters, .hover-card, .pill-nav, .bubble-menu')) return;
+
+    // On desktop, use hoveredMarker. On mobile, detect nearest pin at click point.
     if (hoveredMarker) {
       const m = markers.find((x) => x.dot === hoveredMarker);
       if (m) window.dispatchEvent(new CustomEvent('globe:marker-click', { detail: { marker: m } }));
+      return;
+    }
+
+    // Direct tap detection (mobile + desktop fallback)
+    if (clickableDots.length === 0) return;
+    const clickX = (e.clientX / window.innerWidth) * 2 - 1;
+    const clickY = -(e.clientY / window.innerHeight) * 2 + 1;
+    const scrV = new THREE.Vector3();
+    let closestDist = Infinity, closestMarker = null;
+    markers.forEach((m) => {
+      if (!m.dot.visible || !isFrontFacing(m.dot.position)) return;
+      scrV.copy(m.dot.position).project(camera);
+      if (scrV.z > 1) return;
+      const sx = (scrV.x * 0.5 + 0.5) * window.innerWidth;
+      const sy = (-scrV.y * 0.5 + 0.5) * window.innerHeight;
+      const dist = Math.hypot(e.clientX - sx, e.clientY - sy);
+      if (dist < closestDist) { closestDist = dist; closestMarker = m; }
+    });
+    // Larger tap target on mobile (80px vs 60px for hover)
+    if (closestMarker && closestDist < 80) {
+      window.dispatchEvent(new CustomEvent('globe:marker-click', { detail: { marker: closestMarker } }));
     }
   });
 
@@ -799,14 +841,14 @@ export function initGlobe(canvas) {
         gsapTexTween?.kill();
         gsapTexTween = gsap.to(texState, {
           opacity: texTarget, duration: 1.3, ease: 'cubic.out',
-          onUpdate: () => { sphereMat.opacity = texState.opacity; },
+          onUpdate: () => { sphereMat.opacity = texState.opacity; nightMat.opacity = texState.opacity * 0.8; },
         });
       } else if (scrollPct < texTrigger && texFadeActive) {
         texFadeActive = false;
         gsapTexTween?.kill();
         gsapTexTween = gsap.to(texState, {
           opacity: 1, duration: 0.8, ease: 'cubic.out',
-          onUpdate: () => { sphereMat.opacity = texState.opacity; },
+          onUpdate: () => { sphereMat.opacity = texState.opacity; nightMat.opacity = texState.opacity * 0.8; },
         });
       }
     }
