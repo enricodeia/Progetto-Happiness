@@ -28,6 +28,7 @@ export const globeState = {
     stickyStrength: 0.15,
     stickyMinScroll: 0,
   },
+  liveConfig: null, // set by panel, read each frame
 };
 
 export function initGlobe(canvas) {
@@ -395,40 +396,31 @@ export function initGlobe(canvas) {
       sphereMat.needsUpdate = true;
     });
 
-    // Control panel update
+    // Live config update from panel — applies immediately
     globeState.updateColors = (c) => {
-      scene.background.set(c.bg);
-      sphereMat.color.set(c.sphereColor);
-      dotMat.color.set(c.dotColor);
-      dotMat.opacity = c.dotOpacity;
-      dotMat.size = c.dotSize || 20000;
-      borderGroup.children.forEach((line) => { line.material.color.set(c.borderColor); line.material.opacity = c.borderOpacity; });
-      markers.forEach((m) => {
-        if (m.type === 'episode') {
-          m.dot.material.color.set(c.markerColor);
-          const s = (c.pinSize || 29000) / 29000;
-          m.dot.userData.baseScale = s;
-        }
+      globeState.liveConfig = c;
+      scene.background.set(c.bg || '#000000');
+      innerSphereMat.color.set(c.sphereColor || '#080808');
+      dotMat.color.set(c.dotColor || '#FDF4ED');
+      dotMat.opacity = c.dotOpacity ?? 0.45;
+      dotMat.size = c.dotSize ?? 20000;
+      borderGroup.children.forEach((line) => {
+        line.material.color.set(c.borderColor || '#FFDD00');
+        line.material.opacity = c.borderOpacity ?? 0.06;
       });
-      // Earth texture toggle
-      if (c.showTexture && earthTexture) {
-        sphereMat.map = earthTexture;
-        sphereMat.color.set('#ffffff');
-        sphereMat.opacity = c.textureOpacity ?? 1;
-        sphereMat.transparent = c.textureOpacity < 1;
-        // Texture offset/rotation to align with TopoJSON dots
-        earthTexture.offset.x = (c.textureOffsetX ?? 0);
-        earthTexture.offset.y = (c.textureOffsetY ?? 0);
-        earthTexture.repeat.set(c.textureScale ?? 1, c.textureScale ?? 1);
-        earthTexture.rotation = (c.textureRotation ?? 0) * Math.PI / 180;
-        earthTexture.center.set(0.5, 0.5);
-      } else {
-        sphereMat.map = null;
-        sphereMat.color.set(c.sphereColor);
-        sphereMat.opacity = 1;
-        sphereMat.transparent = false;
-      }
-      sphereMat.needsUpdate = true;
+      // Pin style
+      Object.assign(globeState.pinStyle, {
+        pinSize: c.pinSize ?? 150000,
+        hoverScale: c.hoverScale ?? 1.4,
+        stickyRadius: c.stickyRadius ?? 100,
+        stickyStrength: c.stickyStrength ?? 0.15,
+        stickyMinScroll: c.stickyMinScroll ?? 0,
+      });
+      // Stalk
+      globeState.stalkConfig.stalkColor = c.stalkColor || '#FFDD00';
+      globeState.stalkConfig.stalkOpacity = c.stalkOpacity ?? 0.5;
+      // Cloud
+      cloudMat.opacity = c.cloudOpacity ?? 0.4;
     };
 
     // Live pin style update — redraws all pin textures
@@ -716,23 +708,22 @@ export function initGlobe(canvas) {
     updateScrollPct();
 
     // ---- Texture opacity based on scroll ----
-    // 0-85%: texture at 100%
-    // 85-93%: ease in-out from 1 to 0.15
-    // 93-100%: texture at 0.15
-    // Texture + clouds fade: 0-75% full, 75-90% ease to 0.15, 90%+ at 0.15
+    // Read fade range from liveConfig or use defaults
+    const lc = globeState.liveConfig;
+    const texFadeStart = lc?.texFadeStart ?? 98;
+    const texFadeEnd = lc?.texFadeEnd ?? 100;
     if (sphereMat.map) {
       let texOpacity;
-      if (scrollPct <= 75) {
+      if (scrollPct <= texFadeStart) {
         texOpacity = 1;
-      } else if (scrollPct <= 90) {
-        const t = (scrollPct - 75) / 15;
+      } else if (scrollPct <= texFadeEnd) {
+        const t = (scrollPct - texFadeStart) / Math.max(1, texFadeEnd - texFadeStart);
         const eased = t * t * (3 - 2 * t);
         texOpacity = 1 - eased * 0.85;
       } else {
         texOpacity = 0.15;
       }
       sphereMat.opacity = texOpacity;
-      // Clouds fade together with texture
       cloudMat.opacity = texOpacity * 0.4;
     }
 
