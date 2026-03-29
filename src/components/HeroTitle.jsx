@@ -23,9 +23,10 @@ const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd, charsRef, introDone }
         else if (scrollPct > start) t = (scrollPct - start) / (end - start);
 
         const eased = circIn(t);
+        const op = t >= 0.95 ? 0 : 1 - eased; // snap to 0 near end
 
         const style = introDone
-          ? { opacity: 1 - eased, transform: `translateY(${-10 * eased}px)` }
+          ? { opacity: op, transform: `translateY(${-10 * eased}px)` }
           : undefined;
 
         return (
@@ -88,8 +89,8 @@ const HeroTitle = ({ config, smileConfig }) => {
         });
       };
 
-      animateIn(happinessCharsRef, 0.1);
-      animateIn(progettoCharsRef, 0.5);
+      animateIn(progettoCharsRef, 0.1);
+      animateIn(happinessCharsRef, 0.5);
 
       // Subtitle paragraph fade in
       if (subtitleRef.current) {
