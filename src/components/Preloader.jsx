@@ -88,6 +88,9 @@ const Preloader = ({ onComplete }) => {
     const el = containerRef.current;
     if (!el) { onComplete(); return; }
 
+    // Disable clicks immediately so globe is usable during fade
+    el.style.pointerEvents = 'none';
+
     // Fade prompt + sticker first
     if (promptTextRef.current) gsap.to(promptTextRef.current, { opacity: 0, duration: cfg.promptFadeDuration, ease: 'circ.in' });
     const btns = [btnYesRef.current, btnNoRef.current].filter(Boolean);

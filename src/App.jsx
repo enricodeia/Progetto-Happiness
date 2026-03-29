@@ -147,8 +147,7 @@ export default function App() {
   const isMobile = () => window.innerWidth <= 768;
 
   const handlePreloaderComplete = useCallback(() => {
-    setLoaded(true);
-    setTimeout(() => setShowUI(true), 300);
+    setShowUI(true);
   }, []);
 
   useEffect(() => {
@@ -227,7 +226,7 @@ export default function App() {
 
   return (
     <>
-      {!loaded && <Preloader onComplete={handlePreloaderComplete} />}
+      <Preloader onComplete={handlePreloaderComplete} />
 
       {/* PillNav — always on top */}
       {showUI && (
