@@ -261,48 +261,14 @@ export function initGlobe(canvas) {
     highlightGroup = new THREE.Group();
     scene.add(highlightGroup);
 
-    // ---- Helper: create circular pin texture (glass bg + thumbnail, NO border) ----
-    // The yellow stroke is a separate sprite that expands on hover
-    const PIN_SIZE = 64;
-    const createPinTexture = (imgUrl) => {
-      const ps = globeState.pinStyle;
-      const canvas2d = document.createElement('canvas');
-      canvas2d.width = PIN_SIZE * 2;
-      canvas2d.height = PIN_SIZE * 2;
-      const c = canvas2d.getContext('2d');
-      const r = PIN_SIZE;
-      const tex = new THREE.CanvasTexture(canvas2d);
-      tex.colorSpace = THREE.SRGBColorSpace;
-
-      let loadedImg = null;
-
-      const drawPin = () => {
-        c.clearRect(0, 0, PIN_SIZE * 2, PIN_SIZE * 2);
-
-        // Circular thumbnail — no glass, no background
-        if (loadedImg) {
-          c.save();
-          c.beginPath(); c.arc(r, r, r, 0, Math.PI * 2); c.clip();
-          const aspect = loadedImg.width / loadedImg.height;
-          let sw, sh, sx, sy;
-          if (aspect > 1) { sh = loadedImg.height; sw = sh; sx = (loadedImg.width - sw) / 2; sy = 0; }
-          else { sw = loadedImg.width; sh = sw; sx = 0; sy = (loadedImg.height - sh) / 2; }
-          c.drawImage(loadedImg, sx, sy, sw, sh, 0, 0, r * 2, r * 2);
-          c.restore();
-        }
-        tex.needsUpdate = true;
-      };
-
-      drawPin();
-
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => { loadedImg = img; drawPin(); };
-      img.src = imgUrl;
-
-      tex.userData = { redraw: drawPin };
-      return tex;
-    };
+    // ---- Yellow dot texture for pins ----
+    const pinDotCanvas = document.createElement('canvas');
+    pinDotCanvas.width = 64; pinDotCanvas.height = 64;
+    const pdc = pinDotCanvas.getContext('2d');
+    pdc.beginPath(); pdc.arc(32, 32, 30, 0, Math.PI * 2);
+    pdc.fillStyle = '#ffffff';
+    pdc.fill();
+    const pinDotTex = new THREE.CanvasTexture(pinDotCanvas);
 
     // ---- Stalks + Pin markers (episodes) ----
     const stalkGroup = new THREE.Group();
@@ -344,10 +310,9 @@ export function initGlobe(canvas) {
       // Tip position = last segment
       const tipPos = dir.clone().multiplyScalar(baseAlt + initCfg.stalkHeight);
 
-      // Pin sprite at stalk tip — yellow dot
-      const pinTex = createPinTexture(ep.thumb);
+      // Pin sprite — solid yellow dot
       const pinMat = new THREE.SpriteMaterial({
-        map: pinTex, transparent: true, opacity: 1, depthWrite: false, sizeAttenuation: true,
+        map: pinDotTex, color: 0xFFDD00, transparent: true, opacity: 1, depthWrite: false, sizeAttenuation: true,
       });
       const pin = new THREE.Sprite(pinMat);
       pin.scale.setScalar(initCfg.pinSize);
