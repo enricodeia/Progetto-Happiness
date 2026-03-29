@@ -112,30 +112,16 @@ const Preloader = ({ onComplete }) => {
     const el = containerRef.current;
     if (!el) { onComplete(); return; }
 
-    const tl = gsap.timeline();
-
-    // 1. Buttons fade out (stagger reverse)
-    const btns = [btnNoRef.current, btnYesRef.current].filter(Boolean);
-    tl.to(btns, { opacity: 0, y: -6, duration: 0.35, ease: 'circ.in', stagger: 0.08 });
-
-    // 2. Prompt text fades
-    if (promptTextRef.current) {
-      tl.to(promptTextRef.current, { opacity: 0, y: -6, duration: 0.35, ease: 'circ.in' }, '-=0.2');
-    }
-
-    // 3. Sticker fades up gently
-    if (stickerWrapRef.current) {
-      tl.to(stickerWrapRef.current, { opacity: 0, y: -20, duration: 0.6, ease: 'circ.inOut' }, '-=0.15');
-    }
-
-    // 4. Background fades out — reveals globe
-    tl.to(el, {
-      opacity: 0, duration: 1.6, ease: 'cubic.inOut',
+    // One clean fade — everything goes together
+    gsap.to(el, {
+      opacity: 0,
+      duration: 1.2,
+      ease: 'power2.inOut',
       onComplete: () => { if (el) el.style.display = 'none'; },
-    }, '-=0.4');
+    });
 
-    // 5. Title starts as background begins fading
-    tl.call(onComplete, [], '-=1.4');
+    // Title starts slightly before preloader is fully gone
+    setTimeout(onComplete, 400);
 
   }, [onComplete]);
 
