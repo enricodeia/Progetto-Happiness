@@ -57,11 +57,10 @@ const Preloader = ({ onComplete }) => {
         setTimeout(() => {
           const el = containerRef.current;
           if (!el) return;
-          onComplete(); // fire immediately so title starts with the fade
           gsap.to(el, {
             opacity: 0, duration: 0.7,
             ease: 'power4.out',
-            onComplete: () => { if (el) el.style.display = 'none'; },
+            onStart: onComplete, // title starts as preloader begins fading
           });
         }, 300);
       } else {
