@@ -156,7 +156,7 @@ const HeroTitle = ({ config, smileConfig }) => {
       <h1 className="hero-title__heading">
         <span className="hero-title__line1">
           <SplitChars text="Progetto" charsRef={progettoCharsRef} scrollPct={scrollPct}
-            fadeStart={50} fadeEnd={60} introDone={introDone} />
+            fadeStart={32} fadeEnd={60} introDone={introDone} />
         </span>
         <span className="hero-title__line2">
           <SplitChars text="Happiness" charsRef={happinessCharsRef} scrollPct={scrollPct}
