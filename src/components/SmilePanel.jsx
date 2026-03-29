@@ -2,15 +2,15 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
 
 const DEFAULTS = {
-  fontSize: 64,
-  width: 700,
-  viewW: 900,
+  fontSize: 52,
+  width: 500,
+  viewW: 620,
   curveDepth: 200,
   posY: 80,
-  revealStart: 60,
-  revealEnd: 75,
-  fadeStart: 90,
-  fadeEnd: 98,
+  revealStart: 59,
+  revealEnd: 69,
+  fadeStart: 77,
+  fadeEnd: 81,
 };
 
 const SmilePanel = ({ onChange }) => {
