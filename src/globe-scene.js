@@ -25,16 +25,6 @@ export const globeState = {
     pinColor: '#FFDD00',
     pinOpacity: 1,
     hoverScale: 1.6,
-    // Orbits
-    orbitCount: 3,
-    orbitColor: '#FFDD00',
-    orbitSize: 0.15,
-    orbitSpeed: 1.2,
-    orbitRadius: 0.22,
-    orbitIdleOpacity: 0.15,  // visible even without hover
-    orbitHoverOpacity: 0.7,  // full intensity on hover
-    orbitBlur: 0.5,          // glow spread (0=sharp, 1=very blurry)
-    orbitTrail: 0.3,         // trail/smear effect
   },
 };
 
@@ -318,21 +308,6 @@ export function initGlobe(canvas) {
       return tex;
     };
 
-    // (stroke ring removed)
-
-    // ---- Blurred glow texture for orbit sprites ----
-    const glowCanvas = document.createElement('canvas');
-    glowCanvas.width = 64; glowCanvas.height = 64;
-    const gc = glowCanvas.getContext('2d');
-    const grad = gc.createRadialGradient(32, 32, 0, 32, 32, 32);
-    grad.addColorStop(0, 'rgba(255,255,255,1)');
-    grad.addColorStop(0.3, 'rgba(255,255,255,0.6)');
-    grad.addColorStop(0.7, 'rgba(255,255,255,0.15)');
-    grad.addColorStop(1, 'rgba(255,255,255,0)');
-    gc.fillStyle = grad;
-    gc.fillRect(0, 0, 64, 64);
-    const glowTex = new THREE.CanvasTexture(glowCanvas);
-
     // ---- Stalks + Pin markers (episodes) ----
     const stalkGroup = new THREE.Group();
     const initCfg = globeState.stalkConfig;
@@ -385,22 +360,7 @@ export function initGlobe(canvas) {
       pin.userData = { type: 'episode', data: ep, baseScale: 1, hoverRingScale: 0 };
       scene.add(pin);
 
-      // Orbiting glow sprites (variable count, up to 6)
-      const MAX_ORBS = 6;
-      const orbitGroup = new THREE.Group();
-      orbitGroup.position.copy(tipPos);
-      orbitGroup.renderOrder = 5;
-      const orbs = [];
-      for (let oi = 0; oi < MAX_ORBS; oi++) {
-        const om = new THREE.SpriteMaterial({ map: glowTex, color: 0xFFDD00, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
-        const orb = new THREE.Sprite(om);
-        orb.scale.setScalar(0.01);
-        orbitGroup.add(orb);
-        orbs.push(orb);
-      }
-      scene.add(orbitGroup);
-
-      markers.push({ dot: pin, orbitGroup, orbs, type: 'episode', data: ep });
+      markers.push({ dot: pin, type: 'episode', data: ep });
       stalks.push({ line, dir, heightPct: 1, pin, baseAlt });
     });
     scene.add(stalkGroup);
@@ -859,50 +819,6 @@ export function initGlobe(canvas) {
       const baseOp = m.type === 'episode' ? (ps.pinOpacity ?? 1) : 0.6;
       m.dot.material.opacity = baseOp * frontOpacity;
 
-      // Orbiting glow balls — variable count, idle + hover intensity
-      if (m.orbitGroup && m.orbs) {
-        m.orbitGroup.position.copy(m.dot.position);
-
-        const count = Math.min(m.orbs.length, Math.round(ps.orbitCount || 3));
-        const speed = (ps.orbitSpeed || 1.2) * animTime;
-        const radius = cfg.pinSize * pinZoomScale * (ps.orbitRadius || 0.22);
-        const idleOp = (ps.orbitIdleOpacity ?? 0.15) * frontOpacity;
-        const hoverOp = (ps.orbitHoverOpacity ?? 0.7) * frontOpacity;
-        const targetOp = idleOp + hoverT * (hoverOp - idleOp);
-        const spriteSize = cfg.pinSize * pinZoomScale * (ps.orbitSize || 0.15);
-        const blur = ps.orbitBlur ?? 0.5;
-        const trail = ps.orbitTrail ?? 0.3;
-
-        const camRight = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0).normalize();
-        const camUp = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1).normalize();
-
-        for (let oi = 0; oi < m.orbs.length; oi++) {
-          const orb = m.orbs[oi];
-          if (oi >= count) {
-            // Hide unused orbs
-            orb.material.opacity += (0 - orb.material.opacity) * 0.1;
-            continue;
-          }
-
-          // Each orb at evenly spaced phase, slightly different speed
-          const phase = (oi / count) * Math.PI * 2;
-          const speedMult = 1 + oi * 0.15; // each orb slightly faster
-          const angle = speed * 2.5 * speedMult + phase;
-          const r = radius * (0.85 + oi * 0.08 + hoverT * 0.3);
-
-          orb.position.copy(camRight).multiplyScalar(Math.cos(angle) * r)
-            .add(camUp.clone().multiplyScalar(Math.sin(angle) * r));
-
-          // Size: larger with more blur
-          const sz = spriteSize * (0.4 + blur * 0.8) * (1 - oi * 0.06);
-          orb.scale.setScalar(Math.max(0.01, sz));
-
-          // Opacity: slight variation per orb, trail reduces rear orbs
-          const orbOp = targetOp * (1 - oi * trail * 0.15);
-          orb.material.opacity += (orbOp - orb.material.opacity) * 0.08;
-          orb.material.color.set(ps.orbitColor || '#FFDD00');
-        }
-      }
     });
 
     renderer.render(scene, camera);
