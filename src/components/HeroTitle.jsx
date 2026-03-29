@@ -99,9 +99,7 @@ const HeroTitle = ({ config, smileConfig }) => {
         );
       }
 
-      // Smile words — hidden initially, revealed on scroll
-      const smileEls = smileWordsRef.current.filter(Boolean);
-      gsap.set(smileEls, { opacity: 0 });
+      // Smile words — opacity controlled by scroll, no GSAP needed
 
       setTimeout(() => setIntroDone(true), 2200);
     }, 100);
@@ -173,10 +171,10 @@ const HeroTitle = ({ config, smileConfig }) => {
         <defs>
           <path id="smile-curve" d={`M 30,10 Q ${(sc.viewW ?? 900) / 2},${sc.curveDepth ?? 200} ${(sc.viewW ?? 900) - 30},10`} fill="none" />
         </defs>
-        <text>
+        <text fontSize={sc.fontSize ?? 64}>
           <textPath href="#smile-curve" startOffset="50%" textAnchor="middle">
             {SMILE_WORDS.map((word, i) => (
-              <tspan key={i} ref={(el) => { smileWordsRef.current[i] = el; }}>
+              <tspan key={i}>
                 {word}{i < SMILE_WORDS.length - 1 ? ' ' : ''}
               </tspan>
             ))}
