@@ -79,7 +79,7 @@ html, body, #root {
   display: block;
   color: var(--hero-top-color, #F6E3D5);
 }
-.hero-char { display: inline-block; will-change: transform, opacity; }
+.hero-char { display: inline-block; will-change: transform, opacity; opacity: 0; }
 
 .hero-title__line2 {
   display: block;
@@ -1042,6 +1042,6 @@ html, body, #root {
   .stats__value { font-size: 18px; }
   .stats__divider { display: none; }
   .sidebar { width: calc(100% - 32px); left: 16px; bottom: 16px; max-height: 40vh; }
-  .panel { bottom: 16px; right: 16px; left: 16px; width: auto; max-height: 42vh; }
+  .panel { bottom: 16px; right: 16px; left: 16px; width: auto; max-height: 70vh; overflow-y: auto; }
   .credit { display: none; }
 }

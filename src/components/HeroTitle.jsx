@@ -5,7 +5,7 @@ const SMILE_WORDS = ['What', 'Makes', 'You', 'Happy?'];
 
 const circIn = (t) => 1 - Math.sqrt(1 - t * t);
 
-const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd }) => {
+const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd, charsRef, introDone }) => {
   const chars = text.split('');
   const mid = (chars.length - 1) / 2;
 
@@ -24,11 +24,15 @@ const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd }) => {
 
         const eased = circIn(t);
 
+        // Before intro done: no inline style (GSAP controls via ref)
+        // After intro done: React controls scroll-out
+        const style = introDone
+          ? { opacity: 1 - eased, transform: `translateY(${-10 * eased}px)` }
+          : undefined;
+
         return (
-          <span key={i} className="hero-char" style={{
-            opacity: 1 - eased,
-            transform: `translateY(${-10 * eased}px)`,
-          }}>
+          <span key={i} ref={(el) => { charsRef.current[i] = el; }}
+            className="hero-char" style={style}>
             {char}
           </span>
         );
@@ -38,10 +42,10 @@ const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd }) => {
 };
 
 const HeroTitle = ({ config }) => {
-  const line1Ref = useRef(null);
-  const line2Ref = useRef(null);
   const smileWordsRef = useRef([]);
-  const [wordsVisible, setWordsVisible] = useState(false);
+  const progettoCharsRef = useRef([]);
+  const happinessCharsRef = useRef([]);
+  const [introDone, setIntroDone] = useState(false);
   const [scrollPct, setScrollPct] = useState(0);
   const targetScroll = useRef(0);
   const smoothScroll = useRef(0);
@@ -63,20 +67,42 @@ const HeroTitle = ({ config }) => {
     };
   }, []);
 
-  // Word-level intro — opacity only (no transform, no clearProps needed)
+  // Per-char intro — GSAP on .hero-char only, never on parent spans
   useEffect(() => {
-    setWordsVisible(false);
-    const tl = gsap.timeline({
-      onComplete: () => setWordsVisible(true),
-    });
-    tl.to({}, { duration: 0.1 }); // tiny delay
-    tl.call(() => setWordsVisible(true));
+    const timer = setTimeout(() => {
+      const animateIn = (charsRef, delay) => {
+        const chars = charsRef.current.filter(Boolean);
+        if (!chars.length) return;
+        const mid = (chars.length - 1) / 2;
+        const sorted = chars
+          .map((el, i) => ({ el, dist: Math.abs(i - mid) }))
+          .sort((a, b) => a.dist - b.dist)
+          .map((o) => o.el);
+        gsap.fromTo(sorted,
+          { y: 10, opacity: 0 },
+          { y: 0, opacity: 1, duration: 1, ease: 'circ.out', stagger: 0.035, delay,
+            onComplete() {
+              // Clear GSAP inline styles so React can take over for scroll-out
+              chars.forEach((el) => gsap.set(el, { clearProps: 'transform,opacity' }));
+            },
+          }
+        );
+      };
 
-    const smileEls = smileWordsRef.current.filter(Boolean);
-    gsap.fromTo(smileEls,
-      { opacity: 0, attr: { dy: 50 } },
-      { opacity: 1, attr: { dy: 0 }, duration: 1.4, ease: 'circ.out', stagger: 0.13, delay: 0.5 }
-    );
+      animateIn(happinessCharsRef, 0.1);
+      animateIn(progettoCharsRef, 0.5);
+
+      const smileEls = smileWordsRef.current.filter(Boolean);
+      gsap.fromTo(smileEls,
+        { opacity: 0, attr: { dy: 50 } },
+        { opacity: 1, attr: { dy: 0 }, duration: 1.4, ease: 'circ.out', stagger: 0.13, delay: 1.0 }
+      );
+
+      // After all animations complete, let React take over
+      setTimeout(() => setIntroDone(true), 2200);
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const c = config;
@@ -98,13 +124,13 @@ const HeroTitle = ({ config }) => {
       '--hero-bottom-color': c.bottomColor,
     }}>
       <h1 className="hero-title__heading">
-        <span className="hero-title__line1" ref={line1Ref}
-          style={{ opacity: wordsVisible ? 1 : 0, transition: wordsVisible ? 'none' : 'opacity 1.2s ease' }}>
-          <SplitChars text="Progetto" scrollPct={scrollPct} fadeStart={50} fadeEnd={60} />
+        <span className="hero-title__line1">
+          <SplitChars text="Progetto" charsRef={progettoCharsRef} scrollPct={scrollPct}
+            fadeStart={50} fadeEnd={60} introDone={introDone} />
         </span>
-        <span className="hero-title__line2" ref={line2Ref}
-          style={{ opacity: wordsVisible ? 1 : 0, transition: wordsVisible ? 'none' : 'opacity 1.2s ease' }}>
-          <SplitChars text="Happiness" scrollPct={scrollPct} fadeStart={18} fadeEnd={46} />
+        <span className="hero-title__line2">
+          <SplitChars text="Happiness" charsRef={happinessCharsRef} scrollPct={scrollPct}
+            fadeStart={18} fadeEnd={46} introDone={introDone} />
         </span>
       </h1>
       <svg className="hero-title__curve" viewBox={`0 0 600 ${Math.round(c.curveDepth * 1.2)}`} xmlns="http://www.w3.org/2000/svg">
