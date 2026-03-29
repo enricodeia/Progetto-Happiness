@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
 
-const DEFAULTS = {
+const DESKTOP = {
   fontSize: 52,
   width: 500,
   viewW: 620,
@@ -13,15 +13,22 @@ const DEFAULTS = {
   fadeEnd: 81,
 };
 
+const MOBILE = {
+  mFontSize: 32,
+  mWidth: 300,
+  mViewW: 400,
+  mCurveDepth: 140,
+  mPosY: 82,
+};
+
 const SmilePanel = ({ onChange }) => {
   const [open, setOpen] = useState(false);
-  const [v, setV] = useState(DEFAULTS);
+  const [tab, setTab] = useState('desktop');
+  const [v, setV] = useState({ ...DESKTOP, ...MOBILE });
   const [copied, setCopied] = useState(false);
   const ref = useRef(null);
 
-  useEffect(() => {
-    onChange(DEFAULTS);
-  }, []);
+  useEffect(() => { onChange({ ...DESKTOP, ...MOBILE }); }, []);
 
   useEffect(() => {
     if (ref.current && open) {
@@ -49,7 +56,7 @@ const SmilePanel = ({ onChange }) => {
     </button>
   );
 
-  const rows = [
+  const desktopRows = [
     { section: 'Text' },
     { key: 'fontSize', label: 'Font size', min: 30, max: 120, step: 2 },
     { key: 'width', label: 'Width', min: 300, max: 1200, step: 20 },
@@ -64,13 +71,28 @@ const SmilePanel = ({ onChange }) => {
     { key: 'fadeEnd', label: 'Fade end %', min: 0, max: 100, step: 1 },
   ];
 
+  const mobileRows = [
+    { section: 'Mobile Text' },
+    { key: 'mFontSize', label: 'Font size', min: 20, max: 80, step: 2 },
+    { key: 'mWidth', label: 'Width', min: 200, max: 600, step: 10 },
+    { key: 'mViewW', label: 'ViewBox W', min: 250, max: 800, step: 10 },
+    { key: 'mCurveDepth', label: 'Curve depth', min: 30, max: 300, step: 10 },
+    { key: 'mPosY', label: 'Position Y', min: 50, max: 95, step: 1 },
+  ];
+
+  const rows = tab === 'desktop' ? desktopRows : mobileRows;
+
   return (
     <div className="pp" ref={ref}>
       <div className="pp__head">
-        <span className="pp__title">What Makes You Happy?</span>
+        <span className="pp__title">Smile</span>
         <button className="pp__x" onClick={close}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
+      </div>
+      <div className="pp__tabs">
+        <button className={`pp__tab ${tab === 'desktop' ? 'pp__tab--on' : ''}`} onClick={() => setTab('desktop')}>Desktop</button>
+        <button className={`pp__tab ${tab === 'mobile' ? 'pp__tab--on' : ''}`} onClick={() => setTab('mobile')}>Mobile</button>
       </div>
       {rows.map((r, i) => {
         if (!r) return <div className="pp__sep" key={i} />;
@@ -80,9 +102,7 @@ const SmilePanel = ({ onChange }) => {
             <span className="pp__label">{r.label}</span>
             <input type="range" min={r.min} max={r.max} step={r.step} value={v[r.key]}
               onChange={(e) => set(r.key, parseFloat(e.target.value))} />
-            <span className="pp__val">
-              {v[r.key] >= 1000 ? Math.round(v[r.key] / 1000) + 'k' : v[r.key]}
-            </span>
+            <span className="pp__val">{v[r.key]}</span>
           </label>
         );
       })}

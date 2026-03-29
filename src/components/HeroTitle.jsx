@@ -108,7 +108,16 @@ const HeroTitle = ({ config, smileConfig }) => {
   }, []);
 
   const c = config;
-  const sc = smileConfig || {};
+  const raw = smileConfig || {};
+  const isMob = typeof window !== 'undefined' && window.innerWidth <= 768;
+  const sc = isMob ? {
+    ...raw,
+    fontSize: raw.mFontSize ?? 32,
+    width: raw.mWidth ?? 300,
+    viewW: raw.mViewW ?? 400,
+    curveDepth: raw.mCurveDepth ?? 140,
+    posY: raw.mPosY ?? 82,
+  } : raw;
 
   // Subtitle fades out on scroll
   const subtitleFade = scrollPct <= 25 ? 1 : scrollPct >= 40 ? 0 : 1 - (scrollPct - 25) / 15;
