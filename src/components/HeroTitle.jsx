@@ -3,6 +3,43 @@ import { gsap } from 'gsap';
 
 const SMILE_WORDS = ['What', 'Makes', 'You', 'Happy?'];
 
+// Split text into individual char spans from center outward
+const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd, className, style }) => {
+  const chars = text.split('');
+  const mid = (chars.length - 1) / 2;
+
+  return (
+    <span className={className} style={{ ...style, display: 'inline-flex', justifyContent: 'center' }}>
+      {chars.map((char, i) => {
+        // Stagger from center: center chars animate first
+        const distFromCenter = Math.abs(i - mid) / mid; // 0 at center, 1 at edges
+        const charDelay = distFromCenter * 0.6; // edges lag behind center
+        const range = fadeEnd - fadeStart;
+        const charStart = fadeStart + charDelay * range * 0.3;
+        const charEnd = fadeStart + range * 0.5 + charDelay * range * 0.5;
+
+        let t = 0;
+        if (scrollPct >= charEnd) t = 1;
+        else if (scrollPct > charStart) t = (scrollPct - charStart) / (charEnd - charStart);
+
+        const op = 1 - t;
+        const y = -20 * t;
+
+        return (
+          <span key={i} style={{
+            display: 'inline-block',
+            opacity: op,
+            transform: `translateY(${y}px)`,
+            transition: 'none',
+          }}>
+            {char === ' ' ? '\u00A0' : char}
+          </span>
+        );
+      })}
+    </span>
+  );
+};
+
 const HeroTitle = ({ config, onConfigChange }) => {
   const line1Ref = useRef(null);
   const line2Ref = useRef(null);
@@ -35,26 +72,7 @@ const HeroTitle = ({ config, onConfigChange }) => {
 
   const c = config;
 
-  // Fade out on scroll (opacity only)
-  const fade = (start, end) => {
-    if (scrollPct <= start) return 1;
-    if (scrollPct >= end) return 0;
-    return 1 - (scrollPct - start) / (end - start);
-  };
-
-  const happinessOp = fade(35, 45);
-  const progettoOp = fade(50, 63);
-  const smileOp = fade(50, 58);
-
-  // Y shift: 0 → -20px over the same scroll range as fade
-  const shift = (start, end) => {
-    if (scrollPct <= start) return 0;
-    if (scrollPct >= end) return -20;
-    return -20 * (scrollPct - start) / (end - start);
-  };
-
-  const happinessY = shift(35, 45);
-  const progettoY = shift(50, 63);
+  const smileFade = scrollPct <= 50 ? 1 : scrollPct >= 58 ? 0 : 1 - (scrollPct - 50) / 8;
 
   return (
     <div className="hero-title" style={{
@@ -73,19 +91,25 @@ const HeroTitle = ({ config, onConfigChange }) => {
     }}>
       <h1 className="hero-title__heading">
         <span className="hero-title__line1" ref={line1Ref} style={{
-          opacity: hasAnimated.current ? progettoOp * c.topOpacity : 0,
-          transform: `translateY(${progettoY}px)`,
-        }}>Progetto</span>
+          opacity: hasAnimated.current ? 1 : 0,
+        }}>
+          {hasAnimated.current ? (
+            <SplitChars text="Progetto" scrollPct={scrollPct} fadeStart={50} fadeEnd={63} />
+          ) : 'Progetto'}
+        </span>
         <span className="hero-title__line2" ref={line2Ref} style={{
-          opacity: hasAnimated.current ? happinessOp * c.topOpacity : 0,
-          transform: `translateY(${happinessY}px)`,
-        }}>Happiness</span>
+          opacity: hasAnimated.current ? 1 : 0,
+        }}>
+          {hasAnimated.current ? (
+            <SplitChars text="Happiness" scrollPct={scrollPct} fadeStart={35} fadeEnd={45} />
+          ) : 'Happiness'}
+        </span>
       </h1>
       <svg className="hero-title__curve" viewBox={`0 0 600 ${Math.round(c.curveDepth * 1.2)}`} xmlns="http://www.w3.org/2000/svg">
         <defs>
           <path id="smile-curve" d={`M 30,10 Q 300,${c.curveDepth} 570,10`} fill="none" />
         </defs>
-        <text style={{ opacity: smileOp }}>
+        <text style={{ opacity: smileFade }}>
           <textPath href="#smile-curve" startOffset="50%" textAnchor="middle">
             {SMILE_WORDS.map((word, i) => (
               <tspan key={i} ref={(el) => { smileWordsRef.current[i] = el; }} style={{ opacity: 0 }}>
