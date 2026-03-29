@@ -46,6 +46,16 @@ const HeroTitle = ({ config, onConfigChange }) => {
   const progettoOp = fade(50, 63);
   const smileOp = fade(50, 58);
 
+  // Y shift: 0 → -20px over the same scroll range as fade
+  const shift = (start, end) => {
+    if (scrollPct <= start) return 0;
+    if (scrollPct >= end) return -20;
+    return -20 * (scrollPct - start) / (end - start);
+  };
+
+  const happinessY = shift(35, 45);
+  const progettoY = shift(50, 63);
+
   return (
     <div className="hero-title" style={{
       '--hero-top-y': `${c.topY}vh`,
@@ -64,9 +74,11 @@ const HeroTitle = ({ config, onConfigChange }) => {
       <h1 className="hero-title__heading">
         <span className="hero-title__line1" ref={line1Ref} style={{
           opacity: hasAnimated.current ? progettoOp * c.topOpacity : 0,
+          transform: `translateY(${progettoY}px)`,
         }}>Progetto</span>
         <span className="hero-title__line2" ref={line2Ref} style={{
           opacity: hasAnimated.current ? happinessOp * c.topOpacity : 0,
+          transform: `translateY(${happinessY}px)`,
         }}>Happiness</span>
       </h1>
       <svg className="hero-title__curve" viewBox={`0 0 600 ${Math.round(c.curveDepth * 1.2)}`} xmlns="http://www.w3.org/2000/svg">
