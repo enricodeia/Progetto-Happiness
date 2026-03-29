@@ -55,11 +55,13 @@ const HeroTitle = ({ config, smileConfig }) => {
     const onScroll = (e) => { targetScroll.current = e.detail.pct; };
     window.addEventListener('globe:scroll', onScroll);
     const tick = () => {
-      const prev = smoothScroll.current;
-      smoothScroll.current += (targetScroll.current - smoothScroll.current) * 0.12;
-      if (Math.abs(smoothScroll.current - prev) > 0.01) {
-        setScrollPct(smoothScroll.current);
+      const diff = targetScroll.current - smoothScroll.current;
+      if (Math.abs(diff) < 0.05) {
+        smoothScroll.current = targetScroll.current;
+      } else {
+        smoothScroll.current += diff * 0.12;
       }
+      setScrollPct(smoothScroll.current);
       rafId.current = requestAnimationFrame(tick);
     };
     rafId.current = requestAnimationFrame(tick);
