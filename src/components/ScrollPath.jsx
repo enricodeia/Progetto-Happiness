@@ -9,10 +9,10 @@ const STEPS = [
   { pct: 97 },
 ];
 
-const H = 420;
-const W = 40;
-// Gentle quarter-orbit arc — mostly vertical with a subtle bow
-const CURVE = `M ${W - 6},16 C ${W - 6},${H * 0.25} ${W * 0.15},${H * 0.55} ${W - 6},${H - 16}`;
+const H = 520;
+const W = 160;
+// Quarter-orbit arc — curves from top-right toward center-left, then back to bottom-right
+const CURVE = `M ${W - 10},14 C ${W - 10},${H * 0.2} 12,${H * 0.4} 12,${H * 0.5} C 12,${H * 0.6} ${W - 10},${H * 0.8} ${W - 10},${H - 14}`;
 
 const ScrollPath = () => {
   const [scrollPct, setScrollPct] = useState(0);
