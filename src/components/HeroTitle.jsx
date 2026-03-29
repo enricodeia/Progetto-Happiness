@@ -24,8 +24,6 @@ const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd, charsRef, introDone }
 
         const eased = circIn(t);
 
-        // Before intro done: no inline style (GSAP controls via ref)
-        // After intro done: React controls scroll-out
         const style = introDone
           ? { opacity: 1 - eased, transform: `translateY(${-10 * eased}px)` }
           : undefined;
@@ -41,24 +39,23 @@ const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd, charsRef, introDone }
   );
 };
 
-const HeroTitle = ({ config }) => {
+const HeroTitle = ({ config, smileConfig }) => {
   const smileWordsRef = useRef([]);
   const progettoCharsRef = useRef([]);
   const happinessCharsRef = useRef([]);
+  const subtitleRef = useRef(null);
   const [introDone, setIntroDone] = useState(false);
   const [scrollPct, setScrollPct] = useState(0);
   const targetScroll = useRef(0);
   const smoothScroll = useRef(0);
   const rafId = useRef(null);
 
-  // Smooth lerp loop
   useEffect(() => {
     const onScroll = (e) => { targetScroll.current = e.detail.pct; };
     window.addEventListener('globe:scroll', onScroll);
     const tick = () => {
       const prev = smoothScroll.current;
       smoothScroll.current += (targetScroll.current - smoothScroll.current) * 0.12;
-      // Only re-render if value changed enough (saves mobile perf)
       if (Math.abs(smoothScroll.current - prev) > 0.01) {
         setScrollPct(smoothScroll.current);
       }
@@ -71,7 +68,7 @@ const HeroTitle = ({ config }) => {
     };
   }, []);
 
-  // Per-char intro — GSAP on .hero-char only, never on parent spans
+  // Per-char intro + subtitle fade in
   useEffect(() => {
     const timer = setTimeout(() => {
       const animateIn = (charsRef, delay) => {
@@ -82,12 +79,10 @@ const HeroTitle = ({ config }) => {
           .map((el, i) => ({ el, dist: Math.abs(i - mid) }))
           .sort((a, b) => a.dist - b.dist)
           .map((o) => o.el);
-        // Set all chars hidden immediately (GSAP controls from here)
         gsap.set(chars, { opacity: 0, y: 10 });
         gsap.to(sorted, {
           y: 0, opacity: 1, duration: 1, ease: 'circ.out', stagger: 0.035, delay,
           onComplete() {
-            // Only clear transform — leave opacity:1 so no flash when React takes over
             chars.forEach((el) => gsap.set(el, { clearProps: 'transform' }));
           },
         });
@@ -96,13 +91,18 @@ const HeroTitle = ({ config }) => {
       animateIn(happinessCharsRef, 0.1);
       animateIn(progettoCharsRef, 0.5);
 
-      const smileEls = smileWordsRef.current.filter(Boolean);
-      gsap.fromTo(smileEls,
-        { opacity: 0, attr: { dy: 50 } },
-        { opacity: 1, attr: { dy: 0 }, duration: 1.4, ease: 'circ.out', stagger: 0.13, delay: 1.0 }
-      );
+      // Subtitle paragraph fade in
+      if (subtitleRef.current) {
+        gsap.fromTo(subtitleRef.current,
+          { opacity: 0, y: 8 },
+          { opacity: 0.45, y: 0, duration: 1.2, ease: 'power3.out', delay: 1.0 }
+        );
+      }
 
-      // After all animations complete, let React take over
+      // Smile words — hidden initially, revealed on scroll
+      const smileEls = smileWordsRef.current.filter(Boolean);
+      gsap.set(smileEls, { opacity: 0 });
+
       setTimeout(() => setIntroDone(true), 2200);
     }, 100);
 
@@ -110,7 +110,23 @@ const HeroTitle = ({ config }) => {
   }, []);
 
   const c = config;
-  const smileFade = scrollPct <= 30 ? 1 : scrollPct >= 40 ? 0 : 1 - (scrollPct - 30) / 10;
+  const sc = smileConfig || {};
+
+  // Subtitle fades out on scroll
+  const subtitleFade = scrollPct <= 25 ? 1 : scrollPct >= 40 ? 0 : 1 - (scrollPct - 25) / 15;
+
+  // "What Makes You Happy?" reveals at scroll
+  const smileRevealStart = sc.revealStart ?? 60;
+  const smileRevealEnd = sc.revealEnd ?? 75;
+  let smileOp = 0;
+  if (scrollPct >= smileRevealStart && scrollPct <= (sc.fadeStart ?? 90)) {
+    smileOp = scrollPct <= smileRevealEnd
+      ? (scrollPct - smileRevealStart) / (smileRevealEnd - smileRevealStart)
+      : 1;
+  } else if (scrollPct > (sc.fadeStart ?? 90)) {
+    const fadeEnd = sc.fadeEnd ?? 98;
+    smileOp = scrollPct >= fadeEnd ? 0 : 1 - (scrollPct - (sc.fadeStart ?? 90)) / (fadeEnd - (sc.fadeStart ?? 90));
+  }
 
   return (
     <div className="hero-title" style={{
@@ -137,14 +153,30 @@ const HeroTitle = ({ config }) => {
             fadeStart={18} fadeEnd={46} introDone={introDone} />
         </span>
       </h1>
-      <svg className="hero-title__curve" viewBox={`0 0 600 ${Math.round(c.curveDepth * 1.2)}`} xmlns="http://www.w3.org/2000/svg">
+
+      {/* Subtitle paragraph — visible at start, fades on scroll */}
+      <p className="hero-title__subtitle" ref={subtitleRef} style={{
+        opacity: introDone ? subtitleFade * 0.45 : 0,
+      }}>
+        Il progetto che racconta la felicità<br />attraverso reportage dal mondo.
+      </p>
+
+      {/* "What Makes You Happy?" — reveals on scroll at 60%+ */}
+      <svg className="hero-title__curve" viewBox={`0 0 ${sc.viewW ?? 900} ${Math.round((sc.curveDepth ?? 200) * 1.2)}`}
+        xmlns="http://www.w3.org/2000/svg"
+        style={{
+          opacity: smileOp,
+          fontSize: `${sc.fontSize ?? 64}px`,
+          top: `${sc.posY ?? 80}vh`,
+          width: `${sc.width ?? 700}px`,
+        }}>
         <defs>
-          <path id="smile-curve" d={`M 30,10 Q 300,${c.curveDepth} 570,10`} fill="none" />
+          <path id="smile-curve" d={`M 30,10 Q ${(sc.viewW ?? 900) / 2},${sc.curveDepth ?? 200} ${(sc.viewW ?? 900) - 30},10`} fill="none" />
         </defs>
-        <text style={{ opacity: smileFade }}>
+        <text>
           <textPath href="#smile-curve" startOffset="50%" textAnchor="middle">
             {SMILE_WORDS.map((word, i) => (
-              <tspan key={i} ref={(el) => { smileWordsRef.current[i] = el; }} style={{ opacity: 0 }}>
+              <tspan key={i} ref={(el) => { smileWordsRef.current[i] = el; }}>
                 {word}{i < SMILE_WORDS.length - 1 ? ' ' : ''}
               </tspan>
             ))}

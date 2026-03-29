@@ -11,9 +11,8 @@ import PillNav from './components/PillNav.jsx';
 import PanelCard from './components/PanelCard.jsx';
 import Bacheca from './components/Bacheca.jsx';
 import BubbleMenu from './components/BubbleMenu.jsx';
-import PinPanel from './components/PinPanel.jsx';
-import ZodiacControlPanel from './components/ZodiacControlPanel.jsx';
 import ScrollPath from './components/ScrollPath.jsx';
+import SmilePanel from './components/SmilePanel.jsx';
 import HeroTitle from './components/HeroTitle.jsx';
 import { globeState } from './globe-scene.js';
 import { episodes, happinessConcepts } from './data.js';
@@ -138,6 +137,7 @@ export default function App() {
     topOpacity: 1,
     bottomOpacity: 0.75,
   });
+  const [smileConfig, setSmileConfig] = useState({});
 
   const sidebarRef = useRef(null);
   const sidebarShown = useRef(false);
@@ -201,9 +201,9 @@ export default function App() {
       globeState.flyToMarker(m, isMobile() ? 0.25 : 0);
     }
 
-    // Mobile: slide sidebar left
+    // Mobile: slide sidebar out to right
     if (isMobile() && sidebarRef.current) {
-      gsap.to(sidebarRef.current, { x: '-100vw', duration: 0.6, ease: 'circ.out', overwrite: true });
+      gsap.to(sidebarRef.current, { x: '100vw', duration: 0.6, ease: 'circ.out', overwrite: true });
     }
   }, []);
 
@@ -289,13 +289,13 @@ export default function App() {
       <div className={`page-wrapper ${bachecaOpen ? 'page-wrapper--slide-left' : ''}`}>
         <Globe />
         <Noise patternSize={200} patternAlpha={12} patternRefreshInterval={6} />
-        {showUI && <PinPanel />}
+        {showUI && <SmilePanel onChange={(c) => setSmileConfig(c)} />}
         {showUI && <LocalClock />}
         {showUI && <ScrollPath />}
 
         {/* Hero title over globe */}
         {showUI && (
-          <HeroTitle config={heroConfig} />
+          <HeroTitle config={heroConfig} smileConfig={smileConfig} />
         )}
 
         <aside
@@ -486,9 +486,6 @@ export default function App() {
           )}
         </>
       )}
-
-      {/* Zodiac control panel */}
-      {showUI && !bachecaOpen && <ZodiacControlPanel />}
 
       {/* About overlay */}
       <AboutOverlay visible={aboutOpen} onClose={() => { setAboutOpen(false); setActiveNav('globe'); }} />

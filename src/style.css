@@ -89,20 +89,29 @@ html, body, #root {
   color: var(--hero-accent-color, #FFDD00);
 }
 
+.hero-title__subtitle {
+  position: absolute;
+  top: 72vh; top: 72dvh;
+  left: 50%; transform: translateX(-50%);
+  text-align: center;
+  font-family: var(--font-serif);
+  font-size: 16px; font-weight: 200;
+  color: var(--color-text);
+  opacity: 0;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
 .hero-title__curve {
   position: absolute;
-  top: var(--hero-bottom-y, 72vh);
-  top: var(--hero-bottom-y-dvh);
   left: 50%; transform: translateX(-50%);
-  width: var(--hero-curve-width, 550px);
   height: auto;
   overflow: visible;
-  opacity: var(--hero-bottom-opacity, 0.85);
+  pointer-events: none;
 }
 
 .hero-title__curve text {
   font-family: var(--font-serif);
-  font-size: var(--hero-bottom-size, 42px);
   font-weight: 200;
   fill: var(--color-primary, #FFDD00);
 }
@@ -113,6 +122,7 @@ html, body, #root {
     top: var(--hero-top-y-mobile, 21vh);
     top: var(--hero-top-y-mobile-dvh);
   }
+  .hero-title__subtitle { font-size: 13px; top: 68vh; top: 68dvh; }
   .hero-title__curve { width: 320px; }
   .hero-title__curve text { font-size: 52px !important; }
 }
