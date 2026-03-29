@@ -58,11 +58,13 @@ const Preloader = ({ onComplete }) => {
           const el = containerRef.current;
           if (!el) return;
           gsap.to(el, {
-            opacity: 0, duration: 0.7,
-            ease: 'power4.out',
-            onStart: onComplete, // title starts as preloader begins fading
+            opacity: 0, duration: 1.4,
+            ease: 'power2.inOut',
+            onComplete: () => { if (el) el.style.display = 'none'; },
           });
-        }, 300);
+          // Title starts halfway through the fade
+          setTimeout(onComplete, 500);
+        }, 200);
       } else {
         animFrame = requestAnimationFrame(tick);
       }
