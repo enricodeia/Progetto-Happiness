@@ -636,6 +636,11 @@ export function initGlobe(canvas) {
   let gsapTexTween = null;
   const texState = { opacity: 1 };
 
+  // Cloud fade state (separate trigger)
+  let cloudFadeActive = false;
+  let gsapCloudTween = null;
+  const cloudState = { opacity: 0.4 };
+
   let animTime = 0;
   function animate() {
     requestAnimationFrame(animate);
@@ -672,34 +677,43 @@ export function initGlobe(canvas) {
     // Update scroll percentage
     updateScrollPct();
 
-    // ---- Texture fade: GSAP-driven at scroll trigger ----
+    // ---- Texture fade: GSAP at scroll trigger ----
     const lc = globeState.liveConfig;
     const texTrigger = lc?.texFadeStart ?? 96;
-    const texTarget = lc?.texFadeEnd ?? 0.3; // target opacity
+    const texTarget = lc?.texFadeEnd ?? 0.3;
     if (sphereMat.map) {
       if (scrollPct >= texTrigger && !texFadeActive) {
         texFadeActive = true;
-        texFadeDir = 'out';
         gsapTexTween?.kill();
         gsapTexTween = gsap.to(texState, {
           opacity: texTarget, duration: 1.3, ease: 'cubic.out',
-          onUpdate: () => {
-            sphereMat.opacity = texState.opacity;
-            cloudMat.opacity = texState.opacity * 0.4;
-          },
+          onUpdate: () => { sphereMat.opacity = texState.opacity; },
         });
       } else if (scrollPct < texTrigger && texFadeActive) {
         texFadeActive = false;
-        texFadeDir = 'in';
         gsapTexTween?.kill();
         gsapTexTween = gsap.to(texState, {
           opacity: 1, duration: 0.8, ease: 'cubic.out',
-          onUpdate: () => {
-            sphereMat.opacity = texState.opacity;
-            cloudMat.opacity = texState.opacity * 0.4;
-          },
+          onUpdate: () => { sphereMat.opacity = texState.opacity; },
         });
       }
+    }
+
+    // ---- Cloud fade: GSAP at 79% scroll ----
+    if (scrollPct >= 79 && !cloudFadeActive) {
+      cloudFadeActive = true;
+      gsapCloudTween?.kill();
+      gsapCloudTween = gsap.to(cloudState, {
+        opacity: 0, duration: 1.2, ease: 'cubic.out',
+        onUpdate: () => { cloudMat.opacity = cloudState.opacity; },
+      });
+    } else if (scrollPct < 79 && cloudFadeActive) {
+      cloudFadeActive = false;
+      gsapCloudTween?.kill();
+      gsapCloudTween = gsap.to(cloudState, {
+        opacity: 0.4, duration: 1.2, ease: 'cubic.out',
+        onUpdate: () => { cloudMat.opacity = cloudState.opacity; },
+      });
     }
 
     // ---- Stalks + pins: scroll-driven collapse with smoothstep ----
