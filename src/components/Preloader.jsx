@@ -1,15 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { gsap } from 'gsap';
 import StickerPeel from './StickerPeel.jsx';
+
+// Audio context singleton — unlocked on user gesture
+let audioCtx = null;
+let audioEnabled = false;
+export const getAudioContext = () => audioCtx;
+export const isAudioEnabled = () => audioEnabled;
 
 const Preloader = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
   const [peelPct, setPeelPct] = useState(90);
+  const [showPrompt, setShowPrompt] = useState(false);
   const containerRef = useRef(null);
+  const promptRef = useRef(null);
   const done = useRef(false);
 
   useEffect(() => {
-    // Track real asset loading
     const assets = [
       '/earth-8k.webp',
       '/clouds.webp',
@@ -23,9 +30,8 @@ const Preloader = ({ onComplete }) => {
     let displayProgress = 0;
     let animFrame = null;
 
-    // Load all assets
     const promises = assets.map((url) =>
-      fetch(url).then((r) => {
+      fetch(url).then(() => {
         loaded++;
         realProgress = Math.round((loaded / assets.length) * 100);
       }).catch(() => {
@@ -34,60 +40,74 @@ const Preloader = ({ onComplete }) => {
       })
     );
 
-    // Also wait for fonts
     if (document.fonts?.ready) {
       promises.push(document.fonts.ready.then(() => {}));
     }
 
-    // Animate display progress smoothly toward real progress
     function tick() {
       if (displayProgress < realProgress) {
-        // Ease toward real progress
         displayProgress += (realProgress - displayProgress) * 0.08;
         if (realProgress - displayProgress < 1) displayProgress = realProgress;
       }
 
       const pct = Math.round(displayProgress);
       setProgress(pct);
-      // Peel: 90% → 0% as progress 0% → 100%
       setPeelPct(Math.round(90 * (1 - pct / 100)));
 
       if (pct >= 100 && !done.current) {
         done.current = true;
-        setTimeout(() => {
-          const el = containerRef.current;
-          if (!el) return;
-          gsap.to(el, {
-            opacity: 0, duration: 1.4,
-            ease: 'circ.inOut',
-            onComplete: () => { if (el) el.style.display = 'none'; },
-          });
-          // Title starts halfway through the fade
-          setTimeout(onComplete, 500);
-        }, 200);
+        // Fade out counter, show audio prompt
+        setTimeout(() => setShowPrompt(true), 400);
       } else {
         animFrame = requestAnimationFrame(tick);
       }
     }
 
-    // Start ticking
     animFrame = requestAnimationFrame(tick);
 
-    // Ensure minimum display time (at least 1.5s even if assets load instantly)
-    const minTimer = setTimeout(() => {
-      if (realProgress < 100) return;
-    }, 1500);
-
-    // Fallback: if assets take too long, force complete after 8s
-    const fallback = setTimeout(() => {
-      realProgress = 100;
-    }, 8000);
+    const fallback = setTimeout(() => { realProgress = 100; }, 8000);
 
     return () => {
       cancelAnimationFrame(animFrame);
-      clearTimeout(minTimer);
       clearTimeout(fallback);
     };
+  }, []);
+
+  // Animate prompt in
+  useEffect(() => {
+    if (!showPrompt || !promptRef.current) return;
+    gsap.fromTo(promptRef.current,
+      { opacity: 0, y: 12 },
+      { opacity: 1, y: 0, duration: 0.8, ease: 'circ.out', delay: 0.1 }
+    );
+  }, [showPrompt]);
+
+  const launchSite = useCallback((withAudio) => {
+    if (withAudio) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioEnabled = true;
+      // Resume in case it's suspended (mobile)
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    const el = containerRef.current;
+    if (!el) { onComplete(); return; }
+
+    // Fade prompt out first
+    if (promptRef.current) {
+      gsap.to(promptRef.current, { opacity: 0, y: -8, duration: 0.4, ease: 'circ.in' });
+    }
+
+    // Then fade entire preloader
+    gsap.to(el, {
+      opacity: 0, duration: 1.4,
+      delay: 0.3,
+      ease: 'circ.inOut',
+      onComplete: () => { if (el) el.style.display = 'none'; },
+    });
+
+    // Title starts midway through fade
+    setTimeout(onComplete, 600);
   }, [onComplete]);
 
   return (
@@ -102,10 +122,32 @@ const Preloader = ({ onComplete }) => {
           lightingIntensity={0.15}
           peelDirection={0}
         />
-        <div className="preloader__counter">
-          <span className="preloader__number">{progress}</span>
-          <span className="preloader__percent">%</span>
-        </div>
+
+        {!showPrompt && (
+          <div className="preloader__counter">
+            <span className="preloader__number">{progress}</span>
+            <span className="preloader__percent">%</span>
+          </div>
+        )}
+
+        {showPrompt && (
+          <div className="preloader__prompt" ref={promptRef} style={{ opacity: 0 }}>
+            <p className="preloader__prompt-text">
+              Attiva l'audio per un'esperienza<br />immersiva
+            </p>
+            <div className="preloader__prompt-buttons">
+              <button className="preloader__prompt-btn preloader__prompt-btn--yes" onClick={() => launchSite(true)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
+                </svg>
+                Sì, attiva
+              </button>
+              <button className="preloader__prompt-btn preloader__prompt-btn--no" onClick={() => launchSite(false)}>
+                Continua senza audio
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
