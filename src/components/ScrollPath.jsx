@@ -9,10 +9,9 @@ const STEPS = [
   { pct: 97 },
 ];
 
-const H = 520;
-const W = 160;
-// Quarter-orbit arc — curves from top-right toward center-left, then back to bottom-right
-const CURVE = `M ${W - 10},14 C ${W - 10},${H * 0.2} 12,${H * 0.4} 12,${H * 0.5} C 12,${H * 0.6} ${W - 10},${H * 0.8} ${W - 10},${H - 14}`;
+const SVG_W = 68;
+const SVG_H = 622;
+const PATH_D = 'M0.769531 0C14.1893 28.8865 29.0413 69.7802 41.2871 118.76C74.759 252.638 88.7837 447.025 0.763672 621.822';
 
 const ScrollPath = () => {
   const [scrollPct, setScrollPct] = useState(0);
@@ -82,10 +81,13 @@ const ScrollPath = () => {
 
   return (
     <div className="scroll-path">
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} fill="none">
-        <path ref={pathRef} d={CURVE} stroke="rgba(255,255,255,0.06)" strokeWidth="1" fill="none" strokeLinecap="round" />
-        <path ref={progressRef} d={CURVE} stroke="rgba(255,221,0,0.4)" strokeWidth="1" fill="none" strokeLinecap="round" />
+      <svg width={SVG_W} height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`} fill="none" xmlns="http://www.w3.org/2000/svg">
+        {/* Background track */}
+        <path ref={pathRef} d={PATH_D} stroke="rgba(255,255,255,0.08)" strokeWidth="1" fill="none" strokeLinecap="round" />
+        {/* Progress overlay */}
+        <path ref={progressRef} d={PATH_D} stroke="rgba(255,221,0,0.4)" strokeWidth="1" fill="none" strokeLinecap="round" />
 
+        {/* Step dots */}
         {dotPositions.map((pos, i) => {
           const step = STEPS[i];
           const isActive = scrollPct >= step.pct - 2;
