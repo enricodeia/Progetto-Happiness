@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { globeState } from '../globe-scene.js';
 
+// pct = zoom target, pos = visual position along the curve (0-100)
 const STEPS = [
-  { pct: 0 },
-  { pct: 64 },
-  { pct: 90 },
-  { pct: 97 },
+  { pct: 0, pos: 5 },
+  { pct: 64, pos: 33 },
+  { pct: 90, pos: 63 },
+  { pct: 97, pos: 93 },
 ];
 
 const SVG_W = 68;
@@ -33,7 +34,7 @@ const ScrollPath = () => {
     if (!path) return;
     const len = path.getTotalLength();
     const positions = STEPS.map((s) => {
-      const pt = path.getPointAtLength(len * (s.pct / 100));
+      const pt = path.getPointAtLength(len * (s.pos / 100));
       return { x: pt.x, y: pt.y };
     });
     setDotPositions(positions);
