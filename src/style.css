@@ -79,7 +79,10 @@ html, body, #root {
   display: block;
   color: var(--hero-top-color, #F6E3D5);
 }
-.hero-char { display: inline-block; will-change: transform, opacity; }
+.hero-char { display: inline-block; }
+@media (min-width: 769px) {
+  .hero-char { will-change: transform, opacity; }
+}
 
 .hero-title__line2 {
   display: block;
