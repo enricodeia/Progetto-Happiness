@@ -115,7 +115,7 @@ const Preloader = ({ onComplete }) => {
     // One clean fade — everything goes together
     gsap.to(el, {
       opacity: 0,
-      duration: 1.2,
+      duration: 3,
       ease: 'power2.inOut',
       onComplete: () => { if (el) el.style.display = 'none'; },
     });
