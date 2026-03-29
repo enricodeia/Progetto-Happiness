@@ -67,12 +67,7 @@ export function initGlobe(canvas) {
   }
   function updateSunLight() {
     const s = getSunPosition();
-    const sunPos = latLngToECEF(s.lat, s.lng, EARTH_RADIUS * 3);
-    sunLight.position.copy(sunPos);
-    // Update night shader sun direction
-    if (nightMat.uniforms) {
-      nightMat.uniforms.sunDir.value.copy(sunPos).normalize();
-    }
+    sunLight.position.copy(latLngToECEF(s.lat, s.lng, EARTH_RADIUS * 3));
   }
   updateSunLight();
 
@@ -251,51 +246,6 @@ export function initGlobe(canvas) {
   globeMesh.rotation.y = -Math.PI / 2;
   globeMesh.renderOrder = 0;
   scene.add(globeMesh);
-
-  // ---- Night lights layer (shader masks day side) ----
-  const nightGeo = new THREE.SphereGeometry(EARTH_RADIUS * 0.998, 96, 96);
-  const nightMat = new THREE.ShaderMaterial({
-    transparent: true, depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    uniforms: {
-      nightMap: { value: null },
-      sunDir: { value: new THREE.Vector3(1, 0, 0) },
-      uOpacity: { value: 0.8 },
-    },
-    vertexShader: `
-      varying vec2 vUv;
-      varying vec3 vWorldNormal;
-      void main() {
-        vUv = uv;
-        vWorldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform sampler2D nightMap;
-      uniform vec3 sunDir;
-      uniform float uOpacity;
-      varying vec2 vUv;
-      varying vec3 vWorldNormal;
-      void main() {
-        float sun = dot(vWorldNormal, normalize(sunDir));
-        // Only show on dark side: smooth transition around terminator
-        float night = smoothstep(0.1, -0.2, sun);
-        vec4 tex = texture2D(nightMap, vUv);
-        gl_FragColor = vec4(tex.rgb * night * uOpacity, tex.a * night * uOpacity);
-      }
-    `,
-  });
-  const nightMesh = new THREE.Mesh(nightGeo, nightMat);
-  nightMesh.rotation.y = -Math.PI / 2;
-  nightMesh.renderOrder = 0;
-  scene.add(nightMesh);
-
-  new THREE.TextureLoader().load('/nightmap.webp', (tex) => {
-    tex.colorSpace = THREE.SRGBColorSpace;
-    nightMat.uniforms.nightMap.value = tex;
-    nightMat.needsUpdate = true;
-  });
 
   // ---- Cloud layer (real texture, additive blending for black bg) ----
   const cloudGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.003, 64, 64);
@@ -873,14 +823,14 @@ export function initGlobe(canvas) {
         gsapTexTween?.kill();
         gsapTexTween = gsap.to(texState, {
           opacity: texTarget, duration: 1.3, ease: 'cubic.out',
-          onUpdate: () => { sphereMat.opacity = texState.opacity; nightMat.uniforms.uOpacity.value = texState.opacity * 0.8; },
+          onUpdate: () => { sphereMat.opacity = texState.opacity; },
         });
       } else if (scrollPct < texTrigger && texFadeActive) {
         texFadeActive = false;
         gsapTexTween?.kill();
         gsapTexTween = gsap.to(texState, {
           opacity: 1, duration: 0.8, ease: 'cubic.out',
-          onUpdate: () => { sphereMat.opacity = texState.opacity; nightMat.uniforms.uOpacity.value = texState.opacity * 0.8; },
+          onUpdate: () => { sphereMat.opacity = texState.opacity; },
         });
       }
     }
