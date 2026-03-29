@@ -95,7 +95,7 @@ html, body, #root {
   left: 50%; transform: translateX(-50%);
   text-align: center;
   font-family: var(--font-serif);
-  font-size: 22px; font-weight: 200;
+  font-size: 28px; font-weight: 200;
   color: var(--color-text);
   opacity: 0;
   line-height: 1.35;
@@ -176,7 +176,7 @@ html, body, #root {
   display: flex; align-items: center; gap: 14px;
 }
 .preloader__prompt-btn {
-  font-family: var(--font-sans); font-size: 13px; font-weight: 400;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 600;
   border: none; cursor: pointer; transition: all 0.3s ease;
   border-radius: 100px; letter-spacing: 0.3px;
 }

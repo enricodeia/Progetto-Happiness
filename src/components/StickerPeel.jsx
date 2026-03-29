@@ -23,22 +23,7 @@ const StickerPeel = ({
   const stickerMainRef = useRef(null);
   const flapRef = useRef(null);
 
-  useEffect(() => {
-    const updateLight = (e) => {
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      gsap.set(pointLightRef.current, { attr: { x, y } });
-      gsap.set(pointLightFlippedRef.current, { attr: { x, y: rect.height - y } });
-    };
-
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener('mousemove', updateLight);
-      return () => container.removeEventListener('mousemove', updateLight);
-    }
-  }, []);
+  // Mouse tracking light disabled
 
   const cssVars = useMemo(() => ({
     '--sticker-rotate': `${rotate}deg`,
