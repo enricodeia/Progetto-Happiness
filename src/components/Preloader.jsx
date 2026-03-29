@@ -104,14 +104,14 @@ const Preloader = ({ onComplete }) => {
 
     // Then fade entire preloader
     gsap.to(el, {
-      opacity: 0, duration: 1.4,
+      opacity: 0, duration: 1.6,
       delay: 0.3,
-      ease: 'circ.inOut',
+      ease: 'cubic.inOut',
       onComplete: () => { if (el) el.style.display = 'none'; },
     });
 
     // Title starts midway through fade
-    setTimeout(onComplete, 600);
+    setTimeout(onComplete, 700);
   }, [onComplete]);
 
   return (
