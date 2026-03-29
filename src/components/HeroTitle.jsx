@@ -71,7 +71,9 @@ const HeroTitle = ({ config }) => {
     const words = [line1Ref.current, line2Ref.current].filter(Boolean);
     gsap.fromTo(words,
       { y: 50, opacity: 0 },
-      { y: 0, opacity: 1, duration: 1.2, ease: 'power3.out', stagger: 0.15 }
+      { y: 0, opacity: 1, duration: 1.2, ease: 'power3.out', stagger: 0.15,
+        onComplete() { words.forEach((w) => gsap.set(w, { clearProps: 'transform' })); }
+      }
     );
 
     const smileEls = smileWordsRef.current.filter(Boolean);
