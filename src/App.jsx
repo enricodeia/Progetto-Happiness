@@ -11,6 +11,7 @@ import PanelCard from './components/PanelCard.jsx';
 import Bacheca from './components/Bacheca.jsx';
 import BubbleMenu from './components/BubbleMenu.jsx';
 import PinPanel from './components/PinPanel.jsx';
+import ZodiacControlPanel from './components/ZodiacControlPanel.jsx';
 import ScrollPath from './components/ScrollPath.jsx';
 import HeroTitle from './components/HeroTitle.jsx';
 import { globeState } from './globe-scene.js';
@@ -294,9 +295,9 @@ export default function App() {
         {/* Scroll % indicator — bottom right */}
         {showUI && (
           <div className="scroll-indicator">
-            <span className="scroll-indicator__value">{scrollPct}%</span>
+            <span className="scroll-indicator__value">{Math.round(scrollPct)}%</span>
             <div className="scroll-indicator__bar">
-              <div className="scroll-indicator__fill" style={{ width: `${scrollPct}%` }} />
+              <div className="scroll-indicator__fill" style={{ width: `${Math.round(scrollPct)}%` }} />
             </div>
           </div>
         )}
@@ -443,6 +444,9 @@ export default function App() {
           )}
         </>
       )}
+
+      {/* Zodiac control panel */}
+      {showUI && !bachecaOpen && <ZodiacControlPanel />}
 
       {/* About overlay */}
       <AboutOverlay visible={aboutOpen} onClose={() => { setAboutOpen(false); setActiveNav('globe'); }} />
