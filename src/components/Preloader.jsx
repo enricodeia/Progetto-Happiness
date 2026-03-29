@@ -127,31 +127,33 @@ const Preloader = ({ onComplete }) => {
           peelDirection={0}
         />
 
-        {!showPrompt && (
-          <div className="preloader__counter">
-            <span className="preloader__number">{progress}</span>
-            <span className="preloader__percent">%</span>
-          </div>
-        )}
-
-        {showPrompt && (
-          <div className="preloader__prompt" ref={promptRef} style={{ opacity: 0 }}>
-            <p className="preloader__prompt-text">
-              Attiva l'audio per un'esperienza<br />immersiva
-            </p>
-            <div className="preloader__prompt-buttons">
-              <button className="preloader__prompt-btn preloader__prompt-btn--yes" onClick={() => launchSite(true)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
-                </svg>
-                Sì, attiva
-              </button>
-              <button className="preloader__prompt-btn preloader__prompt-btn--no" onClick={() => launchSite(false)}>
-                Continua senza audio
-              </button>
+        <div className="preloader__below">
+          {!showPrompt && (
+            <div className="preloader__counter">
+              <span className="preloader__number">{progress}</span>
+              <span className="preloader__percent">%</span>
             </div>
-          </div>
-        )}
+          )}
+
+          {showPrompt && (
+            <div className="preloader__prompt" ref={promptRef} style={{ opacity: 0 }}>
+              <p className="preloader__prompt-text">
+                Attiva l'audio per un'esperienza immersiva
+              </p>
+              <div className="preloader__prompt-buttons">
+                <button className="preloader__prompt-btn preloader__prompt-btn--yes" onClick={() => launchSite(true)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
+                  </svg>
+                  Sì, attiva
+                </button>
+                <button className="preloader__prompt-btn preloader__prompt-btn--no" onClick={() => launchSite(false)}>
+                  Senza audio
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
