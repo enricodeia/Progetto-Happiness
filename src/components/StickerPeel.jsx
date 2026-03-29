@@ -76,7 +76,7 @@ const StickerPeel = ({
           </filter>
           <filter id="sticker-peel__fill">
             <feOffset dx="0" dy="0" in="SourceAlpha" result="shape" />
-            <feFlood floodColor="#ffffff" result="flood" />
+            <feFlood floodColor="#F6E3D5" result="flood" />
             <feComposite operator="in" in="flood" in2="shape" />
           </filter>
         </defs>
