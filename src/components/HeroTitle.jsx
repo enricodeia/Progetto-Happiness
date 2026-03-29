@@ -41,7 +41,7 @@ const HeroTitle = ({ config }) => {
   const line1Ref = useRef(null);
   const line2Ref = useRef(null);
   const smileWordsRef = useRef([]);
-  const hasAnimated = useRef(false);
+  const [wordsVisible, setWordsVisible] = useState(false);
   const [scrollPct, setScrollPct] = useState(0);
   const targetScroll = useRef(0);
   const smoothScroll = useRef(0);
@@ -63,18 +63,14 @@ const HeroTitle = ({ config }) => {
     };
   }, []);
 
-  // Word-level intro — simple, no char conflicts
+  // Word-level intro — opacity only (no transform, no clearProps needed)
   useEffect(() => {
-    if (hasAnimated.current) return;
-    hasAnimated.current = true;
-
-    const words = [line1Ref.current, line2Ref.current].filter(Boolean);
-    gsap.fromTo(words,
-      { y: 50, opacity: 0 },
-      { y: 0, opacity: 1, duration: 1.2, ease: 'power3.out', stagger: 0.15,
-        onComplete() { words.forEach((w) => gsap.set(w, { clearProps: 'transform' })); }
-      }
-    );
+    setWordsVisible(false);
+    const tl = gsap.timeline({
+      onComplete: () => setWordsVisible(true),
+    });
+    tl.to({}, { duration: 0.1 }); // tiny delay
+    tl.call(() => setWordsVisible(true));
 
     const smileEls = smileWordsRef.current.filter(Boolean);
     gsap.fromTo(smileEls,
@@ -102,10 +98,12 @@ const HeroTitle = ({ config }) => {
       '--hero-bottom-color': c.bottomColor,
     }}>
       <h1 className="hero-title__heading">
-        <span className="hero-title__line1" ref={line1Ref} style={{ opacity: 0 }}>
+        <span className="hero-title__line1" ref={line1Ref}
+          style={{ opacity: wordsVisible ? 1 : 0, transition: wordsVisible ? 'none' : 'opacity 1.2s ease' }}>
           <SplitChars text="Progetto" scrollPct={scrollPct} fadeStart={50} fadeEnd={60} />
         </span>
-        <span className="hero-title__line2" ref={line2Ref} style={{ opacity: 0 }}>
+        <span className="hero-title__line2" ref={line2Ref}
+          style={{ opacity: wordsVisible ? 1 : 0, transition: wordsVisible ? 'none' : 'opacity 1.2s ease' }}>
           <SplitChars text="Happiness" scrollPct={scrollPct} fadeStart={18} fadeEnd={46} />
         </span>
       </h1>
