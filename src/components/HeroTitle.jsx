@@ -92,7 +92,7 @@ const HeroTitle = ({ config, smileConfig }) => {
       };
 
       animateIn(progettoCharsRef, 0.1);
-      animateIn(happinessCharsRef, 0.1);
+      animateIn(happinessCharsRef, 0.3);
 
       // Subtitle paragraph fade in
       if (subtitleRef.current) {
