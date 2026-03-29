@@ -279,23 +279,15 @@ export function initGlobe(canvas) {
       const drawPin = () => {
         c.clearRect(0, 0, PIN_SIZE * 2, PIN_SIZE * 2);
 
-        // Glass background circle
-        c.beginPath(); c.arc(r, r, r - 2, 0, Math.PI * 2);
-        c.fillStyle = ps.bgColor || '#1a1a1a';
-        c.globalAlpha = ps.bgOpacity ?? 0.85;
-        c.fill();
-        c.globalAlpha = 1;
-
-        // Thumbnail
+        // Circular thumbnail — no glass, no background
         if (loadedImg) {
           c.save();
-          const inset = 4;
-          c.beginPath(); c.arc(r, r, r - inset, 0, Math.PI * 2); c.clip();
+          c.beginPath(); c.arc(r, r, r, 0, Math.PI * 2); c.clip();
           const aspect = loadedImg.width / loadedImg.height;
           let sw, sh, sx, sy;
           if (aspect > 1) { sh = loadedImg.height; sw = sh; sx = (loadedImg.width - sw) / 2; sy = 0; }
           else { sw = loadedImg.width; sh = sw; sx = 0; sy = (loadedImg.height - sh) / 2; }
-          c.drawImage(loadedImg, sx, sy, sw, sh, inset, inset, (r - inset) * 2, (r - inset) * 2);
+          c.drawImage(loadedImg, sx, sy, sw, sh, 0, 0, r * 2, r * 2);
           c.restore();
         }
         tex.needsUpdate = true;
