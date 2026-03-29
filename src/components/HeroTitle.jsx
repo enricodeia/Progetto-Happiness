@@ -25,7 +25,7 @@ const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd }) => {
 
         const eased = circIn(t);
         const op = 1 - eased;
-        const y = -15 * eased;
+        const y = -10 * eased;
 
         return (
           <span key={i} style={{
@@ -87,7 +87,7 @@ const HeroTitle = ({ config, onConfigChange }) => {
   }, []);
 
   const c = config;
-  const smileFade = scrollPct <= 45 ? 1 : scrollPct >= 53 ? 0 : 1 - (scrollPct - 45) / 8;
+  const smileFade = scrollPct <= 30 ? 1 : scrollPct >= 40 ? 0 : 1 - (scrollPct - 30) / 10;
 
   return (
     <div className="hero-title" style={{
@@ -107,7 +107,7 @@ const HeroTitle = ({ config, onConfigChange }) => {
       <h1 className="hero-title__heading">
         <span className="hero-title__line1" ref={line1Ref} style={{ opacity: hasAnimated.current ? 1 : 0 }}>
           {hasAnimated.current
-            ? <SplitChars text="Progetto" scrollPct={scrollPct} fadeStart={20} fadeEnd={67} />
+            ? <SplitChars text="Progetto" scrollPct={scrollPct} fadeStart={50} fadeEnd={60} />
             : 'Progetto'}
         </span>
         <span className="hero-title__line2" ref={line2Ref} style={{ opacity: hasAnimated.current ? 1 : 0 }}>
