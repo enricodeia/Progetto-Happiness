@@ -114,17 +114,19 @@ const ScrollPath = () => {
               style={{ cursor: 'pointer', opacity: 0 }}
               onClick={() => handleClick(step.pct)}
             >
+              {/* Hit area — invisible, larger for easy tapping */}
+              <circle cx={pos.x} cy={pos.y} r={18} fill="transparent" />
               <circle
-                cx={pos.x} cy={pos.y} r={isCurrent ? 5.5 : 4}
+                cx={pos.x} cy={pos.y} r={isCurrent ? 7 : 5.5}
                 fill="none"
-                stroke={isActive ? 'rgba(255,221,0,0.6)' : 'rgba(255,255,255,0.12)'}
+                stroke={isActive ? 'rgba(255,221,0,0.6)' : 'rgba(255,255,255,0.15)'}
                 strokeWidth={isCurrent ? 1.2 : 0.8}
                 style={{ transition: 'all 0.4s ease' }}
               />
               <circle
                 cx={pos.x} cy={pos.y}
-                r={isCurrent ? 2 : 1.5}
-                fill={isActive ? '#FFDD00' : 'rgba(255,255,255,0.2)'}
+                r={isCurrent ? 2.5 : 2}
+                fill={isActive ? '#FFDD00' : 'rgba(255,255,255,0.25)'}
                 style={{ transition: 'all 0.4s ease' }}
               />
             </g>
