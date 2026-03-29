@@ -3,7 +3,7 @@ import { gsap } from 'gsap';
 
 const SMILE_WORDS = ['What', 'Makes', 'You', 'Happy?'];
 
-const circIn = (t) => 1 - Math.sqrt(1 - t * t);
+const smoothstep = (t) => t * t * (3 - 2 * t);
 
 const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd, charsRef, introDone }) => {
   const chars = text.split('');
@@ -22,8 +22,8 @@ const SplitChars = ({ text, scrollPct, fadeStart, fadeEnd, charsRef, introDone }
         if (scrollPct >= end) t = 1;
         else if (scrollPct > start) t = (scrollPct - start) / (end - start);
 
-        const eased = circIn(t);
-        const op = t >= 0.95 ? 0 : 1 - eased; // snap to 0 near end
+        const eased = smoothstep(t);
+        const op = t >= 0.97 ? 0 : 1 - eased;
 
         const style = introDone
           ? { opacity: op, transform: `translateY(${-10 * eased}px)` }
@@ -59,7 +59,7 @@ const HeroTitle = ({ config, smileConfig }) => {
       if (Math.abs(diff) < 0.05) {
         smoothScroll.current = targetScroll.current;
       } else {
-        smoothScroll.current += diff * 0.12;
+        smoothScroll.current += diff * 0.08;
       }
       setScrollPct(smoothScroll.current);
       rafId.current = requestAnimationFrame(tick);
