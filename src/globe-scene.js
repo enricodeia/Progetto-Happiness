@@ -405,6 +405,16 @@ export function initGlobe(canvas) {
   // No expansion trigger needed
 
   // ---- Fly to marker ----
+  // Set zoom by scroll percentage (0=far, 100=close)
+  globeState.setZoomPct = (pct) => {
+    const p = Math.max(0, Math.min(100, pct)) / 100;
+    const ZOOM_MIN_L = EARTH_RADIUS * 1.15;
+    const ZOOM_MAX_L = EARTH_RADIUS * 7;
+    targetCamDist = ZOOM_MAX_L - p * (ZOOM_MAX_L - ZOOM_MIN_L);
+    autoRotate = false; clearTimeout(autoTimer);
+    autoTimer = setTimeout(() => { autoRotate = true; }, 8000);
+  };
+
   globeState.flyToMarker = (marker) => {
     const d = marker.data;
     const pos = latLngToECEF(d.lat, d.lng, 0).normalize();
