@@ -536,49 +536,6 @@ html, body, #root {
 }
 
 /* ============================================
-   Pin labels (visible at pin zoom level)
-   ============================================ */
-.pin-labels {
-  position: fixed; inset: 0; z-index: 50; pointer-events: none;
-}
-.pin-label {
-  position: absolute;
-  display: flex; align-items: center; gap: 8px;
-  background: rgba(20, 16, 12, 0.75);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(253, 244, 237, 0.1);
-  border-radius: 8px;
-  padding: 5px 10px 5px 5px;
-  pointer-events: auto; cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.2s, border-color 0.2s;
-  font-family: var(--font-sans);
-}
-.pin-label:hover {
-  background: rgba(30, 24, 18, 0.9);
-  border-color: rgba(253, 244, 237, 0.2);
-}
-.pin-label__thumb {
-  width: 36px; height: 36px; border-radius: 5px;
-  overflow: hidden; flex-shrink: 0;
-}
-.pin-label__thumb img {
-  width: 100%; height: 100%; object-fit: cover;
-}
-.pin-label__text {
-  display: flex; flex-direction: column; gap: 1px;
-}
-.pin-label__ep {
-  font-size: 8px; font-weight: 500; letter-spacing: 1.2px;
-  text-transform: uppercase; color: var(--color-primary); opacity: 0.6;
-}
-.pin-label__title {
-  font-family: var(--font-serif); font-size: 13px; font-weight: 200;
-  color: var(--color-text); line-height: 1.2;
-  max-width: 140px; overflow: hidden; text-overflow: ellipsis;
-}
-
-/* ============================================
    Country label
    ============================================ */
 .country-label {
