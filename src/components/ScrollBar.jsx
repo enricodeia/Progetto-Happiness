@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { globeState } from '../globe-scene.js';
 
@@ -31,29 +31,61 @@ const ScrollBar = () => {
   const [panel, setPanel] = useState(false);
   const [copied, setCopied] = useState(false);
   const dashesRef = useRef([]);
+  const containerRef = useRef(null);
   const panelRef = useRef(null);
-  const hasAnimated = useRef(false);
+  const scrollRef = useRef(0);
+  const rafId = useRef(null);
 
-  const set = (k, v) => {
-    const next = { ...cfg, [k]: v };
-    setCfg(next);
-  };
+  const set = (k, v) => setCfg((p) => ({ ...p, [k]: v }));
 
   useEffect(() => {
-    const onScroll = (e) => setScrollPct(e.detail.pct);
+    const onScroll = (e) => {
+      scrollRef.current = e.detail.pct;
+      setScrollPct(e.detail.pct);
+    };
     window.addEventListener('globe:scroll', onScroll);
     return () => window.removeEventListener('globe:scroll', onScroll);
   }, []);
 
+  // GSAP-driven dash animation — smooth, no React inline style flicker
+  useEffect(() => {
+    const tick = () => {
+      const dashes = dashesRef.current;
+      const { count, baseWidth, peakWidth, spread, baseOpacity, activeOpacity } = cfg;
+      const pct = scrollRef.current;
+      const active = scrollToDash(pct, count);
+
+      for (let i = 0; i < dashes.length; i++) {
+        const el = dashes[i];
+        if (!el) continue;
+
+        const dist = Math.abs(i - active);
+        const wave = dist < spread ? 1 - dist / spread : 0;
+        const eased = wave * wave * (3 - 2 * wave);
+
+        const w = baseWidth + eased * (peakWidth - baseWidth);
+        const op = baseOpacity + eased * (activeOpacity - baseOpacity);
+
+        gsap.to(el, {
+          width: w,
+          opacity: op,
+          duration: 0.3,
+          ease: 'power2.out',
+          overwrite: 'auto',
+        });
+      }
+
+      rafId.current = requestAnimationFrame(tick);
+    };
+    rafId.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId.current);
+  }, [cfg]);
+
   // Intro
   useEffect(() => {
-    if (hasAnimated.current) return;
-    hasAnimated.current = true;
     const dashes = dashesRef.current.filter(Boolean);
-    gsap.fromTo(dashes,
-      { opacity: 0, scaleX: 0 },
-      { opacity: 1, scaleX: 1, duration: 0.3, ease: 'circ.out', stagger: 0.015, delay: 0.8 }
-    );
+    gsap.set(dashes, { opacity: 0, scaleX: 0 });
+    // Will be revealed by scroll threshold
   }, []);
 
   useEffect(() => {
@@ -62,10 +94,22 @@ const ScrollBar = () => {
     }
   }, [panel]);
 
-  const { count, baseWidth, peakWidth, spread, baseOpacity, activeOpacity } = cfg;
-  const activeDash = scrollToDash(scrollPct, count);
+  const { count } = cfg;
+  const barOpacity = scrollPct < 5 ? 0 : scrollPct < 10 ? (scrollPct - 5) / 5 : 1;
 
-  // Generate dot positions — evenly distributed along the track
+  // Intro reveal when bar becomes visible
+  const revealed = useRef(false);
+  useEffect(() => {
+    if (barOpacity > 0 && !revealed.current) {
+      revealed.current = true;
+      const dashes = dashesRef.current.filter(Boolean);
+      gsap.to(dashes, {
+        opacity: cfg.baseOpacity, scaleX: 1,
+        duration: 0.4, ease: 'circ.out', stagger: 0.01,
+      });
+    }
+  }, [barOpacity, cfg.baseOpacity]);
+
   const dots = [];
   const dc = cfg.dotCount;
   for (let i = 0; i < dc; i++) {
@@ -75,54 +119,30 @@ const ScrollBar = () => {
     dots.push({ dashIdx, pct, pos: (dashIdx / (count - 1)) * 100 });
   }
 
-  // Appear at 5% scroll
-  const barOpacity = scrollPct < 5 ? 0 : scrollPct < 10 ? (scrollPct - 5) / 5 : 1;
-
   return (
     <>
-      <div className="scrollbar" style={{ height: `${cfg.height}vh`, opacity: barOpacity }}>
+      <div className="scrollbar" ref={containerRef} style={{ height: `${cfg.height}vh`, opacity: barOpacity }}>
         <div className="scrollbar__track" style={{ gap: cfg.gap }}>
-          {Array.from({ length: count }, (_, i) => {
-            const dist = Math.abs(i - activeDash);
-            const wave = dist < spread ? 1 - dist / spread : 0;
-            const eased = wave * wave * (3 - 2 * wave);
-
-            const width = baseWidth + eased * (peakWidth - baseWidth);
-            const opacity = baseOpacity + eased * (activeOpacity - baseOpacity);
-
-            return (
-              <div
-                key={i}
-                ref={(el) => { dashesRef.current[i] = el; }}
-                className="scrollbar__dash"
-                style={{
-                  width,
-                  opacity,
-                  background: eased > 0.1
-                    ? `rgba(253, 244, 237, ${0.4 + eased * 0.6})`
-                    : 'rgba(255, 255, 255, 0.15)',
-                }}
-              />
-            );
-          })}
+          {Array.from({ length: count }, (_, i) => (
+            <div
+              key={i}
+              ref={(el) => { dashesRef.current[i] = el; }}
+              className="scrollbar__dash"
+              style={{ width: cfg.baseWidth, background: 'rgba(255, 255, 255, 0.15)' }}
+            />
+          ))}
         </div>
 
-        {/* Step dots — evenly spaced along the track */}
         {dots.map((dot, i) => (
           <button
             key={i}
             className={`scrollbar__step ${scrollPct >= dot.pct ? 'scrollbar__step--active' : ''}`}
-            style={{
-              top: `${dot.pos}%`,
-              width: cfg.dotSize,
-              height: cfg.dotSize,
-            }}
+            style={{ top: `${dot.pos}%`, width: cfg.dotSize, height: cfg.dotSize }}
             onClick={() => globeState.setZoomPct?.(dot.pct)}
           />
         ))}
       </div>
 
-      {/* Tuning panel */}
       <button className="pp__toggle" style={{ position: 'fixed', top: '50%', left: 20, transform: 'translateY(-50%)', zIndex: 100 }}
         onClick={() => setPanel(!panel)}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -131,7 +151,7 @@ const ScrollBar = () => {
         </svg>
       </button>
       {panel && (
-        <div className="pp" ref={panelRef} style={{ position: 'fixed', top: '50%', left: 56, transform: 'translateY(-50%)', zIndex: 100 }}>
+        <div className="pp" ref={panelRef} style={{ position: 'fixed', top: '50%', left: 56, transform: 'translateY(-50%)', zIndex: 100, maxHeight: '80vh', overflowY: 'auto' }}>
           <div className="pp__head">
             <span className="pp__title">Scroll Bar</span>
             <button className="pp__x" onClick={() => setPanel(false)}>
@@ -141,7 +161,7 @@ const ScrollBar = () => {
           <div className="pp__section">Layout</div>
           <label className="pp__row">
             <span className="pp__label">Count</span>
-            <input type="range" min={15} max={80} step={1} value={cfg.count} onChange={(e) => set('count', +e.target.value)} />
+            <input type="range" min={15} max={100} step={1} value={cfg.count} onChange={(e) => set('count', +e.target.value)} />
             <span className="pp__val">{cfg.count}</span>
           </label>
           <label className="pp__row">
@@ -163,12 +183,12 @@ const ScrollBar = () => {
           </label>
           <label className="pp__row">
             <span className="pp__label">Peak width</span>
-            <input type="range" min={10} max={50} step={1} value={cfg.peakWidth} onChange={(e) => set('peakWidth', +e.target.value)} />
+            <input type="range" min={10} max={60} step={1} value={cfg.peakWidth} onChange={(e) => set('peakWidth', +e.target.value)} />
             <span className="pp__val">{cfg.peakWidth}px</span>
           </label>
           <label className="pp__row">
             <span className="pp__label">Spread</span>
-            <input type="range" min={1} max={15} step={1} value={cfg.spread} onChange={(e) => set('spread', +e.target.value)} />
+            <input type="range" min={1} max={20} step={1} value={cfg.spread} onChange={(e) => set('spread', +e.target.value)} />
             <span className="pp__val">{cfg.spread}</span>
           </label>
           <div className="pp__sep" />
