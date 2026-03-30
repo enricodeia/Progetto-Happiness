@@ -249,6 +249,8 @@ export function initGlobe(canvas) {
 
   // Load normal map
   new THREE.TextureLoader().load('/normal.webp', (tex) => {
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
     sphereMat.normalMap = tex;
     sphereMat.normalScale.set(4.1, 4.1);
     sphereMat.needsUpdate = true;

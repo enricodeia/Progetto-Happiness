@@ -25,48 +25,99 @@ const PanelCard = ({ data, onClose }) => {
         gsap.killTweensOf(el);
         gsap.killTweensOf(items);
 
-        gsap.fromTo(el,
-          { height: 0, opacity: 0 },
-          { height: 'auto', opacity: 1, duration: 0.5, ease: 'power4.out' }
-        );
+        const mobile = window.innerWidth <= 768;
+
+        if (mobile) {
+          // Mobile: slide in from right, scrollable
+          gsap.set(el, { height: 'auto', opacity: 1, x: '100vw', overflow: 'hidden' });
+          gsap.to(el, {
+            x: 0, duration: 1, ease: 'circ.out',
+            onComplete: () => { el.style.overflowY = 'auto'; el.style.overflowX = 'hidden'; }
+          });
+        } else {
+          // Desktop: height reveal
+          gsap.fromTo(el,
+            { height: 0, opacity: 0 },
+            {
+              height: 'auto', opacity: 1, duration: 0.5, ease: 'power4.out',
+              onComplete: () => { el.style.height = ''; el.style.overflow = ''; }
+            }
+          );
+        }
 
         gsap.fromTo(items,
           { y: 16, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.4, ease: 'power4.out', stagger: 0.06, delay: 0.15 }
+          { y: 0, opacity: 1, duration: 0.4, ease: 'power4.out', stagger: 0.06, delay: mobile ? 0.3 : 0.15 }
         );
+
+        // Reset desc height
+        if (descRef.current) descRef.current.style.maxHeight = '60px';
       });
     }
   }, [data]);
 
-  // Expand/collapse animation
-  useEffect(() => {
-    if (!descRef.current) return;
-    if (expanded) {
-      gsap.to(descRef.current, {
-        maxHeight: 600, duration: 0.45, ease: 'circ.out',
-      });
+  // Expand / collapse description
+  const toggleExpand = () => {
+    const el = descRef.current;
+    if (!el) return;
+    const next = !expanded;
+    setExpanded(next);
+
+    if (next) {
+      // Measure full height
+      const prev = el.style.maxHeight;
+      el.style.maxHeight = 'none';
+      const fullH = el.scrollHeight;
+      el.style.maxHeight = prev;
+      // Force reflow so GSAP sees the starting value
+      el.offsetHeight; // eslint-disable-line no-unused-expressions
+      gsap.to(el, { maxHeight: fullH, duration: 0.55, ease: 'circ.out' });
     } else {
-      gsap.to(descRef.current, {
-        maxHeight: 60, duration: 0.4, ease: 'circ.out',
-      });
+      gsap.to(el, { maxHeight: 60, duration: 0.55, ease: 'circ.out' });
     }
-  }, [expanded]);
+  };
 
   const handleClose = () => {
     const el = panelRef.current;
     const items = itemsRef.current.filter(Boolean);
     if (!el) { onClose(); return; }
 
-    gsap.to(items.reverse(), {
-      y: 12, opacity: 0, duration: 0.25, ease: 'power4.in', stagger: 0.04,
-      onComplete: () => {
-        gsap.to(el, {
-          height: 0, opacity: 0, duration: 0.35, ease: 'power4.in',
-          onComplete: () => { setVisible(false); prevDataRef.current = null; onClose(); }
-        });
-      }
-    });
+    const mobile = window.innerWidth <= 768;
+    const done = () => { setVisible(false); prevDataRef.current = null; onClose(); };
+
+    if (mobile) {
+      // Mobile: slide out to right
+      el.style.overflow = 'hidden';
+      gsap.to(items.reverse(), { y: 12, opacity: 0, duration: 0.2, stagger: 0.03 });
+      gsap.to(el, { x: '100vw', duration: 0.6, ease: 'circ.out', delay: 0.1, onComplete: done });
+    } else {
+      // Desktop: collapse
+      gsap.to(items.reverse(), {
+        y: 12, opacity: 0, duration: 0.25, ease: 'power4.in', stagger: 0.04,
+        onComplete: () => {
+          gsap.to(el, { height: 0, opacity: 0, duration: 0.35, ease: 'power4.in', onComplete: done });
+        }
+      });
+    }
   };
+
+  // Click outside to close
+  useEffect(() => {
+    if (!visible || !data) return;
+    const handleClickOutside = (e) => {
+      if (panelRef.current && !panelRef.current.contains(e.target)) {
+        handleClose();
+      }
+    };
+    // Delay listener so the opening click doesn't immediately close
+    const timer = setTimeout(() => {
+      document.addEventListener('pointerdown', handleClickOutside);
+    }, 100);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('pointerdown', handleClickOutside);
+    };
+  }, [visible, data]);
 
   if (!visible || !data) return null;
 
@@ -74,7 +125,6 @@ const PanelCard = ({ data, onClose }) => {
   const isEp = data.type === 'episode';
   const hiddenStyle = { opacity: 0 };
 
-  // Get full description from scraped data, fallback to short description
   const fullDesc = (isEp && d.id && episodeDescriptions[d.id]) || null;
   const shortDesc = d.description || d.meaning || '';
   const hasMore = fullDesc && fullDesc.length > shortDesc.length;
@@ -98,10 +148,10 @@ const PanelCard = ({ data, onClose }) => {
         style={hiddenStyle}
       >
         <div className="panel__desc-inner" ref={descRef} style={{ maxHeight: 60, overflow: 'hidden' }}>
-          <p className="panel__desc">{expanded && fullDesc ? fullDesc : shortDesc}</p>
+          <p className="panel__desc">{fullDesc || shortDesc}</p>
         </div>
         {hasMore && (
-          <button className="panel__expand-btn" onClick={() => setExpanded(!expanded)}>
+          <button className="panel__expand-btn" onClick={toggleExpand}>
             {expanded ? 'mostra meno' : 'leggi tutto'}
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
               style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }}>

@@ -147,11 +147,21 @@ const HeroTitle = ({ config, smileConfig }) => {
       '--hero-bottom-y': `${c.bottomY}vh`,
       '--hero-bottom-y-dvh': `${c.bottomY}dvh`,
       '--hero-top-size': `${c.topSize}px`,
+      '--hero-top-size-mobile': `${c.topSizeMobile ?? 56}px`,
+      '--hero-title-line-height': `${c.titleLineHeight ?? 0.95}`,
       '--hero-bottom-size': `${c.bottomSize}px`,
       '--hero-curve-width': `${c.curveWidth}px`,
       '--hero-top-color': c.topColor,
       '--hero-accent-color': c.accentColor,
       '--hero-bottom-color': c.bottomColor,
+      '--hero-sub-top': `${c.subTop ?? 72}dvh`,
+      '--hero-sub-top-vh': `${c.subTop ?? 72}vh`,
+      '--hero-sub-font-size': `${c.subFontSize ?? 16}px`,
+      '--hero-sub-line-height': `${c.subLineHeight ?? 1.6}`,
+      '--hero-sub-top-mobile': `${c.subTopMobile ?? 65}dvh`,
+      '--hero-sub-top-mobile-vh': `${c.subTopMobile ?? 65}vh`,
+      '--hero-sub-font-size-mobile': `${c.subFontSizeMobile ?? 13}px`,
+      '--hero-sub-line-height-mobile': `${c.subLineHeightMobile ?? 1.5}`,
     }}>
       <h1 className="hero-title__heading">
         <span className="hero-title__line1">
@@ -168,7 +178,7 @@ const HeroTitle = ({ config, smileConfig }) => {
       <p className="hero-title__subtitle" ref={subtitleRef} style={{
         opacity: introDone ? subtitleFade * 0.45 : 0,
       }}>
-        Il progetto che racconta la felicità<br />attraverso reportage dal mondo.
+        {c.subLine1 || 'Il progetto che racconta la felicità'}<br />{c.subLine2 || 'attraverso reportage dal mondo.'}
       </p>
 
       {/* "What Makes You Happy?" — reveals on scroll at 60%+ */}
