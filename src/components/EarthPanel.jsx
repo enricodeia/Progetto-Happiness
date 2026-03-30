@@ -3,15 +3,15 @@ import { gsap } from 'gsap';
 import { globeState } from '../globe-scene.js';
 
 const DEFAULTS = {
-  ambientIntensity: 0.4,
-  ambientColor: '#404040',
-  sunIntensity: 1.5,
+  ambientIntensity: 2.0,
+  ambientColor: '#516270',
+  sunIntensity: 3.1,
   sunColor: '#ffffff',
-  shininess: 5,
+  shininess: 42,
   emissive: '#000000',
   emissiveIntensity: 0,
-  shadowColor: '#080808',
-  cloudOpacity: 0.4,
+  shadowColor: '#000000',
+  cloudOpacity: 0.75,
 };
 
 const EarthPanel = () => {

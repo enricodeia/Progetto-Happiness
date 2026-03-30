@@ -53,9 +53,9 @@ export function initGlobe(canvas) {
   camera.lookAt(0, 0, 0);
 
   // ── Lighting: ambient (night side) + directional (sun for day/night) ──
-  const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+  const ambientLight = new THREE.AmbientLight(0x516270, 2.0);
   scene.add(ambientLight);
-  const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+  const sunLight = new THREE.DirectionalLight(0xffffff, 3.1);
   scene.add(sunLight);
 
   function getSunPosition() {
@@ -234,12 +234,12 @@ export function initGlobe(canvas) {
   //   But we need to rotate 90 degrees around Y because our frame swap
   //   puts geoY (east) on X axis, which shifts longitude by 90 degrees.
   // Inner opaque sphere — blocks backside dots, always visible
-  const innerSphereMat = new THREE.MeshBasicMaterial({ color: 0x080808 });
+  const innerSphereMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
   scene.add(new THREE.Mesh(new THREE.SphereGeometry(EARTH_RADIUS * 0.995, 64, 64), innerSphereMat));
 
   // Outer textured sphere — Phong for day/night lighting, depthWrite false so dots stay on top
   const sphereMat = new THREE.MeshPhongMaterial({
-    color: 0xffffff, transparent: true, opacity: 1, depthWrite: false, shininess: 5,
+    color: 0xffffff, transparent: true, opacity: 1, depthWrite: false, shininess: 42,
   });
   const sphereGeo = new THREE.SphereGeometry(EARTH_RADIUS * 0.997, 96, 96);
   const globeMesh = new THREE.Mesh(sphereGeo, sphereMat);
@@ -250,7 +250,7 @@ export function initGlobe(canvas) {
   // ---- Cloud layer (real texture, additive blending for black bg) ----
   const cloudGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.003, 64, 64);
   const cloudMat = new THREE.MeshBasicMaterial({
-    transparent: true, opacity: 0.4, depthWrite: false,
+    transparent: true, opacity: 0.75, depthWrite: false,
     blending: THREE.AdditiveBlending,
   });
   const cloudMesh = new THREE.Mesh(cloudGeo, cloudMat);
