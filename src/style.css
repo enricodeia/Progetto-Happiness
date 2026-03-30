@@ -91,11 +91,11 @@ html, body, #root {
 
 .hero-title__subtitle {
   position: absolute;
-  top: 68vh; top: 68dvh;
+  top: calc(68vh + 2.5vh); top: calc(68dvh + 2.5vh);
   left: 50%; transform: translateX(-50%);
   text-align: center;
   font-family: var(--font-serif);
-  font-size: 24px; font-weight: 200;
+  font-size: 28px; font-weight: 200;
   color: var(--color-text);
   opacity: 0;
   line-height: 1.35;

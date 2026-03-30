@@ -835,15 +835,15 @@ export function initGlobe(canvas) {
       }
     }
 
-    // ---- Cloud fade: GSAP at 90% scroll ----
-    if (scrollPct >= 90 && !cloudFadeActive) {
+    // ---- Cloud fade: GSAP at 68% scroll (1% before "What Makes You Happy?" max) ----
+    if (scrollPct >= 68 && !cloudFadeActive) {
       cloudFadeActive = true;
       gsapCloudTween?.kill();
       gsapCloudTween = gsap.to(cloudState, {
         opacity: 0, duration: 1.2, ease: 'cubic.out',
         onUpdate: () => { cloudMat.opacity = cloudState.opacity; },
       });
-    } else if (scrollPct < 90 && cloudFadeActive) {
+    } else if (scrollPct < 68 && cloudFadeActive) {
       cloudFadeActive = false;
       gsapCloudTween?.kill();
       gsapCloudTween = gsap.to(cloudState, {
