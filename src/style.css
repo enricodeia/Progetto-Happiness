@@ -600,7 +600,7 @@ html, body, #root {
   transition: opacity 0.3s ease;
 }
 @media (max-width: 768px) {
-  .logo-overlay { width: 12.3vh !important; top: 37vh !important; }
+  .logo-overlay { width: 12.3svh !important; top: 50svh !important; transform: translate(-50%, -50%) !important; }
   .sticker-peel { --sticker-width: 170px !important; }
 }
 
