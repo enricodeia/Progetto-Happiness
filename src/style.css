@@ -95,10 +95,10 @@ html, body, #root {
   left: 50%; transform: translateX(-50%);
   text-align: center;
   font-family: var(--font-serif);
-  font-size: 28px; font-weight: 200;
+  font-size: 24px; font-weight: 200;
   color: var(--color-text);
   opacity: 0;
-  line-height: 1.35;
+  line-height: 1.3;
   white-space: nowrap;
 }
 
@@ -123,7 +123,7 @@ html, body, #root {
     top: var(--hero-top-y-mobile-dvh);
     white-space: nowrap;
   }
-  .hero-title__subtitle { font-size: 13px; top: 65vh; top: 65dvh; white-space: nowrap; }
+  .hero-title__subtitle { font-size: 18px; top: 70dvh; white-space: nowrap; }
   .hero-title__curve { width: 280px; }
   .hero-title__curve text { font-size: 40px !important; }
 }

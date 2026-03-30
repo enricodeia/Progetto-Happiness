@@ -126,7 +126,7 @@ export default function App() {
   });
   const [heroConfig, setHeroConfig] = useState({
     topY: 12,
-    topYMobile: 21,
+    topYMobile: 18,
     bottomY: 60,
     topSize: 92,
     bottomSize: 41,
@@ -357,7 +357,6 @@ export default function App() {
               { href: 'https://www.youtube.com/@ProgettoHappiness', icon: <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 12a29 29 0 00.46 5.58 2.78 2.78 0 001.94 2C5.12 20 12 20 12 20s6.88 0 8.6-.46a2.78 2.78 0 001.94-2A29 29 0 0023 12a29 29 0 00-.46-5.58zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/> },
               { href: 'https://www.instagram.com/progettohappiness/', icon: <><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5"/></> },
               { href: 'https://www.facebook.com/progettohappiness', icon: <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/> },
-              { href: 'https://www.linkedin.com/company/progettohappiness/', icon: <><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-4 0v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></> },
               { href: 'https://www.twitch.tv/progettohappiness', icon: <path d="M21 2H3v16h5v4l4-4h5l4-4V2zm-10 9V7m5 4V7"/> },
             ].map(({ href, icon }, i) => (
               <a key={i} href={href} target="_blank" rel="noopener" className="socials__icon"
