@@ -400,10 +400,13 @@ export function initGlobe(canvas) {
     let activePin = null;
     let ringPulseTween = null;
     const ringState = { scale: 1, opacity: 0.8 };
+    globeState._activePin = null;
+    globeState._ringSprite = ringSprite;
 
     globeState.setActivePin = (marker) => {
       if (marker === activePin) return;
       activePin = marker;
+      globeState._activePin = marker;
       ringPulseTween?.kill();
 
       if (!marker) {
@@ -442,6 +445,7 @@ export function initGlobe(canvas) {
 
     globeState.clearActivePin = () => {
       activePin = null;
+      globeState._activePin = null;
       ringPulseTween?.kill();
       ringSprite.visible = false;
       ringMat.opacity = 0;
@@ -971,8 +975,8 @@ export function initGlobe(canvas) {
     updateScrollPct();
 
     // Keep ring sprite on active pin position
-    if (activePin && ringSprite.visible) {
-      ringSprite.position.copy(activePin.dot.position);
+    if (globeState._activePin && globeState._ringSprite?.visible) {
+      globeState._ringSprite.position.copy(globeState._activePin.dot.position);
     }
 
     // ---- Texture fade: GSAP at scroll trigger ----
