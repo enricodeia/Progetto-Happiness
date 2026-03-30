@@ -590,14 +590,37 @@ html, body, #root {
 /* ============================================
    Hint
    ============================================ */
-.hint {
-  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-  z-index: 10; font-size: 10px; font-weight: 300; letter-spacing: 0.5px;
-  color: var(--color-text-tertiary); pointer-events: none;
-  opacity: 0; animation: hint-fade 7s ease 0.5s forwards;
+/* Scroll line — Apple-style bottom center indicator */
+.scroll-line {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+  z-index: 10; pointer-events: none;
+  opacity: 0; transition: opacity 0.6s ease;
 }
-.hint--visible { animation: hint-fade 7s ease 0.7s forwards; }
-@keyframes hint-fade { 0% { opacity: 0; } 15% { opacity: 0.4; } 65% { opacity: 0.4; } 100% { opacity: 0; } }
+.scroll-line--visible { opacity: 1; }
+.scroll-line__track {
+  width: 1px; height: 40px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 1px;
+  overflow: hidden;
+  position: relative;
+}
+.scroll-line__pulse {
+  width: 100%; height: 14px;
+  background: rgba(253, 244, 237, 0.5);
+  border-radius: 1px;
+  position: absolute; bottom: 0; left: 0;
+  animation: scrollPulse 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes scrollPulse {
+  0% { bottom: 0; opacity: 0; height: 14px; }
+  20% { opacity: 1; }
+  80% { opacity: 0.6; }
+  100% { bottom: 100%; opacity: 0; height: 6px; }
+}
+@media (max-width: 768px) {
+  .scroll-line { bottom: 24px; }
+  .scroll-line__track { height: 32px; }
+}
 
 /* ============================================
    Scroll indicator (debug)

@@ -334,7 +334,14 @@ export default function App() {
 
         <PanelCard data={panelData} onClose={closeEpisodePanel} />
 
-        <div className={`hint ${showUI ? 'hint--visible' : ''}`}>Scroll per esplorare il mondo</div>
+        {/* Scroll line indicator — bottom center */}
+        <div className={`scroll-line ${showUI ? 'scroll-line--visible' : ''}`} style={{
+          opacity: scrollPct <= 8 ? 1 : scrollPct >= 18 ? 0 : 1 - (scrollPct - 8) / 10,
+        }}>
+          <div className="scroll-line__track">
+            <div className="scroll-line__pulse" />
+          </div>
+        </div>
 
         {/* Social icons — bottom right */}
         {showUI && (
