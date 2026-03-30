@@ -30,7 +30,7 @@ function LocalClock({ scrollPct = 0 }) {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
-  const op = scrollPct <= 15 ? 1 : scrollPct >= 25 ? 0 : 1 - (scrollPct - 15) / 10;
+  const op = scrollPct <= 8 ? 1 : scrollPct >= 15 ? 0 : 1 - (scrollPct - 8) / 7;
   return (
     <div className="local-clock" style={{ opacity: op }}>
       <span className="local-clock__zone">{zone}</span>
@@ -335,12 +335,15 @@ export default function App() {
         <PanelCard data={panelData} onClose={closeEpisodePanel} />
 
         {/* Scroll line indicator — bottom center */}
-        <div className={`scroll-line ${showUI ? 'scroll-line--visible' : ''}`} style={{
-          opacity: scrollPct <= 8 ? 1 : scrollPct >= 18 ? 0 : 1 - (scrollPct - 8) / 10,
-        }}>
-          {Array.from({ length: 22 }, (_, i) => (
-            <div key={i} className="scroll-line__dash" />
-          ))}
+        <div className={`scroll-line ${showUI ? 'scroll-line--visible' : ''}`}>
+          {Array.from({ length: 22 }, (_, i) => {
+            // Each dash disappears on stagger: bottom (i=0) first, top (i=21) last
+            // Spread across 2% → 15% scroll
+            const fadeStart = 2 + (i / 21) * 10;
+            const fadeEnd = fadeStart + 3;
+            const op = scrollPct <= fadeStart ? 1 : scrollPct >= fadeEnd ? 0 : 1 - (scrollPct - fadeStart) / (fadeEnd - fadeStart);
+            return <div key={i} className="scroll-line__dash" style={{ opacity: op }} />;
+          })}
         </div>
 
         {/* Social icons — bottom right */}
