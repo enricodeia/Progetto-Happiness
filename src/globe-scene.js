@@ -241,6 +241,98 @@ export function initGlobe(canvas) {
   const sphereMat = new THREE.MeshPhongMaterial({
     color: 0xffffff, transparent: true, opacity: 1, depthWrite: false, shininess: 27,
   });
+
+  // ---- FBM reveal mask around selected pin ----
+  const maskUniforms = {
+    uPinWorld: { value: new THREE.Vector3(0, 0, 0) },
+    uMaskActive: { value: 0.0 },
+    uMaskRadius: { value: 0.35 },  // radius in normalized sphere coords
+    uMaskSoft: { value: 0.15 },    // feather edge
+    uTime: { value: 0.0 },
+  };
+
+  sphereMat.onBeforeCompile = (shader) => {
+    // Inject our uniforms
+    Object.keys(maskUniforms).forEach((k) => { shader.uniforms[k] = maskUniforms[k]; });
+
+    // Add vWorldPos varying to vertex shader
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <common>',
+      `#include <common>
+      varying vec3 vWorldPos;`
+    );
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <worldpos_vertex>',
+      `#include <worldpos_vertex>
+      vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;`
+    );
+
+    // Add FBM + mask to fragment shader
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <common>',
+      `#include <common>
+      varying vec3 vWorldPos;
+      uniform vec3 uPinWorld;
+      uniform float uMaskActive;
+      uniform float uMaskRadius;
+      uniform float uMaskSoft;
+      uniform float uTime;
+
+      // Simple hash + noise for FBM
+      float hash(vec3 p) {
+        p = fract(p * 0.3183099 + 0.1);
+        p *= 17.0;
+        return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+      }
+      float noise3d(vec3 p) {
+        vec3 i = floor(p);
+        vec3 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(
+          mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x),
+              mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+          mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+              mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
+      }
+      float fbm(vec3 p) {
+        float v = 0.0, a = 0.5;
+        for (int i = 0; i < 4; i++) {
+          v += a * noise3d(p);
+          p *= 2.1;
+          a *= 0.45;
+        }
+        return v;
+      }`
+    );
+
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <dithering_fragment>',
+      `#include <dithering_fragment>
+      if (uMaskActive > 0.5) {
+        // Distance on unit sphere between fragment and pin
+        vec3 fragDir = normalize(vWorldPos);
+        vec3 pinDir = normalize(uPinWorld);
+        float dist = acos(clamp(dot(fragDir, pinDir), -1.0, 1.0));
+
+        // FBM distortion on the edge
+        vec3 fbmInput = fragDir * 6.0 + uTime * 0.08;
+        float noiseVal = fbm(fbmInput) * 0.12;
+
+        // Soft mask with organic edge
+        float edge = smoothstep(uMaskRadius + uMaskSoft + noiseVal, uMaskRadius - uMaskSoft + noiseVal, dist);
+
+        // Desaturate + darken outside mask
+        vec3 col = gl_FragColor.rgb;
+        float luma = dot(col, vec3(0.299, 0.587, 0.114));
+        vec3 desat = vec3(luma) * 0.3;
+        gl_FragColor.rgb = mix(desat, col, edge);
+      }`
+    );
+
+    // Store ref so we can update uniforms
+    sphereMat.userData.shader = shader;
+  };
+
   const sphereGeo = new THREE.SphereGeometry(EARTH_RADIUS * 0.997, 128, 128);
   const globeMesh = new THREE.Mesh(sphereGeo, sphereMat);
   globeMesh.rotation.y = -Math.PI / 2;
@@ -402,8 +494,14 @@ export function initGlobe(canvas) {
       if (!marker) {
         ringSprite.visible = false;
         ringMat.opacity = 0;
+        // Fade out mask
+        gsap.to(maskUniforms.uMaskActive, { value: 0, duration: 0.6, ease: 'power2.inOut' });
         return;
       }
+
+      // Activate FBM mask at pin position
+      maskUniforms.uPinWorld.value.copy(marker.dot.position);
+      gsap.to(maskUniforms.uMaskActive, { value: 1, duration: 0.5, ease: 'power2.out' });
 
       ringSprite.visible = true;
       ringSprite.position.copy(marker.dot.position);
@@ -438,6 +536,7 @@ export function initGlobe(canvas) {
       globeState._activePin = null;
       ringPulseTween?.kill();
       ringSprite.visible = false;
+      gsap.to(maskUniforms.uMaskActive, { value: 0, duration: 0.6, ease: 'power2.inOut' });
       ringMat.opacity = 0;
     };
 
@@ -988,6 +1087,7 @@ export function initGlobe(canvas) {
   function animate() {
     requestAnimationFrame(animate);
     animTime += 0.016;
+    maskUniforms.uTime.value = animTime;
 
     // Stars twinkle + zodiac + sun position
     starMat.uniforms.time.value = animTime;
