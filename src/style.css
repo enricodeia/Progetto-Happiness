@@ -593,7 +593,7 @@ html, body, #root {
 /* Logo overlay */
 .logo-overlay {
   position: fixed;
-  left: 50%; transform: translateX(-50%);
+  left: 50%;
   z-index: 3;
   pointer-events: none;
   transition: opacity 0.3s ease;
