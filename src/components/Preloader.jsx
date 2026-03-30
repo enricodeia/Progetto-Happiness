@@ -113,7 +113,7 @@ const Preloader = ({ onComplete }) => {
     <div className="preloader" ref={containerRef}>
       <div className="preloader__content">
         <div ref={stickerWrapRef}>
-          <StickerPeel imageSrc="/logo.webp" width={190} rotate={0} peelBackPct={peelPct}
+          <StickerPeel imageSrc="/logo.webp" width={170} rotate={0} peelBackPct={peelPct}
             shadowIntensity={0.4} lightingIntensity={0.15} peelDirection={0} />
         </div>
 
