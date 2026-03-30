@@ -140,7 +140,7 @@ html, body, #root {
 .preloader__content {
   display: flex; flex-direction: column;
   align-items: center; gap: 32px;
-  margin-top: calc(7vh + 42px);
+  margin-top: calc(8.4vh + 42px);
 }
 
 .preloader__counter {
