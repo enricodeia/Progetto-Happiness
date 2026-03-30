@@ -16,7 +16,7 @@ import HeroTitle from './components/HeroTitle.jsx';
 import { globeState } from './globe-scene.js';
 import { episodes, happinessConcepts } from './data.js';
 
-function LocalClock() {
+function LocalClock({ scrollPct = 0 }) {
   const [time, setTime] = useState('');
   const [zone, setZone] = useState('');
   useEffect(() => {
@@ -30,8 +30,9 @@ function LocalClock() {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
+  const op = scrollPct <= 15 ? 1 : scrollPct >= 25 ? 0 : 1 - (scrollPct - 15) / 10;
   return (
-    <div className="local-clock">
+    <div className="local-clock" style={{ opacity: op }}>
       <span className="local-clock__time">{time}</span>
       <span className="local-clock__zone">{zone}</span>
     </div>
@@ -291,7 +292,7 @@ export default function App() {
       <div className={`page-wrapper ${bachecaOpen ? 'page-wrapper--slide-left' : ''}`}>
         <Globe />
         <Noise patternSize={200} patternAlpha={12} patternRefreshInterval={6} />
-        {showUI && <LocalClock />}
+        {showUI && <LocalClock scrollPct={scrollPct} />}
         {showUI && <ScrollPath />}
 
         {/* Hero title over globe */}
@@ -335,13 +336,22 @@ export default function App() {
 
         <div className={`hint ${showUI ? 'hint--visible' : ''}`}>Scroll per esplorare il mondo</div>
 
-        {/* Scroll % indicator — bottom right */}
+        {/* Social icons — bottom right */}
         {showUI && (
-          <div className="scroll-indicator">
-            <span className="scroll-indicator__value">{Math.round(scrollPct)}%</span>
-            <div className="scroll-indicator__bar">
-              <div className="scroll-indicator__fill" style={{ width: `${Math.round(scrollPct)}%` }} />
-            </div>
+          <div className="socials">
+            {[
+              { href: 'https://www.youtube.com/@ProgettoHappiness', icon: <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 12a29 29 0 00.46 5.58 2.78 2.78 0 001.94 2C5.12 20 12 20 12 20s6.88 0 8.6-.46a2.78 2.78 0 001.94-2A29 29 0 0023 12a29 29 0 00-.46-5.58zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/> },
+              { href: 'https://www.instagram.com/progettohappiness/', icon: <><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5"/></> },
+              { href: 'https://www.facebook.com/progettohappiness', icon: <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/> },
+              { href: 'https://www.linkedin.com/company/progettohappiness/', icon: <><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-4 0v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></> },
+              { href: 'https://www.twitch.tv/progettohappiness', icon: <path d="M21 2H3v16h5v4l4-4h5l4-4V2zm-10 9V7m5 4V7"/> },
+            ].map(({ href, icon }, i) => (
+              <a key={i} href={href} target="_blank" rel="noopener" className="socials__icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  {icon}
+                </svg>
+              </a>
+            ))}
           </div>
         )}
       </div>
