@@ -534,6 +534,7 @@ export function initGlobe(canvas) {
     const ZOOM_MIN_L = EARTH_RADIUS * 1.15;
     const ZOOM_MAX_L = EARTH_RADIUS * 7;
     const dest = ZOOM_MAX_L - p * (ZOOM_MAX_L - ZOOM_MIN_L);
+    if (pct > SCROLL_LIMIT) pinZoomActive = true;
     autoRotate = false; clearTimeout(autoTimer);
     autoTimer = setTimeout(() => { autoRotate = true; }, 8000);
     zoomTween?.kill();
@@ -543,6 +544,12 @@ export function initGlobe(canvas) {
     });
   };
 
+  // Zoom back to scroll limit (90%) — called when panel closes
+  globeState.returnToScrollLimit = () => {
+    pinZoomActive = false;
+    globeState.setZoomPct(SCROLL_LIMIT);
+  };
+
   globeState.flyToMarker = (marker, verticalOffset = 0) => {
     const d = marker.data;
     const pos = latLngToECEF(d.lat, d.lng, 0).normalize();
@@ -550,6 +557,7 @@ export function initGlobe(canvas) {
     // verticalOffset shifts pin upward in viewport (0 = center, 0.25 = upper third)
     targetRotX = Math.asin(Math.max(-0.99, Math.min(0.99, pos.y))) - verticalOffset;
     targetCamDist = EARTH_RADIUS * 2.2;
+    pinZoomActive = true; // bypass 90% scroll cap
     autoRotate = false; clearTimeout(autoTimer);
     autoTimer = setTimeout(() => { autoRotate = true; }, 10000);
   };
@@ -775,7 +783,10 @@ export function initGlobe(canvas) {
   // Zoom range: EARTH_RADIUS * 1.15 (closest, 100%) to EARTH_RADIUS * 7 (farthest, 0%)
   const ZOOM_MIN = EARTH_RADIUS * 1.15;
   const ZOOM_MAX = EARTH_RADIUS * 7;
+  const SCROLL_LIMIT = 90; // manual scroll caps at 90%, pins can go to 97%
+  const ZOOM_SCROLL_CAP = ZOOM_MAX - (SCROLL_LIMIT / 100) * (ZOOM_MAX - ZOOM_MIN);
   let scrollPct = 0; // 0 = zoomed out (far), 100 = zoomed in (close)
+  let pinZoomActive = false; // true when zoomed via pin click (bypasses 90% cap)
 
   // Dispatch scroll % for UI
   function updateScrollPct() {
@@ -822,7 +833,11 @@ export function initGlobe(canvas) {
 
     // Smooth zoom: apply velocity with friction (no jitter)
     targetCamDist *= 1 - zoomVelocity;
-    targetCamDist = Math.max(EARTH_RADIUS * 1.15, Math.min(EARTH_RADIUS * 7, targetCamDist));
+    // Manual scroll capped at 90%; pin zoom can reach 100%
+    const zoomFloor = pinZoomActive ? EARTH_RADIUS * 1.15 : ZOOM_SCROLL_CAP;
+    targetCamDist = Math.max(zoomFloor, Math.min(EARTH_RADIUS * 7, targetCamDist));
+    // If user manually scrolls out past 90% cap, deactivate pin zoom
+    if (pinZoomActive && zoomVelocity > 0 && targetCamDist >= ZOOM_SCROLL_CAP) pinZoomActive = false;
     zoomVelocity *= 0.85; // friction decay
     if (Math.abs(zoomVelocity) < 0.000001) zoomVelocity = 0;
     camDist += (targetCamDist - camDist) * 0.06;

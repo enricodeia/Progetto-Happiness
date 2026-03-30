@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { episodeDescriptions } from '../descriptions.js';
+import { globeState } from '../globe-scene.js';
 
 const PanelCard = ({ data, onClose }) => {
   const panelRef = useRef(null);
@@ -81,6 +82,9 @@ const PanelCard = ({ data, onClose }) => {
     const el = panelRef.current;
     const items = itemsRef.current.filter(Boolean);
     if (!el) { onClose(); return; }
+
+    // Zoom back to 90% scroll limit
+    globeState.returnToScrollLimit?.();
 
     const mobile = window.innerWidth <= 768;
     const done = () => { setVisible(false); prevDataRef.current = null; onClose(); };
