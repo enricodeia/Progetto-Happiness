@@ -228,7 +228,7 @@ html, body, #root {
 .local-clock__zone {
   font-family: var(--font-sans); font-size: 9px; font-weight: 300;
   letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--color-text-tertiary); margin-top: 3px;
+  color: var(--color-text-tertiary); margin-bottom: 6px;
 }
 @media (max-width: 768px) {
   .local-clock { bottom: 16px; left: 16px; }
@@ -590,36 +590,45 @@ html, body, #root {
 /* ============================================
    Hint
    ============================================ */
-/* Scroll line — Apple-style bottom center indicator */
+/* Scroll dashes — bottom center, stagger illuminate bottom→top */
 .scroll-line {
-  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
   z-index: 10; pointer-events: none;
   opacity: 0; transition: opacity 0.6s ease;
+  display: flex; flex-direction: column-reverse; align-items: center;
+  gap: 5px; padding-bottom: 16px;
 }
 .scroll-line--visible { opacity: 1; }
-.scroll-line__track {
-  width: 1px; height: 40px;
-  background: rgba(255, 255, 255, 0.12);
+.scroll-line__dash {
+  width: 12px; height: 1px;
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 1px;
-  overflow: hidden;
-  position: relative;
+  animation: dashPulse 2.4s ease infinite;
 }
-.scroll-line__pulse {
-  width: 100%; height: 14px;
-  background: rgba(253, 244, 237, 0.5);
-  border-radius: 1px;
-  position: absolute; bottom: 0; left: 0;
-  animation: scrollPulse 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-@keyframes scrollPulse {
-  0% { bottom: 0; opacity: 0; height: 14px; }
-  20% { opacity: 1; }
-  80% { opacity: 0.6; }
-  100% { bottom: 100%; opacity: 0; height: 6px; }
+/* Stagger: each dash gets a different delay (bottom=0, top=last) */
+.scroll-line__dash:nth-child(1)  { animation-delay: 0s; }
+.scroll-line__dash:nth-child(2)  { animation-delay: 0.1s; }
+.scroll-line__dash:nth-child(3)  { animation-delay: 0.2s; }
+.scroll-line__dash:nth-child(4)  { animation-delay: 0.3s; }
+.scroll-line__dash:nth-child(5)  { animation-delay: 0.4s; }
+.scroll-line__dash:nth-child(6)  { animation-delay: 0.5s; }
+.scroll-line__dash:nth-child(7)  { animation-delay: 0.6s; }
+.scroll-line__dash:nth-child(8)  { animation-delay: 0.7s; }
+.scroll-line__dash:nth-child(9)  { animation-delay: 0.8s; }
+.scroll-line__dash:nth-child(10) { animation-delay: 0.9s; }
+.scroll-line__dash:nth-child(11) { animation-delay: 1.0s; }
+.scroll-line__dash:nth-child(12) { animation-delay: 1.1s; }
+.scroll-line__dash:nth-child(13) { animation-delay: 1.2s; }
+.scroll-line__dash:nth-child(14) { animation-delay: 1.3s; }
+.scroll-line__dash:nth-child(15) { animation-delay: 1.4s; }
+@keyframes dashPulse {
+  0%, 100% { background: rgba(255, 255, 255, 0.08); }
+  30% { background: rgba(253, 244, 237, 0.6); }
+  60% { background: rgba(255, 255, 255, 0.08); }
 }
 @media (max-width: 768px) {
-  .scroll-line { bottom: 24px; }
-  .scroll-line__track { height: 32px; }
+  .scroll-line { gap: 4px; padding-bottom: 12px; }
+  .scroll-line__dash { width: 10px; }
 }
 
 /* ============================================
