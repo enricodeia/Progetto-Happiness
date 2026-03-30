@@ -184,13 +184,13 @@ export default function App() {
     const el = sidebarRef.current;
     if (!el || !showUI) return;
 
-    if (scrollPct >= 64 && !sidebarShown.current) {
+    if (scrollPct >= 77 && !sidebarShown.current) {
       sidebarShown.current = true;
       gsap.fromTo(el,
         { y: 100, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.7, ease: 'circ.out' }
       );
-    } else if (scrollPct < 60 && sidebarShown.current) {
+    } else if (scrollPct < 73 && sidebarShown.current) {
       sidebarShown.current = false;
       gsap.to(el, { y: 100, opacity: 0, duration: 0.4, ease: 'circ.in' });
     }
@@ -316,7 +316,7 @@ export default function App() {
 
         <aside
           ref={sidebarRef}
-          className={`sidebar ${scrollPct >= 81 ? 'sidebar--visible' : ''} ${sidebarExpanded ? 'sidebar--expanded' : ''}`}
+          className={`sidebar ${scrollPct >= 77 ? 'sidebar--visible' : ''} ${sidebarExpanded ? 'sidebar--expanded' : ''}`}
           style={{ '--sb-bottom-mobile': `${sidebarConfig.bottom}px`, '--sb-bottom-desktop': `${sidebarConfig.desktopBottom}px`, borderRadius: sidebarConfig.borderRadius, maxHeight: sidebarExpanded ? '55vh' : sidebarConfig.collapsedHeight }}
         >
           <div className="sidebar__header" onClick={() => setSidebarExpanded((p) => !p)}

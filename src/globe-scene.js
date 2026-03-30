@@ -550,16 +550,42 @@ export function initGlobe(canvas) {
     globeState.setZoomPct(SCROLL_LIMIT);
   };
 
+  let flyTween = null;
+  let rotTweenX = null;
+  let rotTweenY = null;
+  const PIN_ZOOM_PCT = 97; // zoom level when clicking a pin
+  const PIN_ZOOM_DIST = ZOOM_MAX - (PIN_ZOOM_PCT / 100) * (ZOOM_MAX - ZOOM_MIN);
+
   globeState.flyToMarker = (marker, verticalOffset = 0) => {
     const d = marker.data;
     const pos = latLngToECEF(d.lat, d.lng, 0).normalize();
-    targetRotY = Math.atan2(pos.x, pos.z);
-    // verticalOffset shifts pin upward in viewport (0 = center, 0.25 = upper third)
-    targetRotX = Math.asin(Math.max(-0.99, Math.min(0.99, pos.y))) - verticalOffset;
-    targetCamDist = EARTH_RADIUS * 2.2;
-    pinZoomActive = true; // bypass 90% scroll cap
+    const destRotY = Math.atan2(pos.x, pos.z);
+    const destRotX = Math.asin(Math.max(-0.99, Math.min(0.99, pos.y))) - verticalOffset;
+
+    pinZoomActive = true;
     autoRotate = false; clearTimeout(autoTimer);
     autoTimer = setTimeout(() => { autoRotate = true; }, 10000);
+
+    // Animate rotation to center the pin
+    rotTweenX?.kill(); rotTweenY?.kill();
+    rotTweenX = gsap.to({ v: targetRotX }, {
+      v: destRotX, duration: 1.2, ease: 'circ.out',
+      onUpdate() { targetRotX = this.targets()[0].v; },
+    });
+    rotTweenY = gsap.to({ v: targetRotY }, {
+      v: destRotY, duration: 1.2, ease: 'circ.out',
+      onUpdate() { targetRotY = this.targets()[0].v; },
+    });
+
+    // Only zoom if not already at pin zoom level (switching between pins keeps zoom)
+    const alreadyClose = Math.abs(targetCamDist - PIN_ZOOM_DIST) < EARTH_RADIUS * 0.3;
+    if (!alreadyClose) {
+      flyTween?.kill();
+      flyTween = gsap.to({ v: targetCamDist }, {
+        v: PIN_ZOOM_DIST, duration: 1.2, ease: 'circ.out',
+        onUpdate() { targetCamDist = this.targets()[0].v; },
+      });
+    }
   };
 
   function isFrontFacing(worldPos) {

@@ -5,7 +5,7 @@ import { globeState } from '../globe-scene.js';
 const STEPS = [
   { pct: 0 },
   { pct: 64 },
-  { pct: 97 },
+  { pct: 90 },
 ];
 
 const DEFAULTS = {
