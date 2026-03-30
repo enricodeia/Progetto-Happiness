@@ -600,11 +600,27 @@ html, body, #root {
 }
 .scroll-line--visible { opacity: 1; }
 .scroll-line__dash {
-  width: 12px; height: 1px;
+  height: 1px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 1px;
   animation: dashPulse 2.4s ease infinite;
 }
+/* Bottom (1st) = widest, top (15th) = narrowest */
+.scroll-line__dash:nth-child(1)  { width: 24px; }
+.scroll-line__dash:nth-child(2)  { width: 22px; }
+.scroll-line__dash:nth-child(3)  { width: 20px; }
+.scroll-line__dash:nth-child(4)  { width: 18px; }
+.scroll-line__dash:nth-child(5)  { width: 16px; }
+.scroll-line__dash:nth-child(6)  { width: 15px; }
+.scroll-line__dash:nth-child(7)  { width: 13px; }
+.scroll-line__dash:nth-child(8)  { width: 11px; }
+.scroll-line__dash:nth-child(9)  { width: 9px; }
+.scroll-line__dash:nth-child(10) { width: 8px; }
+.scroll-line__dash:nth-child(11) { width: 6px; }
+.scroll-line__dash:nth-child(12) { width: 5px; }
+.scroll-line__dash:nth-child(13) { width: 3px; }
+.scroll-line__dash:nth-child(14) { width: 2px; }
+.scroll-line__dash:nth-child(15) { width: 1px; }
 /* Stagger: each dash gets a different delay (bottom=0, top=last) */
 .scroll-line__dash:nth-child(1)  { animation-delay: 0s; }
 .scroll-line__dash:nth-child(2)  { animation-delay: 0.1s; }
@@ -628,7 +644,6 @@ html, body, #root {
 }
 @media (max-width: 768px) {
   .scroll-line { gap: 4px; padding-bottom: 12px; }
-  .scroll-line__dash { width: 10px; }
 }
 
 /* ============================================
