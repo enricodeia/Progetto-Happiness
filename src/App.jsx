@@ -338,7 +338,7 @@ export default function App() {
         <div className={`scroll-line ${showUI ? 'scroll-line--visible' : ''}`} style={{
           opacity: scrollPct <= 8 ? 1 : scrollPct >= 18 ? 0 : 1 - (scrollPct - 8) / 10,
         }}>
-          {Array.from({ length: 15 }, (_, i) => (
+          {Array.from({ length: 22 }, (_, i) => (
             <div key={i} className="scroll-line__dash" />
           ))}
         </div>
