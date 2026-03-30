@@ -326,7 +326,9 @@ export default function App() {
               <h3 className="sidebar__title" style={{ fontSize: sidebarConfig.fontSize }}>Episodi</h3>
               <span className="sidebar__badge" style={{ width: sidebarConfig.badgeSize, height: sidebarConfig.badgeSize }}>{episodes.length}</span>
             </div>
-            <svg className={`sidebar__arrow ${sidebarExpanded ? 'sidebar__arrow--up' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 9l6 6 6-6"/></svg>
+            <svg className={`sidebar__arrow ${sidebarExpanded ? 'sidebar__arrow--up' : ''}`} width="17" height="9" viewBox="0 0 17 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10.0399 7.49652C9.00284 8.60272 7.2469 8.60272 6.20983 7.49652L0.168812 1.05316C-0.0672382 0.801369 -0.0545936 0.40546 0.197133 0.169367C0.44892 -0.0666835 0.84483 -0.0540382 1.08092 0.197688L7.12194 6.64202C7.6651 7.22105 8.58463 7.22105 9.1278 6.64202L15.1688 0.197689C15.4049 -0.0540367 15.8008 -0.066682 16.0526 0.169369C16.3043 0.405462 16.317 0.80137 16.0809 1.05316L10.0399 7.49652Z" fill="#FFFAFA"/>
+            </svg>
           </div>
           <div className="sidebar__scroll">
             <ul className="sidebar__list">
