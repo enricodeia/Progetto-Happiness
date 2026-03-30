@@ -1,5 +1,5 @@
 const LogoOverlay = ({ scrollPct = 0 }) => {
-  const sizeVh = 16; // vh units — scales with viewport like the globe
+  const sizeVh = 13.5; // vh units — scales with viewport like the globe
   const topVh = 43;
   const opacity = 0.65;
   const fadeStart = 30;
