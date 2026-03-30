@@ -487,6 +487,19 @@ export function initGlobe(canvas) {
         }
       });
     };
+
+    // Earth appearance controls
+    globeState.updateEarth = (c) => {
+      ambientLight.intensity = c.ambientIntensity ?? 0.4;
+      ambientLight.color.set(c.ambientColor || '#404040');
+      sunLight.intensity = c.sunIntensity ?? 1.5;
+      sunLight.color.set(c.sunColor || '#ffffff');
+      sphereMat.shininess = c.shininess ?? 5;
+      sphereMat.emissive.set(c.emissive || '#000000');
+      sphereMat.emissiveIntensity = c.emissiveIntensity ?? 0;
+      innerSphereMat.color.set(c.shadowColor || '#080808');
+      cloudMat.opacity = c.cloudOpacity ?? 0.4;
+    };
   })();
 
   // ---- State ----
