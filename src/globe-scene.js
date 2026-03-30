@@ -526,6 +526,13 @@ export function initGlobe(canvas) {
 
   // No expansion trigger needed
 
+  // ---- Zoom constants (needed by fly/scroll) ----
+  const ZOOM_MIN = EARTH_RADIUS * 1.15;
+  const ZOOM_MAX = EARTH_RADIUS * 7;
+  const SCROLL_LIMIT = 90;
+  const ZOOM_SCROLL_CAP = ZOOM_MAX - (SCROLL_LIMIT / 100) * (ZOOM_MAX - ZOOM_MIN);
+  let pinZoomActive = false;
+
   // ---- Fly to marker ----
   // Set zoom by scroll percentage (0=far, 100=close) — animated
   let zoomTween = null;
@@ -544,6 +551,14 @@ export function initGlobe(canvas) {
     });
   };
 
+  // ---- Fly animation state ----
+  let flyActive = false; // when true, GSAP controls camDist/rot directly (bypasses lerp)
+  let flyZoomTween = null;
+  let flyRotTweenX = null;
+  let flyRotTweenY = null;
+  const PIN_ZOOM_PCT = 97;
+  const PIN_ZOOM_DIST = ZOOM_MAX - (PIN_ZOOM_PCT / 100) * (ZOOM_MAX - ZOOM_MIN);
+
   // Zoom back to scroll limit (90%) — called when panel closes
   let returnTween = null;
   globeState.returnToScrollLimit = () => {
@@ -556,14 +571,6 @@ export function initGlobe(canvas) {
       onComplete() { pinZoomActive = false; flyActive = false; },
     });
   };
-
-  // ---- Fly animation state ----
-  let flyActive = false; // when true, GSAP controls camDist/rot directly (bypasses lerp)
-  let flyZoomTween = null;
-  let flyRotTweenX = null;
-  let flyRotTweenY = null;
-  const PIN_ZOOM_PCT = 97;
-  const PIN_ZOOM_DIST = ZOOM_MAX - (PIN_ZOOM_PCT / 100) * (ZOOM_MAX - ZOOM_MIN);
 
   globeState.flyToMarker = (marker, verticalOffset = 0) => {
     const d = marker.data;
@@ -821,13 +828,7 @@ export function initGlobe(canvas) {
   }
 
   // ---- Scroll percentage tracker ----
-  // Zoom range: EARTH_RADIUS * 1.15 (closest, 100%) to EARTH_RADIUS * 7 (farthest, 0%)
-  const ZOOM_MIN = EARTH_RADIUS * 1.15;
-  const ZOOM_MAX = EARTH_RADIUS * 7;
-  const SCROLL_LIMIT = 90; // manual scroll caps at 90%, pins can go to 97%
-  const ZOOM_SCROLL_CAP = ZOOM_MAX - (SCROLL_LIMIT / 100) * (ZOOM_MAX - ZOOM_MIN);
   let scrollPct = 0; // 0 = zoomed out (far), 100 = zoomed in (close)
-  let pinZoomActive = false; // true when zoomed via pin click (bypasses 90% cap)
 
   // Dispatch scroll % for UI
   function updateScrollPct() {
