@@ -10,8 +10,7 @@ const LogoOverlay = ({ scrollPct = 0 }) => {
   return (
     <div className="logo-overlay" style={{
       width: `${sizeVh}vh`,
-      top: '50%',
-      transform: 'translate(-50%, -50%)',
+      top: `${topVh}vh`,
       opacity: scrollOp * opacity,
       mixBlendMode: 'difference',
       color: '#ffffff',

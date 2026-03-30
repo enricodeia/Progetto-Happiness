@@ -595,13 +595,13 @@ html, body, #root {
 /* Logo overlay */
 .logo-overlay {
   position: fixed;
-  left: 50%;
+  left: 50%; transform: translateX(-50%);
   z-index: 3;
   pointer-events: none;
   transition: opacity 0.3s ease;
 }
 @media (max-width: 768px) {
-  .logo-overlay { width: 12.3vh !important; transform: translate(-50%, -43%) !important; }
+  .logo-overlay { width: 12.3vh !important; top: 39vh !important; }
 }
 
 /* Scroll dashes — bottom center, stagger illuminate bottom→top */
