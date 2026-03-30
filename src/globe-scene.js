@@ -242,22 +242,12 @@ export function initGlobe(canvas) {
     color: 0xffffff, transparent: true, opacity: 1, depthWrite: false, shininess: 27,
   });
   const sphereGeo = new THREE.SphereGeometry(EARTH_RADIUS * 0.997, 128, 128);
-  sphereGeo.computeTangents(); // fix normal map seam at UV boundary
   const globeMesh = new THREE.Mesh(sphereGeo, sphereMat);
   globeMesh.rotation.y = -Math.PI / 2;
   globeMesh.renderOrder = 0;
   scene.add(globeMesh);
 
-  // Load normal map — match earth texture settings exactly
-  new THREE.TextureLoader().load('/normal.webp', (tex) => {
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.RepeatWrapping;
-    tex.colorSpace = THREE.NoColorSpace; // normal maps are linear data, not sRGB
-    tex.anisotropy = 8;
-    sphereMat.normalMap = tex;
-    sphereMat.normalScale.set(4.1, 4.1);
-    sphereMat.needsUpdate = true;
-  });
+  // Normal map removed — was causing visible seam
 
   // ---- Cloud layer (real texture, additive blending for black bg) ----
   const cloudGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.003, 64, 64);
@@ -582,10 +572,6 @@ export function initGlobe(canvas) {
       sphereMat.shininess = c.shininess ?? 42;
       sphereMat.emissive.set(c.emissive || '#000000');
       sphereMat.emissiveIntensity = c.emissiveIntensity ?? 0;
-      if (sphereMat.normalMap) {
-        const ns = c.normalScale ?? 1;
-        sphereMat.normalScale.set(ns, ns);
-      }
       innerSphereMat.color.set(c.shadowColor || '#000000');
       cloudMat.opacity = c.cloudOpacity ?? 0.75;
     };
@@ -819,7 +805,10 @@ export function initGlobe(canvas) {
     }
 
     // Direct tap detection (mobile + desktop fallback)
-    if (clickableDots.length === 0) return;
+    if (clickableDots.length === 0) {
+      window.dispatchEvent(new CustomEvent('globe:empty-click'));
+      return;
+    }
     const clickX = (e.clientX / window.innerWidth) * 2 - 1;
     const clickY = -(e.clientY / window.innerHeight) * 2 + 1;
     const scrV = new THREE.Vector3();
@@ -836,6 +825,9 @@ export function initGlobe(canvas) {
     // Larger tap target on mobile (80px vs 60px for hover)
     if (closestMarker && closestDist < 80) {
       window.dispatchEvent(new CustomEvent('globe:marker-click', { detail: { marker: closestMarker } }));
+    } else {
+      // Clicked empty space — tell UI to close any open panel
+      window.dispatchEvent(new CustomEvent('globe:empty-click'));
     }
   });
 

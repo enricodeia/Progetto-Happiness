@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { episodeDescriptions } from '../descriptions.js';
 import { globeState } from '../globe-scene.js';
@@ -10,7 +10,50 @@ const PanelCard = ({ data, onClose }) => {
   const [expanded, setExpanded] = useState(false);
   const prevDataRef = useRef(null);
   const descRef = useRef(null);
-  const isOpenRef = useRef(false); // tracks if panel is already showing
+  const isOpenRef = useRef(false);
+  const closingRef = useRef(false); // prevent double-close
+
+  // Close with animation
+  const handleClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+
+    const el = panelRef.current;
+    const items = itemsRef.current.filter(Boolean);
+    if (!el) { closingRef.current = false; onClose(); return; }
+
+    globeState.returnToScrollLimit?.();
+
+    const mobile = window.innerWidth <= 768;
+    const done = () => {
+      setVisible(false);
+      prevDataRef.current = null;
+      isOpenRef.current = false;
+      closingRef.current = false;
+      onClose();
+    };
+
+    if (mobile) {
+      el.style.overflow = 'hidden';
+      gsap.to(items.reverse(), { y: 12, opacity: 0, duration: 0.2, stagger: 0.03 });
+      gsap.to(el, { x: '100vw', duration: 0.6, ease: 'circ.out', delay: 0.1, onComplete: done });
+    } else {
+      gsap.to(items.reverse(), {
+        y: 12, opacity: 0, duration: 0.25, ease: 'power4.in', stagger: 0.04,
+        onComplete: () => {
+          gsap.to(el, { height: 0, opacity: 0, duration: 0.35, ease: 'power4.in', onComplete: done });
+        }
+      });
+    }
+  }, [onClose]);
+
+  // Close when clicking empty space on globe
+  useEffect(() => {
+    if (!visible) return;
+    const onEmpty = () => handleClose();
+    window.addEventListener('globe:empty-click', onEmpty);
+    return () => window.removeEventListener('globe:empty-click', onEmpty);
+  }, [visible, handleClose]);
 
   // Open or swap content
   useEffect(() => {
@@ -19,6 +62,7 @@ const PanelCard = ({ data, onClose }) => {
 
     const wasOpen = isOpenRef.current;
     prevDataRef.current = data;
+    closingRef.current = false; // cancel any pending close
     setVisible(true);
     setExpanded(false);
     isOpenRef.current = true;
@@ -33,24 +77,20 @@ const PanelCard = ({ data, onClose }) => {
       const mobile = window.innerWidth <= 768;
 
       if (wasOpen) {
-        // --- SWAP: panel already visible, just crossfade content ---
-        // Quick fade out items
+        // SWAP: crossfade content in place
         gsap.to(items, {
           opacity: 0, duration: 0.15, ease: 'power2.in',
           onComplete: () => {
-            // Reset desc height
             if (descRef.current) descRef.current.style.maxHeight = '60px';
-            // Fade in new content + auto-resize
             gsap.fromTo(items,
               { y: 8, opacity: 0 },
               { y: 0, opacity: 1, duration: 0.35, ease: 'power3.out', stagger: 0.04 }
             );
-            // Smooth height transition
             gsap.to(el, { height: 'auto', duration: 0.4, ease: 'circ.out' });
           }
         });
       } else {
-        // --- FIRST OPEN: full reveal animation ---
+        // FIRST OPEN: full reveal
         if (mobile) {
           gsap.set(el, { height: 'auto', opacity: 1, x: '100vw', overflow: 'hidden' });
           gsap.to(el, {
@@ -95,52 +135,6 @@ const PanelCard = ({ data, onClose }) => {
       gsap.to(el, { maxHeight: 60, duration: 0.55, ease: 'circ.out' });
     }
   };
-
-  const handleClose = () => {
-    const el = panelRef.current;
-    const items = itemsRef.current.filter(Boolean);
-    if (!el) { onClose(); return; }
-
-    globeState.returnToScrollLimit?.();
-
-    const mobile = window.innerWidth <= 768;
-    const done = () => {
-      setVisible(false);
-      prevDataRef.current = null;
-      isOpenRef.current = false;
-      onClose();
-    };
-
-    if (mobile) {
-      el.style.overflow = 'hidden';
-      gsap.to(items.reverse(), { y: 12, opacity: 0, duration: 0.2, stagger: 0.03 });
-      gsap.to(el, { x: '100vw', duration: 0.6, ease: 'circ.out', delay: 0.1, onComplete: done });
-    } else {
-      gsap.to(items.reverse(), {
-        y: 12, opacity: 0, duration: 0.25, ease: 'power4.in', stagger: 0.04,
-        onComplete: () => {
-          gsap.to(el, { height: 0, opacity: 0, duration: 0.35, ease: 'power4.in', onComplete: done });
-        }
-      });
-    }
-  };
-
-  // Click outside to close (only when no pin is being clicked)
-  useEffect(() => {
-    if (!visible || !data) return;
-    const handleClickOutside = (e) => {
-      if (panelRef.current && !panelRef.current.contains(e.target)) {
-        handleClose();
-      }
-    };
-    const timer = setTimeout(() => {
-      document.addEventListener('pointerdown', handleClickOutside);
-    }, 100);
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener('pointerdown', handleClickOutside);
-    };
-  }, [visible, data]);
 
   if (!visible || !data) return null;
 
