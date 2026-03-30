@@ -338,9 +338,9 @@ export default function App() {
         <div className={`scroll-line ${showUI ? 'scroll-line--visible' : ''}`}>
           {Array.from({ length: 22 }, (_, i) => {
             // Each dash disappears on stagger: bottom (i=0) first, top (i=21) last
-            // Spread across 2% → 15% scroll
-            const fadeStart = 2 + (i / 21) * 10;
-            const fadeEnd = fadeStart + 3;
+            // Spread across 2% → 22% scroll — longer, more visual
+            const fadeStart = 2 + (i / 21) * 18;
+            const fadeEnd = fadeStart + 4;
             const op = scrollPct <= fadeStart ? 1 : scrollPct >= fadeEnd ? 0 : 1 - (scrollPct - fadeStart) / (fadeEnd - fadeStart);
             return <div key={i} className="scroll-line__dash" style={{ opacity: op }} />;
           })}

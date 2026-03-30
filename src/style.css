@@ -217,7 +217,7 @@ html, body, #root {
   position: fixed; bottom: 28px; left: 28px;
   z-index: 10; pointer-events: none;
   display: flex; flex-direction: column; align-items: flex-start;
-  animation: fadeInClock 0.8s ease 0.5s forwards;
+  transition: opacity 0.4s ease;
 }
 @keyframes fadeInClock { to { opacity: 1; } }
 .local-clock__time {
