@@ -12,7 +12,6 @@ import PanelCard from './components/PanelCard.jsx';
 import Bacheca from './components/Bacheca.jsx';
 import BubbleMenu from './components/BubbleMenu.jsx';
 import ScrollPath from './components/ScrollPath.jsx';
-import EarthPanel from './components/EarthPanel.jsx';
 import LogoOverlay from './components/LogoOverlay.jsx';
 import HeroTitle from './components/HeroTitle.jsx';
 import { globeState } from './globe-scene.js';
@@ -297,7 +296,6 @@ export default function App() {
         {showUI && <LocalClock scrollPct={scrollPct} />}
         {showUI && <ScrollPath />}
         {showUI && <LogoOverlay scrollPct={scrollPct} />}
-        {showUI && <EarthPanel />}
 
         {/* Hero title over globe */}
         {showUI && (
