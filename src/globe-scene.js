@@ -242,69 +242,6 @@ export function initGlobe(canvas) {
     color: 0xffffff, transparent: true, opacity: 1, depthWrite: false, shininess: 27,
   });
 
-  // ---- Night lights: visible only on dark side ----
-  const nightUniforms = {
-    uNightMap: { value: null },
-    uSunDir: { value: new THREE.Vector3(1, 0, 0) },
-    uNightIntensity: { value: 1.2 },
-  };
-
-  new THREE.TextureLoader().load('/nightmap.webp', (tex) => {
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.RepeatWrapping;
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 8;
-    nightUniforms.uNightMap.value = tex;
-    sphereMat.needsUpdate = true;
-  });
-
-  sphereMat.onBeforeCompile = (shader) => {
-    shader.uniforms.uNightMap = nightUniforms.uNightMap;
-    shader.uniforms.uSunDir = nightUniforms.uSunDir;
-    shader.uniforms.uNightIntensity = nightUniforms.uNightIntensity;
-
-    // Add varyings to vertex shader
-    shader.vertexShader = shader.vertexShader.replace(
-      '#include <common>',
-      `#include <common>
-      varying vec3 vWorldNormal;
-      varying vec2 vMapUv;`
-    );
-    shader.vertexShader = shader.vertexShader.replace(
-      '#include <worldpos_vertex>',
-      `#include <worldpos_vertex>
-      vWorldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
-      vMapUv = uv;`
-    );
-
-    // Inject night map blending into fragment shader
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <common>',
-      `#include <common>
-      uniform sampler2D uNightMap;
-      uniform vec3 uSunDir;
-      uniform float uNightIntensity;
-      varying vec3 vWorldNormal;
-      varying vec2 vMapUv;`
-    );
-
-    // After all lighting is computed, blend in night lights on dark side
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <dithering_fragment>',
-      `#include <dithering_fragment>
-      if (uNightIntensity > 0.0) {
-        float sunDot = dot(normalize(vWorldNormal), normalize(uSunDir));
-        // Smooth transition: fully night below -0.1, fully day above 0.15
-        float nightMask = 1.0 - smoothstep(-0.1, 0.15, sunDot);
-        vec3 nightColor = texture2D(uNightMap, vMapUv).rgb;
-        // Additive blend — city lights glow on top of dark surface
-        gl_FragColor.rgb += nightColor * nightMask * uNightIntensity;
-      }`
-    );
-
-    sphereMat.userData.shader = shader;
-  };
-
   const sphereGeo = new THREE.SphereGeometry(EARTH_RADIUS * 0.997, 128, 128);
   const globeMesh = new THREE.Mesh(sphereGeo, sphereMat);
   globeMesh.rotation.y = -Math.PI / 2;
@@ -1093,8 +1030,6 @@ export function initGlobe(canvas) {
     zMat.uniforms.uTwinkle.value = zc.twinkleAmount;
     zMat.uniforms.uWarmth.value = zc.warmth;
     updateSunLight();
-    // Sync sun direction for night map shader
-    nightUniforms.uSunDir.value.copy(sunLight.position).normalize();
 
     // Smooth rotation speed (ease on pause/resume)
     rotSpeed += (targetRotSpeed - rotSpeed) * 0.04;
