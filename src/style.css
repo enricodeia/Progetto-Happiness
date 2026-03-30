@@ -196,7 +196,6 @@ html, body, #root {
 @media (max-width: 768px) {
   .preloader__prompt-text { font-size: 18px; }
   .preloader__content { margin-top: calc(8.4vh + 42px + 2.5vh); }
-  .sticker-peel { width: 170px !important; }
 }
 
 /* ============================================
@@ -602,6 +601,7 @@ html, body, #root {
 }
 @media (max-width: 768px) {
   .logo-overlay { width: 12.3vh !important; top: 39vh !important; }
+  .sticker-peel { width: 170px !important; }
 }
 
 /* Scroll dashes — bottom center, stagger illuminate bottom→top */
