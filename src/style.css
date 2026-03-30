@@ -746,9 +746,8 @@ html, body, #root {
    ============================================ */
 .socials {
   position: fixed; bottom: 28px; right: 28px;
-  z-index: 10; display: flex;
-  opacity: 0; transform: translateY(8px);
-  animation: fadeInClock 0.8s ease 1s forwards;
+  z-index: 10; display: flex; gap: 1px;
+  transition: opacity 0.4s ease;
 }
 .socials__icon {
   display: flex; align-items: center; justify-content: center;
@@ -756,11 +755,9 @@ html, body, #root {
   border: 1px solid var(--color-border);
   color: var(--color-text);
   text-decoration: none;
-  margin-left: -1px;
   position: relative;
   overflow: hidden;
 }
-.socials__icon:first-child { margin-left: 0; }
 .socials__circle {
   position: absolute; inset: 0;
   background: var(--color-text);
@@ -826,20 +823,9 @@ html, body, #root {
   touch-action: none;
 }
 
-.about__close {
-  position: absolute; top: 28px; right: 28px; z-index: 510;
-  width: 36px; height: 36px; border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.35);
-  backdrop-filter: blur(8px);
-  color: var(--color-text); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s;
-}
-.about__close:hover { color: var(--color-primary); border-color: var(--color-border-hover); }
-
 /* Control panel toggle */
 .about__ctrl-toggle {
-  position: absolute; top: 28px; right: 72px; z-index: 510;
+  position: absolute; top: 28px; right: 28px; z-index: 510;
   width: 36px; height: 36px; border-radius: 50%;
   border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.35);
   backdrop-filter: blur(8px);
@@ -894,73 +880,9 @@ html, body, #root {
   min-width: 36px; text-align: right; font-family: monospace; flex-shrink: 0;
 }
 
-/* Scroll hint */
-.about__scroll-hint {
-  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
-  z-index: 510; display: flex; align-items: center; gap: 6px;
-  font-family: var(--font-sans); font-size: 11px; font-weight: 300;
-  letter-spacing: 1px; text-transform: uppercase;
-  color: var(--color-text-tertiary);
-  opacity: 0.5;
-  animation: about-hint-pulse 2s ease-in-out infinite;
-}
-@keyframes about-hint-pulse {
-  0%, 100% { opacity: 0.5; transform: translateX(-50%) translateY(0); }
-  50% { opacity: 0.8; transform: translateX(-50%) translateY(4px); }
-}
-
-/* Text overlay */
-.about__text {
-  position: absolute; z-index: 505;
-  top: 50%; left: 50%; transform: translate(-50%, -50%);
-  max-width: 520px; text-align: center;
-  padding: 0 24px;
-  pointer-events: none;
-}
-
-.about__logo {
-  width: 48px; height: 48px; object-fit: contain;
-  filter: drop-shadow(0 0 12px var(--color-primary-glow));
-  margin-bottom: 20px;
-}
-
-.about__title {
-  font-family: var(--font-serif);
-  font-size: 36px; font-weight: 200;
-  line-height: 1.1; color: var(--color-text);
-  margin-bottom: 24px;
-  text-shadow: 0 2px 20px rgba(0,0,0,0.5);
-}
-
-.about__body {
-  font-family: var(--font-sans);
-  font-size: 14px; font-weight: 300;
-  line-height: 1.8; color: var(--color-text-secondary);
-  margin-bottom: 16px;
-  text-shadow: 0 1px 8px rgba(0,0,0,0.4);
-}
-
-.about__body--accent {
-  color: var(--color-cream);
-  font-style: italic;
-  font-family: var(--font-serif);
-  font-size: 15px; font-weight: 200;
-}
-
-.about__stats {
-  display: flex; gap: 32px; justify-content: center; margin-top: 24px;
-}
-.about__stat { text-align: center; }
-.about__stat-value {
-  display: block; font-family: var(--font-serif); font-size: 24px; font-weight: 200;
-  color: var(--color-primary);
-  text-shadow: 0 0 16px var(--color-primary-glow);
-}
-.about__stat-label {
-  display: block; font-size: 9px; font-weight: 300;
-  letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--color-text-tertiary); margin-top: 2px;
-}
+/* About scroll dashes */
+.scroll-line--about { z-index: 508; }
+.scroll-line__dash--about { background: var(--color-primary); }
 
 /* ── Depth label overlay (DOM, injected by about-scene.js) ── */
 .depth-label-overlay {
@@ -999,13 +921,8 @@ html, body, #root {
 .depth-label__row dd { font-size: clamp(9px, 0.72vw, 11px); }
 
 @media (max-width: 768px) {
-  .about__close { width: 40px; height: 40px; top: 16px; right: 16px; }
-  .about__ctrl-toggle { top: 16px; right: 64px; }
-  .about__ctrl-panel { top: 64px; right: 16px; width: 220px; }
-  .about__title { font-size: 24px; }
-  .about__body { font-size: 13px; }
-  .about__text { max-width: 90%; }
-  .about__scroll-hint { bottom: 24px; }
+  .about__ctrl-toggle { top: 16px; right: 16px; }
+  .about__ctrl-panel { top: 60px; right: 16px; width: 220px; }
 
   .depth-label-overlay {
     inset: auto 0 max(6rem, env(safe-area-inset-bottom)) 0;

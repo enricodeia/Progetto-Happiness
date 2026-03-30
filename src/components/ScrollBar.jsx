@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { globeState } from '../globe-scene.js';
 
@@ -27,16 +27,12 @@ function scrollToDash(scrollPct, count) {
 
 const ScrollBar = () => {
   const [scrollPct, setScrollPct] = useState(0);
-  const [cfg, setCfg] = useState(DEFAULTS);
-  const [panel, setPanel] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const cfg = DEFAULTS;
   const dashesRef = useRef([]);
   const containerRef = useRef(null);
-  const panelRef = useRef(null);
   const scrollRef = useRef(0);
   const rafId = useRef(null);
 
-  const set = (k, v) => setCfg((p) => ({ ...p, [k]: v }));
 
   useEffect(() => {
     const onScroll = (e) => {
@@ -89,11 +85,6 @@ const ScrollBar = () => {
 
   // No intro hide — dashes always visible
 
-  useEffect(() => {
-    if (panelRef.current && panel) {
-      gsap.fromTo(panelRef.current, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' });
-    }
-  }, [panel]);
 
   const { count } = cfg;
   const barOpacity = 1; // always visible
@@ -132,84 +123,6 @@ const ScrollBar = () => {
         ))}
       </div>
 
-      <button className="pp__toggle" style={{ position: 'fixed', top: '50%', left: 20, transform: 'translateY(-50%)', zIndex: 100 }}
-        onClick={() => setPanel(!panel)}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="4" r="1.5"/><circle cx="12" cy="20" r="1.5"/>
-          <circle cx="4" cy="12" r="1.5"/><circle cx="20" cy="12" r="1.5"/>
-        </svg>
-      </button>
-      {panel && (
-        <div className="pp" ref={panelRef} style={{ position: 'fixed', top: '50%', left: 56, transform: 'translateY(-50%)', zIndex: 100, maxHeight: '80vh', overflowY: 'auto' }}>
-          <div className="pp__head">
-            <span className="pp__title">Scroll Bar</span>
-            <button className="pp__x" onClick={() => setPanel(false)}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-          </div>
-          <div className="pp__section">Layout</div>
-          <label className="pp__row">
-            <span className="pp__label">Count</span>
-            <input type="range" min={15} max={100} step={1} value={cfg.count} onChange={(e) => set('count', +e.target.value)} />
-            <span className="pp__val">{cfg.count}</span>
-          </label>
-          <label className="pp__row">
-            <span className="pp__label">Height vh</span>
-            <input type="range" min={20} max={80} step={1} value={cfg.height} onChange={(e) => set('height', +e.target.value)} />
-            <span className="pp__val">{cfg.height}</span>
-          </label>
-          <label className="pp__row">
-            <span className="pp__label">Gap</span>
-            <input type="range" min={0} max={6} step={0.5} value={cfg.gap} onChange={(e) => set('gap', +e.target.value)} />
-            <span className="pp__val">{cfg.gap}</span>
-          </label>
-          <div className="pp__sep" />
-          <div className="pp__section">Wave</div>
-          <label className="pp__row">
-            <span className="pp__label">Base width</span>
-            <input type="range" min={2} max={20} step={1} value={cfg.baseWidth} onChange={(e) => set('baseWidth', +e.target.value)} />
-            <span className="pp__val">{cfg.baseWidth}px</span>
-          </label>
-          <label className="pp__row">
-            <span className="pp__label">Peak width</span>
-            <input type="range" min={10} max={60} step={1} value={cfg.peakWidth} onChange={(e) => set('peakWidth', +e.target.value)} />
-            <span className="pp__val">{cfg.peakWidth}px</span>
-          </label>
-          <label className="pp__row">
-            <span className="pp__label">Spread</span>
-            <input type="range" min={1} max={20} step={1} value={cfg.spread} onChange={(e) => set('spread', +e.target.value)} />
-            <span className="pp__val">{cfg.spread}</span>
-          </label>
-          <div className="pp__sep" />
-          <div className="pp__section">Dots</div>
-          <label className="pp__row">
-            <span className="pp__label">Count</span>
-            <input type="range" min={2} max={8} step={1} value={cfg.dotCount} onChange={(e) => set('dotCount', +e.target.value)} />
-            <span className="pp__val">{cfg.dotCount}</span>
-          </label>
-          <label className="pp__row">
-            <span className="pp__label">Size</span>
-            <input type="range" min={3} max={14} step={1} value={cfg.dotSize} onChange={(e) => set('dotSize', +e.target.value)} />
-            <span className="pp__val">{cfg.dotSize}px</span>
-          </label>
-          <div className="pp__sep" />
-          <div className="pp__section">Opacity</div>
-          <label className="pp__row">
-            <span className="pp__label">Base</span>
-            <input type="range" min={0} max={0.3} step={0.01} value={cfg.baseOpacity} onChange={(e) => set('baseOpacity', +e.target.value)} />
-            <span className="pp__val">{cfg.baseOpacity.toFixed(2)}</span>
-          </label>
-          <label className="pp__row">
-            <span className="pp__label">Active</span>
-            <input type="range" min={0.2} max={1} step={0.05} value={cfg.activeOpacity} onChange={(e) => set('activeOpacity', +e.target.value)} />
-            <span className="pp__val">{cfg.activeOpacity.toFixed(2)}</span>
-          </label>
-          <button className="pp__copy" onClick={() => {
-            navigator.clipboard.writeText(JSON.stringify(cfg, null, 2));
-            setCopied(true); setTimeout(() => setCopied(false), 1200);
-          }}>{copied ? 'copiato!' : 'copia'}</button>
-        </div>
-      )}
     </>
   );
 };
