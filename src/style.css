@@ -599,7 +599,7 @@ html, body, #root {
   transition: opacity 0.3s ease;
 }
 @media (max-width: 768px) {
-  .logo-overlay { width: 13vh !important; }
+  .logo-overlay { width: 12.3vh !important; transform: translate(-50%, -43%) !important; }
 }
 
 /* Scroll dashes — bottom center, stagger illuminate bottom→top */
