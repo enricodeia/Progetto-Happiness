@@ -241,16 +241,19 @@ export function initGlobe(canvas) {
   const sphereMat = new THREE.MeshPhongMaterial({
     color: 0xffffff, transparent: true, opacity: 1, depthWrite: false, shininess: 27,
   });
-  const sphereGeo = new THREE.SphereGeometry(EARTH_RADIUS * 0.997, 96, 96);
+  const sphereGeo = new THREE.SphereGeometry(EARTH_RADIUS * 0.997, 128, 128);
+  sphereGeo.computeTangents(); // fix normal map seam at UV boundary
   const globeMesh = new THREE.Mesh(sphereGeo, sphereMat);
   globeMesh.rotation.y = -Math.PI / 2;
   globeMesh.renderOrder = 0;
   scene.add(globeMesh);
 
-  // Load normal map
+  // Load normal map — match earth texture settings exactly
   new THREE.TextureLoader().load('/normal.webp', (tex) => {
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.RepeatWrapping;
+    tex.colorSpace = THREE.NoColorSpace; // normal maps are linear data, not sRGB
+    tex.anisotropy = 8;
     sphereMat.normalMap = tex;
     sphereMat.normalScale.set(4.1, 4.1);
     sphereMat.needsUpdate = true;
