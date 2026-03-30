@@ -590,6 +590,18 @@ html, body, #root {
 /* ============================================
    Hint
    ============================================ */
+/* Logo overlay */
+.logo-overlay {
+  position: fixed;
+  left: 50%; transform: translateX(-50%);
+  z-index: 3;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+@media (max-width: 768px) {
+  .logo-overlay { width: 180px !important; }
+}
+
 /* Scroll dashes — bottom center, stagger illuminate bottom→top */
 .scroll-line {
   position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);

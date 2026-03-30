@@ -12,6 +12,7 @@ import PanelCard from './components/PanelCard.jsx';
 import Bacheca from './components/Bacheca.jsx';
 import BubbleMenu from './components/BubbleMenu.jsx';
 import ScrollPath from './components/ScrollPath.jsx';
+import LogoOverlay from './components/LogoOverlay.jsx';
 import HeroTitle from './components/HeroTitle.jsx';
 import { globeState } from './globe-scene.js';
 import { episodes, happinessConcepts } from './data.js';
@@ -294,6 +295,7 @@ export default function App() {
         <Noise patternSize={200} patternAlpha={12} patternRefreshInterval={6} />
         {showUI && <LocalClock scrollPct={scrollPct} />}
         {showUI && <ScrollPath />}
+        {showUI && <LogoOverlay scrollPct={scrollPct} />}
 
         {/* Hero title over globe */}
         {showUI && (
