@@ -11,7 +11,8 @@ import PillNav from './components/PillNav.jsx';
 import PanelCard from './components/PanelCard.jsx';
 import Bacheca from './components/Bacheca.jsx';
 import BubbleMenu from './components/BubbleMenu.jsx';
-import ScrollPath from './components/ScrollPath.jsx';
+// import ScrollPath from './components/ScrollPath.jsx';
+import ScrollBar from './components/ScrollBar.jsx';
 import LogoOverlay from './components/LogoOverlay.jsx';
 import HeroTitle from './components/HeroTitle.jsx';
 import { globeState } from './globe-scene.js';
@@ -294,8 +295,19 @@ export default function App() {
         <Globe />
         <Noise patternSize={200} patternAlpha={12} patternRefreshInterval={6} />
         {showUI && <LocalClock scrollPct={scrollPct} />}
-        {showUI && <ScrollPath />}
+        {/* {showUI && <ScrollPath />} */}
+        {showUI && <ScrollBar />}
         {showUI && <LogoOverlay scrollPct={scrollPct} />}
+        {showUI && (
+          <div style={{
+            position: 'fixed', top: 16, right: 16, zIndex: 9999,
+            fontFamily: 'monospace', fontSize: 13, color: '#FFDD00',
+            background: 'rgba(0,0,0,0.5)', padding: '4px 10px',
+            borderRadius: 6, pointerEvents: 'none', backdropFilter: 'blur(4px)',
+          }}>
+            {Math.round(scrollPct)}%
+          </div>
+        )}
 
         {/* Hero title over globe */}
         {showUI && (

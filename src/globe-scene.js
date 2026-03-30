@@ -239,13 +239,20 @@ export function initGlobe(canvas) {
 
   // Outer textured sphere — Phong for day/night lighting, depthWrite false so dots stay on top
   const sphereMat = new THREE.MeshPhongMaterial({
-    color: 0xffffff, transparent: true, opacity: 1, depthWrite: false, shininess: 42,
+    color: 0xffffff, transparent: true, opacity: 1, depthWrite: false, shininess: 27,
   });
   const sphereGeo = new THREE.SphereGeometry(EARTH_RADIUS * 0.997, 96, 96);
   const globeMesh = new THREE.Mesh(sphereGeo, sphereMat);
   globeMesh.rotation.y = -Math.PI / 2;
   globeMesh.renderOrder = 0;
   scene.add(globeMesh);
+
+  // Load normal map
+  new THREE.TextureLoader().load('/normal.webp', (tex) => {
+    sphereMat.normalMap = tex;
+    sphereMat.normalScale.set(4.1, 4.1);
+    sphereMat.needsUpdate = true;
+  });
 
   // ---- Cloud layer (real texture, additive blending for black bg) ----
   const cloudGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.003, 64, 64);
@@ -490,15 +497,19 @@ export function initGlobe(canvas) {
 
     // Earth appearance controls
     globeState.updateEarth = (c) => {
-      ambientLight.intensity = c.ambientIntensity ?? 0.4;
-      ambientLight.color.set(c.ambientColor || '#404040');
-      sunLight.intensity = c.sunIntensity ?? 1.5;
+      ambientLight.intensity = c.ambientIntensity ?? 2.0;
+      ambientLight.color.set(c.ambientColor || '#516270');
+      sunLight.intensity = c.sunIntensity ?? 3.1;
       sunLight.color.set(c.sunColor || '#ffffff');
-      sphereMat.shininess = c.shininess ?? 5;
+      sphereMat.shininess = c.shininess ?? 42;
       sphereMat.emissive.set(c.emissive || '#000000');
       sphereMat.emissiveIntensity = c.emissiveIntensity ?? 0;
-      innerSphereMat.color.set(c.shadowColor || '#080808');
-      cloudMat.opacity = c.cloudOpacity ?? 0.4;
+      if (sphereMat.normalMap) {
+        const ns = c.normalScale ?? 1;
+        sphereMat.normalScale.set(ns, ns);
+      }
+      innerSphereMat.color.set(c.shadowColor || '#000000');
+      cloudMat.opacity = c.cloudOpacity ?? 0.75;
     };
   })();
 

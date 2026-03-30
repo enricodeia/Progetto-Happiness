@@ -8,13 +8,11 @@ let bgMusic = null;
 export const isAudioEnabled = () => audioEnabled;
 export const getBgMusic = () => bgMusic;
 
-const EASES = ['power1.inOut','power2.inOut','power3.inOut','power4.inOut','circ.inOut','cubic.inOut','sine.inOut','expo.inOut','none'];
 
 const Preloader = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
   const [peelPct, setPeelPct] = useState(90);
   const [showPrompt, setShowPrompt] = useState(false);
-  const [showPanel, setShowPanel] = useState(false);
   const containerRef = useRef(null);
   const promptTextRef = useRef(null);
   const btnYesRef = useRef(null);
@@ -145,67 +143,6 @@ const Preloader = ({ onComplete }) => {
           )}
         </div>
       </div>
-
-      {/* Tuning panel */}
-      {showPrompt && (
-        <button className="pp__toggle" style={{ position: 'fixed', bottom: 20, left: 20, zIndex: 9999 }}
-          onClick={() => setShowPanel(!showPanel)}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="4" r="1.5"/><circle cx="12" cy="20" r="1.5"/>
-            <circle cx="4" cy="12" r="1.5"/><circle cx="20" cy="12" r="1.5"/>
-          </svg>
-        </button>
-      )}
-      {showPanel && (
-        <div className="pp" style={{ position: 'fixed', bottom: 60, left: 20, zIndex: 9999 }}>
-          <div className="pp__head">
-            <span className="pp__title">Preloader</span>
-            <button className="pp__x" onClick={() => setShowPanel(false)}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-          </div>
-          <div className="pp__section">Fade Out</div>
-          <label className="pp__row">
-            <span className="pp__label">Duration</span>
-            <input type="range" min={0.3} max={4} step={0.1} value={cfg.fadeDuration} onChange={(e) => set('fadeDuration', +e.target.value)} />
-            <span className="pp__val">{cfg.fadeDuration.toFixed(1)}s</span>
-          </label>
-          <label className="pp__row">
-            <span className="pp__label">Ease</span>
-            <select value={cfg.fadeEase} onChange={(e) => set('fadeEase', e.target.value)}
-              style={{ flex: 1, background: '#111', color: '#F6E3D5', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, padding: '2px 4px', fontSize: 10, fontFamily: 'monospace' }}>
-              {EASES.map((e) => <option key={e} value={e}>{e}</option>)}
-            </select>
-          </label>
-          <label className="pp__row">
-            <span className="pp__label">Title delay</span>
-            <input type="range" min={0} max={2000} step={50} value={cfg.titleDelay} onChange={(e) => set('titleDelay', +e.target.value)} />
-            <span className="pp__val">{cfg.titleDelay}ms</span>
-          </label>
-          <div className="pp__sep" />
-          <div className="pp__section">Sticker</div>
-          <label className="pp__row">
-            <span className="pp__label">Fade dur</span>
-            <input type="range" min={0} max={2} step={0.05} value={cfg.stickerFadeDuration} onChange={(e) => set('stickerFadeDuration', +e.target.value)} />
-            <span className="pp__val">{cfg.stickerFadeDuration.toFixed(2)}s</span>
-          </label>
-          <label className="pp__row">
-            <span className="pp__label">Fade delay</span>
-            <input type="range" min={0} max={1} step={0.05} value={cfg.stickerFadeDelay} onChange={(e) => set('stickerFadeDelay', +e.target.value)} />
-            <span className="pp__val">{cfg.stickerFadeDelay.toFixed(2)}s</span>
-          </label>
-          <div className="pp__sep" />
-          <div className="pp__section">Prompt</div>
-          <label className="pp__row">
-            <span className="pp__label">Fade dur</span>
-            <input type="range" min={0.1} max={1} step={0.05} value={cfg.promptFadeDuration} onChange={(e) => set('promptFadeDuration', +e.target.value)} />
-            <span className="pp__val">{cfg.promptFadeDuration.toFixed(2)}s</span>
-          </label>
-          <button className="pp__copy" onClick={() => {
-            navigator.clipboard.writeText(JSON.stringify(cfg, null, 2));
-          }}>copia valori</button>
-        </div>
-      )}
     </div>
   );
 };
