@@ -1073,6 +1073,26 @@ export function initGlobe(canvas) {
       if (globeState._pulseRing?.visible) globeState._pulseRing.position.copy(pinPos);
     }
 
+    // ---- Pin labels: broadcast screen positions when at pin zoom ----
+    if (pinZoomActive && markers.length > 0 && Math.round(animTime * 10) % 2 === 0) {
+      const labelPins = [];
+      const sv = new THREE.Vector3();
+      markers.forEach((m) => {
+        if (m.type !== 'episode' || !m.dot.visible || !isFrontFacing(m.dot.position)) return;
+        sv.copy(m.dot.position).project(camera);
+        if (sv.z > 1) return;
+        const sx = (sv.x * 0.5 + 0.5) * window.innerWidth;
+        const sy = (-sv.y * 0.5 + 0.5) * window.innerHeight;
+        // Only pins within viewport bounds
+        if (sx < -50 || sx > window.innerWidth + 50 || sy < -50 || sy > window.innerHeight + 50) return;
+        labelPins.push({ id: m.data.id, title: m.data.title, thumb: m.data.thumb, sx, sy });
+      });
+      window.dispatchEvent(new CustomEvent('globe:pin-positions', { detail: { pins: labelPins } }));
+    } else if (!pinZoomActive) {
+      // Clear labels when not at pin zoom
+      window.dispatchEvent(new CustomEvent('globe:pin-positions', { detail: { pins: [] } }));
+    }
+
     // ---- Texture fade: GSAP at scroll trigger ----
     const lc = globeState.liveConfig;
     const texTrigger = lc?.texFadeStart ?? 96;

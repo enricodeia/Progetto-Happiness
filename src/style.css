@@ -536,6 +536,49 @@ html, body, #root {
 }
 
 /* ============================================
+   Pin labels (visible at pin zoom level)
+   ============================================ */
+.pin-labels {
+  position: fixed; inset: 0; z-index: 50; pointer-events: none;
+}
+.pin-label {
+  position: absolute;
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(20, 16, 12, 0.75);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(253, 244, 237, 0.1);
+  border-radius: 8px;
+  padding: 5px 10px 5px 5px;
+  pointer-events: auto; cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s;
+  font-family: var(--font-sans);
+}
+.pin-label:hover {
+  background: rgba(30, 24, 18, 0.9);
+  border-color: rgba(253, 244, 237, 0.2);
+}
+.pin-label__thumb {
+  width: 36px; height: 36px; border-radius: 5px;
+  overflow: hidden; flex-shrink: 0;
+}
+.pin-label__thumb img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.pin-label__text {
+  display: flex; flex-direction: column; gap: 1px;
+}
+.pin-label__ep {
+  font-size: 8px; font-weight: 500; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--color-primary); opacity: 0.6;
+}
+.pin-label__title {
+  font-family: var(--font-serif); font-size: 13px; font-weight: 200;
+  color: var(--color-text); line-height: 1.2;
+  max-width: 140px; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ============================================
    Country label
    ============================================ */
 .country-label {
@@ -823,6 +866,9 @@ html, body, #root {
   touch-action: none;
 }
 
+/* PillNav inside about must sit above the canvas */
+.about .pill-nav-container { z-index: 512; }
+
 /* Control panel toggle */
 .about__ctrl-toggle {
   position: absolute; top: 28px; right: 28px; z-index: 510;
@@ -902,23 +948,43 @@ html, body, #root {
 .depth-label__index { margin: 0; font-size: 9px; opacity: 0.7; }
 .depth-label__word { margin: 0; font-size: clamp(9px, 0.78vw, 11px); white-space: nowrap; }
 .depth-label__chip {
-  width: 18px; height: 18px; border-radius: 50%;
-  display: inline-block; box-shadow: 0 0 0 1px rgba(255,255,255,0.14);
+  position: relative;
+  width: 18px; height: 18px;
+  display: inline-block;
+}
+.depth-label__chip-dot {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: currentColor;
+  transition: background-color 0.4s ease;
+}
+.depth-label__chip-ring {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  opacity: 0;
+  animation: chip-pulse 2s ease-out infinite;
+}
+@keyframes chip-pulse {
+  0%   { transform: scale(0.6); opacity: 0.8; }
+  100% { transform: scale(1.4); opacity: 0; }
 }
 .depth-label-overlay__right {
   position: absolute;
   right: clamp(2.5rem, 7vw, 10rem);
-  top: 50%;
+  top: 50%; transform: translateY(-50%);
+  max-width: min(28vw, 340px);
 }
-.depth-label__specs { margin: 0; display: grid; gap: 0.25rem; }
-.depth-label__row {
-  margin: 0; display: grid;
-  grid-template-columns: 3.5rem 1fr;
-  align-items: baseline; gap: 0.8rem;
+.depth-label__paragraph {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: clamp(12px, 1vw, 14px);
+  font-weight: 300;
+  line-height: 1.7;
+  opacity: 0.8;
+  transition: opacity 0.4s ease;
 }
-.depth-label__row dt, .depth-label__row dd { margin: 0; }
-.depth-label__row dt { font-size: 9px; opacity: 0.7; }
-.depth-label__row dd { font-size: clamp(9px, 0.72vw, 11px); }
 
 @media (max-width: 768px) {
   .about__ctrl-toggle { top: 16px; right: 16px; }
@@ -926,14 +992,12 @@ html, body, #root {
 
   .depth-label-overlay {
     inset: auto 0 max(6rem, env(safe-area-inset-bottom)) 0;
-    display: grid;
-    grid-template-columns: auto auto;
-    justify-content: space-between;
-    padding: 0 max(1rem, env(safe-area-inset-right)) 0 max(1rem, env(safe-area-inset-left));
+    display: flex; flex-direction: column; gap: 1rem;
+    padding: 0 max(1.5rem, env(safe-area-inset-right)) 0 max(1.5rem, env(safe-area-inset-left));
   }
   .depth-label-overlay__left { position: static; transform: none; gap: 0.5rem; }
-  .depth-label-overlay__right { position: static; transform: none; }
-  .depth-label__row { grid-template-columns: 2.8rem 1fr; gap: 0.6rem; }
+  .depth-label-overlay__right { position: static; transform: none; max-width: 100%; }
+  .depth-label__paragraph { font-size: 12px; }
 }
 
 /* ============================================
