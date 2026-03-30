@@ -1,6 +1,6 @@
 const LogoOverlay = ({ scrollPct = 0 }) => {
-  const size = 120;
-  const top = 43;
+  const sizeVh = 16; // vh units — scales with viewport like the globe
+  const topVh = 43;
   const opacity = 0.65;
   const fadeStart = 30;
   const fadeEnd = 59;
@@ -9,8 +9,8 @@ const LogoOverlay = ({ scrollPct = 0 }) => {
 
   return (
     <div className="logo-overlay" style={{
-      width: size,
-      top: `${top}%`,
+      width: `${sizeVh}vh`,
+      top: `${topVh}vh`,
       opacity: scrollOp * opacity,
       mixBlendMode: 'difference',
       color: '#ffffff',
