@@ -10,33 +10,54 @@ const PanelCard = ({ data, onClose }) => {
   const [expanded, setExpanded] = useState(false);
   const prevDataRef = useRef(null);
   const descRef = useRef(null);
+  const isOpenRef = useRef(false); // tracks if panel is already showing
 
-  // Open animation
+  // Open or swap content
   useEffect(() => {
-    if (data && data !== prevDataRef.current) {
-      prevDataRef.current = data;
-      setVisible(true);
-      setExpanded(false);
+    if (!data) return;
+    if (data === prevDataRef.current) return;
 
-      requestAnimationFrame(() => {
-        const el = panelRef.current;
-        if (!el) return;
-        const items = itemsRef.current.filter(Boolean);
+    const wasOpen = isOpenRef.current;
+    prevDataRef.current = data;
+    setVisible(true);
+    setExpanded(false);
+    isOpenRef.current = true;
 
-        gsap.killTweensOf(el);
-        gsap.killTweensOf(items);
+    requestAnimationFrame(() => {
+      const el = panelRef.current;
+      if (!el) return;
+      const items = itemsRef.current.filter(Boolean);
+      gsap.killTweensOf(el);
+      gsap.killTweensOf(items);
 
-        const mobile = window.innerWidth <= 768;
+      const mobile = window.innerWidth <= 768;
 
+      if (wasOpen) {
+        // --- SWAP: panel already visible, just crossfade content ---
+        // Quick fade out items
+        gsap.to(items, {
+          opacity: 0, duration: 0.15, ease: 'power2.in',
+          onComplete: () => {
+            // Reset desc height
+            if (descRef.current) descRef.current.style.maxHeight = '60px';
+            // Fade in new content + auto-resize
+            gsap.fromTo(items,
+              { y: 8, opacity: 0 },
+              { y: 0, opacity: 1, duration: 0.35, ease: 'power3.out', stagger: 0.04 }
+            );
+            // Smooth height transition
+            gsap.to(el, { height: 'auto', duration: 0.4, ease: 'circ.out' });
+          }
+        });
+      } else {
+        // --- FIRST OPEN: full reveal animation ---
         if (mobile) {
-          // Mobile: slide in from right, scrollable
           gsap.set(el, { height: 'auto', opacity: 1, x: '100vw', overflow: 'hidden' });
           gsap.to(el, {
             x: 0, duration: 1, ease: 'circ.out',
             onComplete: () => { el.style.overflowY = 'auto'; el.style.overflowX = 'hidden'; }
           });
         } else {
-          // Desktop: height reveal
           gsap.fromTo(el,
             { height: 0, opacity: 0 },
             {
@@ -51,10 +72,9 @@ const PanelCard = ({ data, onClose }) => {
           { y: 0, opacity: 1, duration: 0.4, ease: 'power4.out', stagger: 0.06, delay: mobile ? 0.3 : 0.15 }
         );
 
-        // Reset desc height
         if (descRef.current) descRef.current.style.maxHeight = '60px';
-      });
-    }
+      }
+    });
   }, [data]);
 
   // Expand / collapse description
@@ -65,12 +85,10 @@ const PanelCard = ({ data, onClose }) => {
     setExpanded(next);
 
     if (next) {
-      // Measure full height
       const prev = el.style.maxHeight;
       el.style.maxHeight = 'none';
       const fullH = el.scrollHeight;
       el.style.maxHeight = prev;
-      // Force reflow so GSAP sees the starting value
       el.offsetHeight; // eslint-disable-line no-unused-expressions
       gsap.to(el, { maxHeight: fullH, duration: 0.55, ease: 'circ.out' });
     } else {
@@ -83,19 +101,21 @@ const PanelCard = ({ data, onClose }) => {
     const items = itemsRef.current.filter(Boolean);
     if (!el) { onClose(); return; }
 
-    // Zoom back to 90% scroll limit
     globeState.returnToScrollLimit?.();
 
     const mobile = window.innerWidth <= 768;
-    const done = () => { setVisible(false); prevDataRef.current = null; onClose(); };
+    const done = () => {
+      setVisible(false);
+      prevDataRef.current = null;
+      isOpenRef.current = false;
+      onClose();
+    };
 
     if (mobile) {
-      // Mobile: slide out to right
       el.style.overflow = 'hidden';
       gsap.to(items.reverse(), { y: 12, opacity: 0, duration: 0.2, stagger: 0.03 });
       gsap.to(el, { x: '100vw', duration: 0.6, ease: 'circ.out', delay: 0.1, onComplete: done });
     } else {
-      // Desktop: collapse
       gsap.to(items.reverse(), {
         y: 12, opacity: 0, duration: 0.25, ease: 'power4.in', stagger: 0.04,
         onComplete: () => {
@@ -105,7 +125,7 @@ const PanelCard = ({ data, onClose }) => {
     }
   };
 
-  // Click outside to close
+  // Click outside to close (only when no pin is being clicked)
   useEffect(() => {
     if (!visible || !data) return;
     const handleClickOutside = (e) => {
@@ -113,7 +133,6 @@ const PanelCard = ({ data, onClose }) => {
         handleClose();
       }
     };
-    // Delay listener so the opening click doesn't immediately close
     const timer = setTimeout(() => {
       document.addEventListener('pointerdown', handleClickOutside);
     }, 100);

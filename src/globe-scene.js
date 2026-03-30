@@ -378,6 +378,75 @@ export function initGlobe(canvas) {
     pdc.fill();
     const pinDotTex = new THREE.CanvasTexture(pinDotCanvas);
 
+    // ---- Ring texture for active pin pulse ----
+    const ringCanvas = document.createElement('canvas');
+    ringCanvas.width = 128; ringCanvas.height = 128;
+    const rctx = ringCanvas.getContext('2d');
+    rctx.beginPath(); rctx.arc(64, 64, 58, 0, Math.PI * 2);
+    rctx.strokeStyle = '#ffffff';
+    rctx.lineWidth = 3;
+    rctx.stroke();
+    const ringTex = new THREE.CanvasTexture(ringCanvas);
+
+    const ringMat = new THREE.SpriteMaterial({
+      map: ringTex, color: 0xFFDD00, transparent: true, opacity: 0, depthWrite: false, sizeAttenuation: true,
+    });
+    const ringSprite = new THREE.Sprite(ringMat);
+    ringSprite.renderOrder = 5;
+    ringSprite.visible = false;
+    scene.add(ringSprite);
+
+    // Pulse animation state
+    let activePin = null;
+    let ringPulseTween = null;
+    const ringState = { scale: 1, opacity: 0.8 };
+
+    globeState.setActivePin = (marker) => {
+      if (marker === activePin) return;
+      activePin = marker;
+      ringPulseTween?.kill();
+
+      if (!marker) {
+        ringSprite.visible = false;
+        ringMat.opacity = 0;
+        return;
+      }
+
+      ringSprite.visible = true;
+      ringSprite.position.copy(marker.dot.position);
+
+      // Looping pulse: scale up + fade out, then reset
+      const baseScale = marker.dot.scale.x * 1.2;
+      ringState.scale = baseScale;
+      ringState.opacity = 0.8;
+      ringSprite.scale.setScalar(baseScale);
+      ringMat.opacity = 0.8;
+
+      const pulse = () => {
+        ringState.scale = baseScale;
+        ringState.opacity = 0.8;
+        ringSprite.scale.setScalar(baseScale);
+        ringMat.opacity = 0.8;
+
+        ringPulseTween = gsap.to(ringState, {
+          scale: baseScale * 2.5, opacity: 0, duration: 1.4, ease: 'power2.out',
+          onUpdate() {
+            ringSprite.scale.setScalar(ringState.scale);
+            ringMat.opacity = ringState.opacity;
+          },
+          onComplete: pulse, // loop
+        });
+      };
+      pulse();
+    };
+
+    globeState.clearActivePin = () => {
+      activePin = null;
+      ringPulseTween?.kill();
+      ringSprite.visible = false;
+      ringMat.opacity = 0;
+    };
+
     // ---- Stalks + Pin markers (episodes) ----
     const stalkGroup = new THREE.Group();
     const initCfg = globeState.stalkConfig;
@@ -900,6 +969,11 @@ export function initGlobe(canvas) {
 
     // Update scroll percentage
     updateScrollPct();
+
+    // Keep ring sprite on active pin position
+    if (activePin && ringSprite.visible) {
+      ringSprite.position.copy(activePin.dot.position);
+    }
 
     // ---- Texture fade: GSAP at scroll trigger ----
     const lc = globeState.liveConfig;

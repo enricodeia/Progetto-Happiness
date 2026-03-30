@@ -201,6 +201,9 @@ export default function App() {
     setActiveEp(m.data.id);
     setHoverCard(null);
 
+    // Show pulsing ring on active pin
+    globeState.setActivePin?.(m);
+
     // Fly to marker — on mobile offset upward so card doesn't cover pin
     if (globeState.flyToMarker) {
       globeState.flyToMarker(m, isMobile() ? 0.25 : 0);
@@ -216,6 +219,7 @@ export default function App() {
   const closeEpisodePanel = useCallback(() => {
     setPanelData(null);
     setActiveEp(null);
+    globeState.clearActivePin?.();
 
     if (isMobile() && sidebarRef.current) {
       gsap.to(sidebarRef.current, { x: 0, duration: 0.6, ease: 'circ.out', overwrite: true });
