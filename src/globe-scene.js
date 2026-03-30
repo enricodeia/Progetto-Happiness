@@ -712,7 +712,12 @@ export function initGlobe(canvas) {
         targetRotY -= dx * 0.004 * sens;
         targetRotX += dy * 0.002 * sens * rotWeight;
         targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
-        zoomVelocity -= dy * 0.0003 * zoomWeight;
+        if (!pinZoomActive) {
+          zoomVelocity -= dy * 0.0003 * zoomWeight;
+        } else if (dy > 0 && zoomWeight > 0.3) {
+          // Swipe down while card open = zoom out = close
+          window.dispatchEvent(new CustomEvent('globe:empty-click'));
+        }
       } else {
         // Desktop: drag rotates both axes, scaled by zoom
         targetRotY -= dx * 0.003 * sens;
@@ -834,7 +839,17 @@ export function initGlobe(canvas) {
   // Smooth zoom with accumulated velocity (like Lenis)
   let zoomVelocity = 0;
   canvas.addEventListener('wheel', (e) => {
-    zoomVelocity += e.deltaY * 0.00015;
+    const delta = e.deltaY * 0.00015;
+    if (pinZoomActive) {
+      // Block zoom-in; allow zoom-out (positive delta = scroll down = zoom out)
+      if (delta > 0) {
+        // User is zooming out — close panel and return to scroll limit
+        window.dispatchEvent(new CustomEvent('globe:empty-click'));
+        return;
+      }
+      return; // block zoom-in
+    }
+    zoomVelocity += delta;
   }, { passive: true });
 
   // Touch: pinch to zoom, single finger to rotate
@@ -859,6 +874,16 @@ export function initGlobe(canvas) {
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       const dist = Math.sqrt(dx * dx + dy * dy);
       const delta = lastTouchDist - dist;
+      if (pinZoomActive) {
+        // Block pinch-in; pinch-out closes panel
+        if (delta > 0) {
+          window.dispatchEvent(new CustomEvent('globe:empty-click'));
+          lastTouchDist = dist;
+          return;
+        }
+        lastTouchDist = dist;
+        return;
+      }
       zoomVelocity += delta * 0.0003;
       lastTouchDist = dist;
     }
