@@ -242,97 +242,6 @@ export function initGlobe(canvas) {
     color: 0xffffff, transparent: true, opacity: 1, depthWrite: false, shininess: 27,
   });
 
-  // ---- FBM reveal mask around selected pin ----
-  const maskUniforms = {
-    uPinWorld: { value: new THREE.Vector3(0, 0, 0) },
-    uMaskActive: { value: 0.0 },
-    uMaskRadius: { value: 0.35 },  // radius in normalized sphere coords
-    uMaskSoft: { value: 0.15 },    // feather edge
-    uTime: { value: 0.0 },
-  };
-
-  sphereMat.onBeforeCompile = (shader) => {
-    // Inject our uniforms
-    Object.keys(maskUniforms).forEach((k) => { shader.uniforms[k] = maskUniforms[k]; });
-
-    // Add vWorldPos varying to vertex shader
-    shader.vertexShader = shader.vertexShader.replace(
-      '#include <common>',
-      `#include <common>
-      varying vec3 vWorldPos;`
-    );
-    shader.vertexShader = shader.vertexShader.replace(
-      '#include <worldpos_vertex>',
-      `#include <worldpos_vertex>
-      vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;`
-    );
-
-    // Add FBM + mask to fragment shader
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <common>',
-      `#include <common>
-      varying vec3 vWorldPos;
-      uniform vec3 uPinWorld;
-      uniform float uMaskActive;
-      uniform float uMaskRadius;
-      uniform float uMaskSoft;
-      uniform float uTime;
-
-      // Simple hash + noise for FBM
-      float hash(vec3 p) {
-        p = fract(p * 0.3183099 + 0.1);
-        p *= 17.0;
-        return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-      }
-      float noise3d(vec3 p) {
-        vec3 i = floor(p);
-        vec3 f = fract(p);
-        f = f * f * (3.0 - 2.0 * f);
-        return mix(
-          mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x),
-              mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
-          mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
-              mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
-      }
-      float fbm(vec3 p) {
-        float v = 0.0, a = 0.5;
-        for (int i = 0; i < 4; i++) {
-          v += a * noise3d(p);
-          p *= 2.1;
-          a *= 0.45;
-        }
-        return v;
-      }`
-    );
-
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <dithering_fragment>',
-      `#include <dithering_fragment>
-      if (uMaskActive > 0.5) {
-        // Distance on unit sphere between fragment and pin
-        vec3 fragDir = normalize(vWorldPos);
-        vec3 pinDir = normalize(uPinWorld);
-        float dist = acos(clamp(dot(fragDir, pinDir), -1.0, 1.0));
-
-        // FBM distortion on the edge
-        vec3 fbmInput = fragDir * 6.0 + uTime * 0.08;
-        float noiseVal = fbm(fbmInput) * 0.12;
-
-        // Soft mask with organic edge
-        float edge = smoothstep(uMaskRadius + uMaskSoft + noiseVal, uMaskRadius - uMaskSoft + noiseVal, dist);
-
-        // Desaturate + darken outside mask
-        vec3 col = gl_FragColor.rgb;
-        float luma = dot(col, vec3(0.299, 0.587, 0.114));
-        vec3 desat = vec3(luma) * 0.3;
-        gl_FragColor.rgb = mix(desat, col, edge);
-      }`
-    );
-
-    // Store ref so we can update uniforms
-    sphereMat.userData.shader = shader;
-  };
-
   const sphereGeo = new THREE.SphereGeometry(EARTH_RADIUS * 0.997, 128, 128);
   const globeMesh = new THREE.Mesh(sphereGeo, sphereMat);
   globeMesh.rotation.y = -Math.PI / 2;
@@ -460,84 +369,109 @@ export function initGlobe(canvas) {
     pdc.fill();
     const pinDotTex = new THREE.CanvasTexture(pinDotCanvas);
 
-    // ---- Ring texture for active pin pulse ----
-    const ringCanvas = document.createElement('canvas');
-    ringCanvas.width = 128; ringCanvas.height = 128;
-    const rctx = ringCanvas.getContext('2d');
-    rctx.beginPath(); rctx.arc(64, 64, 58, 0, Math.PI * 2);
-    rctx.strokeStyle = '#ffffff';
-    rctx.lineWidth = 3;
-    rctx.stroke();
-    const ringTex = new THREE.CanvasTexture(ringCanvas);
+    // ---- Active pin indicator: static ring + pulse ring ----
+    // Thin ring with soft glow
+    const makeRingTex = (size, radius, lineW, glowW) => {
+      const c = document.createElement('canvas');
+      c.width = size; c.height = size;
+      const ctx = c.getContext('2d');
+      const cx = size / 2;
+      // Outer glow
+      if (glowW > 0) {
+        ctx.beginPath(); ctx.arc(cx, cx, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = lineW + glowW;
+        ctx.stroke();
+      }
+      // Core ring
+      ctx.beginPath(); ctx.arc(cx, cx, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = lineW;
+      ctx.stroke();
+      return new THREE.CanvasTexture(c);
+    };
 
-    const ringMat = new THREE.SpriteMaterial({
-      map: ringTex, color: 0xFFDD00, transparent: true, opacity: 0, depthWrite: false, sizeAttenuation: true,
+    // Static ring (always visible when pin selected)
+    const staticRingTex = makeRingTex(128, 52, 1.5, 6);
+    const staticRingMat = new THREE.SpriteMaterial({
+      map: staticRingTex, color: 0xFFDD00, transparent: true, opacity: 0, depthWrite: false, sizeAttenuation: true,
     });
-    const ringSprite = new THREE.Sprite(ringMat);
-    ringSprite.renderOrder = 5;
-    ringSprite.visible = false;
-    scene.add(ringSprite);
+    const staticRing = new THREE.Sprite(staticRingMat);
+    staticRing.renderOrder = 5;
+    staticRing.visible = false;
+    scene.add(staticRing);
 
-    // Pulse animation state
+    // Pulse ring (expands + fades in loop)
+    const pulseRingTex = makeRingTex(128, 54, 1, 0);
+    const pulseRingMat = new THREE.SpriteMaterial({
+      map: pulseRingTex, color: 0xFFDD00, transparent: true, opacity: 0, depthWrite: false, sizeAttenuation: true,
+    });
+    const pulseRing = new THREE.Sprite(pulseRingMat);
+    pulseRing.renderOrder = 5;
+    pulseRing.visible = false;
+    scene.add(pulseRing);
+
     let activePin = null;
-    let ringPulseTween = null;
-    const ringState = { scale: 1, opacity: 0.8 };
+    let pulseTween = null;
+    let staticFadeTween = null;
     globeState._activePin = null;
-    globeState._ringSprite = ringSprite;
+    globeState._staticRing = staticRing;
+    globeState._pulseRing = pulseRing;
 
     globeState.setActivePin = (marker) => {
       if (marker === activePin) return;
       activePin = marker;
       globeState._activePin = marker;
-      ringPulseTween?.kill();
+      pulseTween?.kill();
+      staticFadeTween?.kill();
 
       if (!marker) {
-        ringSprite.visible = false;
-        ringMat.opacity = 0;
-        // Fade out mask
-        gsap.to(maskUniforms.uMaskActive, { value: 0, duration: 0.6, ease: 'power2.inOut' });
+        // Fade out
+        staticFadeTween = gsap.to(staticRingMat, {
+          opacity: 0, duration: 0.3, ease: 'power2.in',
+          onComplete: () => { staticRing.visible = false; }
+        });
+        pulseRing.visible = false;
+        pulseRingMat.opacity = 0;
         return;
       }
 
-      // Activate FBM mask at pin position
-      maskUniforms.uPinWorld.value.copy(marker.dot.position);
-      gsap.to(maskUniforms.uMaskActive, { value: 1, duration: 0.5, ease: 'power2.out' });
+      const baseScale = marker.dot.scale.x * 1.8;
 
-      ringSprite.visible = true;
-      ringSprite.position.copy(marker.dot.position);
+      // Position both rings
+      staticRing.position.copy(marker.dot.position);
+      pulseRing.position.copy(marker.dot.position);
 
-      // Looping pulse: scale up + fade out, then reset
-      const baseScale = marker.dot.scale.x * 1.2;
-      ringState.scale = baseScale;
-      ringState.opacity = 0.8;
-      ringSprite.scale.setScalar(baseScale);
-      ringMat.opacity = 0.8;
+      // Static ring: fade in, stays
+      staticRing.visible = true;
+      staticRing.scale.setScalar(baseScale);
+      staticFadeTween = gsap.to(staticRingMat, { opacity: 0.7, duration: 0.4, ease: 'power2.out' });
 
-      const pulse = () => {
-        ringState.scale = baseScale;
-        ringState.opacity = 0.8;
-        ringSprite.scale.setScalar(baseScale);
-        ringMat.opacity = 0.8;
-
-        ringPulseTween = gsap.to(ringState, {
-          scale: baseScale * 2.5, opacity: 0, duration: 1.4, ease: 'power2.out',
+      // Pulse ring: expand + fade loop
+      pulseRing.visible = true;
+      const runPulse = () => {
+        pulseRing.scale.setScalar(baseScale);
+        pulseRingMat.opacity = 0.5;
+        pulseTween = gsap.to({ s: baseScale, o: 0.5 }, {
+          s: baseScale * 3, o: 0, duration: 1.8, ease: 'power1.out',
           onUpdate() {
-            ringSprite.scale.setScalar(ringState.scale);
-            ringMat.opacity = ringState.opacity;
+            pulseRing.scale.setScalar(this.targets()[0].s);
+            pulseRingMat.opacity = this.targets()[0].o;
           },
-          onComplete: pulse, // loop
+          onComplete: runPulse,
         });
       };
-      pulse();
+      runPulse();
     };
 
     globeState.clearActivePin = () => {
       activePin = null;
       globeState._activePin = null;
-      ringPulseTween?.kill();
-      ringSprite.visible = false;
-      gsap.to(maskUniforms.uMaskActive, { value: 0, duration: 0.6, ease: 'power2.inOut' });
-      ringMat.opacity = 0;
+      pulseTween?.kill();
+      staticFadeTween?.kill();
+      // Fade out both
+      gsap.to(staticRingMat, { opacity: 0, duration: 0.3, ease: 'power2.in', onComplete: () => { staticRing.visible = false; } });
+      gsap.to(pulseRingMat, { opacity: 0, duration: 0.2, ease: 'power2.in', onComplete: () => { pulseRing.visible = false; } });
     };
 
     // ---- Stalks + Pin markers (episodes) ----
@@ -1087,7 +1021,6 @@ export function initGlobe(canvas) {
   function animate() {
     requestAnimationFrame(animate);
     animTime += 0.016;
-    maskUniforms.uTime.value = animTime;
 
     // Stars twinkle + zodiac + sun position
     starMat.uniforms.time.value = animTime;
@@ -1134,8 +1067,10 @@ export function initGlobe(canvas) {
     updateScrollPct();
 
     // Keep ring sprite on active pin position
-    if (globeState._activePin && globeState._ringSprite?.visible) {
-      globeState._ringSprite.position.copy(globeState._activePin.dot.position);
+    if (globeState._activePin) {
+      const pinPos = globeState._activePin.dot.position;
+      if (globeState._staticRing?.visible) globeState._staticRing.position.copy(pinPos);
+      if (globeState._pulseRing?.visible) globeState._pulseRing.position.copy(pinPos);
     }
 
     // ---- Texture fade: GSAP at scroll trigger ----
