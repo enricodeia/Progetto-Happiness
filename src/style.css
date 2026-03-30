@@ -633,24 +633,27 @@ html, body, #root {
 }
 .socials__icon {
   display: flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;
   border: 1px solid var(--color-border);
   color: var(--color-text);
   text-decoration: none;
-  transition: all 0.25s ease;
   margin-left: -1px;
+  position: relative;
+  overflow: hidden;
 }
 .socials__icon:first-child { margin-left: 0; }
-.socials__icon:hover {
-  background: var(--color-text); color: var(--color-bg);
-  border-color: var(--color-text);
-  z-index: 1;
+.socials__circle {
+  position: absolute; inset: 0;
+  background: var(--color-text);
+  border-radius: 50%;
+  transform: scale(0);
+  pointer-events: none;
 }
-.socials__icon svg { pointer-events: none; }
+.socials__icon svg { position: relative; z-index: 1; pointer-events: none; }
 @media (max-width: 768px) {
   .socials { bottom: 16px; right: 16px; }
-  .socials__icon { width: 28px; height: 28px; }
-  .socials__icon svg { width: 12px; height: 12px; }
+  .socials__icon { width: 32px; height: 32px; }
+  .socials__icon svg { width: 13px; height: 13px; }
 }
 
 /* ============================================

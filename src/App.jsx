@@ -33,8 +33,8 @@ function LocalClock({ scrollPct = 0 }) {
   const op = scrollPct <= 15 ? 1 : scrollPct >= 25 ? 0 : 1 - (scrollPct - 15) / 10;
   return (
     <div className="local-clock" style={{ opacity: op }}>
-      <span className="local-clock__time">{time}</span>
       <span className="local-clock__zone">{zone}</span>
+      <span className="local-clock__time">{time}</span>
     </div>
   );
 }
@@ -345,7 +345,9 @@ export default function App() {
 
         {/* Social icons — bottom right */}
         {showUI && (
-          <div className="socials">
+          <div className="socials" style={{
+            opacity: scrollPct <= 15 ? 1 : scrollPct >= 25 ? 0 : 1 - (scrollPct - 15) / 10,
+          }}>
             {[
               { href: 'https://www.youtube.com/@ProgettoHappiness', icon: <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 12a29 29 0 00.46 5.58 2.78 2.78 0 001.94 2C5.12 20 12 20 12 20s6.88 0 8.6-.46a2.78 2.78 0 001.94-2A29 29 0 0023 12a29 29 0 00-.46-5.58zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/> },
               { href: 'https://www.instagram.com/progettohappiness/', icon: <><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5"/></> },
@@ -353,8 +355,20 @@ export default function App() {
               { href: 'https://www.linkedin.com/company/progettohappiness/', icon: <><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-4 0v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></> },
               { href: 'https://www.twitch.tv/progettohappiness', icon: <path d="M21 2H3v16h5v4l4-4h5l4-4V2zm-10 9V7m5 4V7"/> },
             ].map(({ href, icon }, i) => (
-              <a key={i} href={href} target="_blank" rel="noopener" className="socials__icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <a key={i} href={href} target="_blank" rel="noopener" className="socials__icon"
+                onPointerEnter={(e) => {
+                  const circle = e.currentTarget.querySelector('.socials__circle');
+                  if (circle) gsap.to(circle, { scale: 1, duration: 0.4, ease: 'circ.out', overwrite: true });
+                  gsap.to(e.currentTarget.querySelector('svg'), { stroke: '#000', duration: 0.25, overwrite: true });
+                }}
+                onPointerLeave={(e) => {
+                  const circle = e.currentTarget.querySelector('.socials__circle');
+                  if (circle) gsap.to(circle, { scale: 0, duration: 0.4, ease: 'circ.out', overwrite: true });
+                  gsap.to(e.currentTarget.querySelector('svg'), { stroke: 'currentColor', duration: 0.25, overwrite: true });
+                }}
+              >
+                <span className="socials__circle" />
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   {icon}
                 </svg>
               </a>
@@ -365,145 +379,6 @@ export default function App() {
 
       {/* ---- Bacheca (slides in from right) ---- */}
       <Bacheca visible={bachecaOpen} onBack={() => setBachecaOpen(false)} />
-
-      {/* BubbleMenu control panel */}
-      {showUI && (
-        <>
-          <button
-            className="bubble-ctrl-toggle"
-            onClick={() => setBubblePanelOpen((p) => !p)}
-            style={{
-              position: 'fixed', bottom: 28, left: 28, zIndex: 100,
-              width: 32, height: 32, borderRadius: '50%',
-              border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(12,12,12,0.7)',
-              backdropFilter: 'blur(12px)', color: 'rgba(255,255,255,0.5)',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 14,
-            }}
-          >
-            B
-          </button>
-          {bubblePanelOpen && (
-            <div style={{
-              position: 'fixed', bottom: 68, left: 28, zIndex: 100,
-              width: 260, background: 'rgba(12,12,12,0.9)', backdropFilter: 'blur(16px)',
-              border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 16,
-              fontFamily: 'Inter, system-ui, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.7)',
-            }}>
-              <div style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' }}>
-              {/* ── Hero Title ── */}
-              <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,221,0,0.6)' }}>Hero Title</div>
-              {[
-                { label: 'Top Y % (desktop)', key: 'topY', min: 0, max: 50, step: 1 },
-                { label: 'Top Y % (mobile)', key: 'topYMobile', min: 0, max: 50, step: 1 },
-                { label: 'Bottom Y %', key: 'bottomY', min: 30, max: 90, step: 1 },
-                { label: 'Top Size', key: 'topSize', min: 20, max: 140, step: 1 },
-                { label: 'Bottom Size', key: 'bottomSize', min: 12, max: 80, step: 1 },
-                { label: 'Curve Width', key: 'curveWidth', min: 100, max: 900, step: 10 },
-                { label: 'Curve Depth', key: 'curveDepth', min: 0, max: 500, step: 5 },
-                { label: 'Top Opacity', key: 'topOpacity', min: 0, max: 1, step: 0.05 },
-                { label: 'Bottom Opacity', key: 'bottomOpacity', min: 0, max: 1, step: 0.05 },
-              ].map(({ label, key, min, max, step }) => (
-                <div key={key} style={{ marginBottom: 6 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 1 }}>
-                    <span>{label}</span><span>{heroConfig[key]}</span>
-                  </div>
-                  <input type="range" min={min} max={max} step={step} value={heroConfig[key]}
-                    onChange={(e) => setHeroConfig((c) => ({ ...c, [key]: parseFloat(e.target.value) }))}
-                    style={{ width: '100%', accentColor: '#FFDD00' }}
-                  />
-                </div>
-              ))}
-              {[
-                { label: 'Top Color', key: 'topColor' },
-                { label: 'Accent Color', key: 'accentColor' },
-                { label: 'Bottom Color', key: 'bottomColor' },
-              ].map(({ label, key }) => (
-                <div key={key} style={{ marginBottom: 6 }}>
-                  <div style={{ marginBottom: 2 }}>{label}</div>
-                  <input type="color" value={heroConfig[key]}
-                    onChange={(e) => setHeroConfig((c) => ({ ...c, [key]: e.target.value }))}
-                    style={{ width: '100%', height: 24, border: 'none', borderRadius: 6, cursor: 'pointer' }}
-                  />
-                </div>
-              ))}
-
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '12px 0' }} />
-
-              {/* ── Sidebar ── */}
-              <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,221,0,0.6)' }}>Sidebar</div>
-              {[
-                { label: 'Padding Top', key: 'paddingTop', min: 4, max: 30, step: 1 },
-                { label: 'Padding Bottom', key: 'paddingBottom', min: 4, max: 30, step: 1 },
-                { label: 'Padding X', key: 'paddingX', min: 8, max: 32, step: 1 },
-                { label: 'Font Size', key: 'fontSize', min: 12, max: 32, step: 1 },
-                { label: 'Badge Size', key: 'badgeSize', min: 16, max: 36, step: 1 },
-                { label: 'Border Radius', key: 'borderRadius', min: 8, max: 40, step: 1 },
-                { label: 'Bottom (mobile)', key: 'bottom', min: 0, max: 40, step: 1 },
-                { label: 'Bottom (desktop)', key: 'desktopBottom', min: 8, max: 60, step: 1 },
-                { label: 'Collapsed H', key: 'collapsedHeight', min: 46, max: 300, step: 2 },
-              ].map(({ label, key, min, max, step }) => (
-                <div key={key} style={{ marginBottom: 6 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 1 }}>
-                    <span>{label}</span><span>{sidebarConfig[key]}px</span>
-                  </div>
-                  <input type="range" min={min} max={max} step={step} value={sidebarConfig[key]}
-                    onChange={(e) => setSidebarConfig((c) => ({ ...c, [key]: parseFloat(e.target.value) }))}
-                    style={{ width: '100%', accentColor: '#FFDD00' }}
-                  />
-                </div>
-              ))}
-
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '12px 0' }} />
-
-              {/* ── Bubble Menu ── */}
-              <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,221,0,0.6)' }}>Bubble Menu</div>
-              {[
-                { label: 'Duration', key: 'duration', min: 0.1, max: 1.5, step: 0.05 },
-                { label: 'Stagger', key: 'stagger', min: 0.02, max: 0.4, step: 0.01 },
-                { label: 'Rotation', key: 'rotation', min: 0, max: 20, step: 1 },
-                { label: 'Gap', key: 'gap', min: -60, max: 20, step: 2 },
-              ].map(({ label, key, min, max, step }) => (
-                <div key={key} style={{ marginBottom: 6 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 1 }}>
-                    <span>{label}</span><span>{bubbleConfig[key]}</span>
-                  </div>
-                  <input type="range" min={min} max={max} step={step} value={bubbleConfig[key]}
-                    onChange={(e) => setBubbleConfig((c) => ({ ...c, [key]: parseFloat(e.target.value) }))}
-                    style={{ width: '100%', accentColor: '#FFDD00' }}
-                  />
-                </div>
-              ))}
-              <div style={{ marginBottom: 6 }}>
-                <div style={{ marginBottom: 2 }}>Ease</div>
-                <select value={bubbleConfig.ease}
-                  onChange={(e) => setBubbleConfig((c) => ({ ...c, ease: e.target.value }))}
-                  style={{ width: '100%', padding: '4px 6px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: 11 }}
-                >
-                  {['back.out(1.5)', 'back.out(2)', 'back.out(3)', 'elastic.out(1, 0.3)', 'power3.out', 'power4.out', 'expo.out', 'circ.out', 'bounce.out'].map((e) => (
-                    <option key={e} value={e}>{e}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ marginBottom: 6 }}>
-                <div style={{ marginBottom: 2 }}>Button BG</div>
-                <input type="color" value={bubbleConfig.menuBg}
-                  onChange={(e) => setBubbleConfig((c) => ({ ...c, menuBg: e.target.value }))}
-                  style={{ width: '100%', height: 24, border: 'none', borderRadius: 6, cursor: 'pointer' }}
-                />
-              </div>
-              <div>
-                <div style={{ marginBottom: 2 }}>Button Lines</div>
-                <input type="color" value={bubbleConfig.menuContentColor}
-                  onChange={(e) => setBubbleConfig((c) => ({ ...c, menuContentColor: e.target.value }))}
-                  style={{ width: '100%', height: 24, border: 'none', borderRadius: 6, cursor: 'pointer' }}
-                />
-              </div>
-              </div>
-            </div>
-          )}
-        </>
-      )}
 
       {/* About overlay */}
       <AboutOverlay visible={aboutOpen} onClose={() => { setAboutOpen(false); setActiveNav('globe'); }} />
