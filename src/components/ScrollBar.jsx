@@ -15,8 +15,8 @@ const DEFAULTS = {
   spread: 12,
   height: 40,
   gap: 2.5,
-  baseOpacity: 0.10,
-  activeOpacity: 0.60,
+  baseOpacity: 0.25,
+  activeOpacity: 1.0,
   dotSize: 11,
   dotCount: 3,
 };
@@ -66,9 +66,15 @@ const ScrollBar = () => {
         const w = baseWidth + eased * (peakWidth - baseWidth);
         const op = baseOpacity + eased * (activeOpacity - baseOpacity);
 
+        // Color: blend from dim to #FDF4ED based on wave
+        const r = Math.round(253 * (0.25 + eased * 0.75));
+        const g = Math.round(244 * (0.25 + eased * 0.75));
+        const b = Math.round(237 * (0.25 + eased * 0.75));
+
         gsap.to(el, {
           width: w,
           opacity: op,
+          backgroundColor: `rgb(${r}, ${g}, ${b})`,
           duration: 0.3,
           ease: 'power2.out',
           overwrite: 'auto',
@@ -81,12 +87,7 @@ const ScrollBar = () => {
     return () => cancelAnimationFrame(rafId.current);
   }, [cfg]);
 
-  // Intro
-  useEffect(() => {
-    const dashes = dashesRef.current.filter(Boolean);
-    gsap.set(dashes, { opacity: 0, scaleX: 0 });
-    // Will be revealed by scroll threshold
-  }, []);
+  // No intro hide — dashes always visible
 
   useEffect(() => {
     if (panelRef.current && panel) {
@@ -95,20 +96,8 @@ const ScrollBar = () => {
   }, [panel]);
 
   const { count } = cfg;
-  const barOpacity = scrollPct < 5 ? 0 : scrollPct < 10 ? (scrollPct - 5) / 5 : 1;
+  const barOpacity = 1; // always visible
 
-  // Intro reveal when bar becomes visible
-  const revealed = useRef(false);
-  useEffect(() => {
-    if (barOpacity > 0 && !revealed.current) {
-      revealed.current = true;
-      const dashes = dashesRef.current.filter(Boolean);
-      gsap.to(dashes, {
-        opacity: cfg.baseOpacity, scaleX: 1,
-        duration: 0.4, ease: 'circ.out', stagger: 0.01,
-      });
-    }
-  }, [barOpacity, cfg.baseOpacity]);
 
   const dots = [];
   const dc = cfg.dotCount;
@@ -128,7 +117,7 @@ const ScrollBar = () => {
               key={i}
               ref={(el) => { dashesRef.current[i] = el; }}
               className="scrollbar__dash"
-              style={{ width: cfg.baseWidth, background: 'rgba(255, 255, 255, 0.15)' }}
+              style={{ width: cfg.baseWidth, background: 'rgba(253, 244, 237, 0.25)' }}
             />
           ))}
         </div>

@@ -316,7 +316,7 @@ export default function App() {
 
         <aside
           ref={sidebarRef}
-          className={`sidebar ${sidebarExpanded ? 'sidebar--expanded' : ''}`}
+          className={`sidebar ${scrollPct >= 81 ? 'sidebar--visible' : ''} ${sidebarExpanded ? 'sidebar--expanded' : ''}`}
           style={{ '--sb-bottom-mobile': `${sidebarConfig.bottom}px`, '--sb-bottom-desktop': `${sidebarConfig.desktopBottom}px`, borderRadius: sidebarConfig.borderRadius, maxHeight: sidebarExpanded ? '55vh' : sidebarConfig.collapsedHeight }}
         >
           <div className="sidebar__header" onClick={() => setSidebarExpanded((p) => !p)}
