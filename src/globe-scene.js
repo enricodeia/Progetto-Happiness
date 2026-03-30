@@ -545,15 +545,24 @@ export function initGlobe(canvas) {
   };
 
   // Zoom back to scroll limit (90%) — called when panel closes
+  let returnTween = null;
   globeState.returnToScrollLimit = () => {
-    pinZoomActive = false;
-    globeState.setZoomPct(SCROLL_LIMIT);
+    flyActive = true;
+    zoomVelocity = 0;
+    flyZoomTween?.kill(); returnTween?.kill();
+    returnTween = gsap.to({ v: camDist }, {
+      v: ZOOM_SCROLL_CAP, duration: 1, ease: 'circ.inOut',
+      onUpdate() { camDist = targetCamDist = this.targets()[0].v; },
+      onComplete() { pinZoomActive = false; flyActive = false; },
+    });
   };
 
-  let flyTween = null;
-  let rotTweenX = null;
-  let rotTweenY = null;
-  const PIN_ZOOM_PCT = 97; // zoom level when clicking a pin
+  // ---- Fly animation state ----
+  let flyActive = false; // when true, GSAP controls camDist/rot directly (bypasses lerp)
+  let flyZoomTween = null;
+  let flyRotTweenX = null;
+  let flyRotTweenY = null;
+  const PIN_ZOOM_PCT = 97;
   const PIN_ZOOM_DIST = ZOOM_MAX - (PIN_ZOOM_PCT / 100) * (ZOOM_MAX - ZOOM_MIN);
 
   globeState.flyToMarker = (marker, verticalOffset = 0) => {
@@ -563,28 +572,34 @@ export function initGlobe(canvas) {
     const destRotX = Math.asin(Math.max(-0.99, Math.min(0.99, pos.y))) - verticalOffset;
 
     pinZoomActive = true;
+    flyActive = true;
+    zoomVelocity = 0; // kill any manual scroll momentum
     autoRotate = false; clearTimeout(autoTimer);
     autoTimer = setTimeout(() => { autoRotate = true; }, 10000);
 
-    // Animate rotation to center the pin
-    rotTweenX?.kill(); rotTweenY?.kill();
-    rotTweenX = gsap.to({ v: targetRotX }, {
+    // Kill previous tweens
+    flyZoomTween?.kill(); flyRotTweenX?.kill(); flyRotTweenY?.kill();
+
+    // Animate rotation — GSAP writes rotX/rotY/targetRotX/targetRotY directly
+    flyRotTweenX = gsap.to({ v: rotX }, {
       v: destRotX, duration: 1.2, ease: 'circ.out',
-      onUpdate() { targetRotX = this.targets()[0].v; },
+      onUpdate() { rotX = targetRotX = this.targets()[0].v; },
     });
-    rotTweenY = gsap.to({ v: targetRotY }, {
+    flyRotTweenY = gsap.to({ v: rotY }, {
       v: destRotY, duration: 1.2, ease: 'circ.out',
-      onUpdate() { targetRotY = this.targets()[0].v; },
+      onUpdate() { rotY = targetRotY = this.targets()[0].v; },
     });
 
-    // Only zoom if not already at pin zoom level (switching between pins keeps zoom)
-    const alreadyClose = Math.abs(targetCamDist - PIN_ZOOM_DIST) < EARTH_RADIUS * 0.3;
+    // Zoom — only if not already at pin level (switching pins keeps zoom)
+    const alreadyClose = Math.abs(camDist - PIN_ZOOM_DIST) < EARTH_RADIUS * 0.3;
     if (!alreadyClose) {
-      flyTween?.kill();
-      flyTween = gsap.to({ v: targetCamDist }, {
+      flyZoomTween = gsap.to({ v: camDist }, {
         v: PIN_ZOOM_DIST, duration: 1.2, ease: 'circ.out',
-        onUpdate() { targetCamDist = this.targets()[0].v; },
+        onUpdate() { camDist = targetCamDist = this.targets()[0].v; },
+        onComplete() { flyActive = false; },
       });
+    } else {
+      flyActive = false;
     }
   };
 
@@ -853,20 +868,22 @@ export function initGlobe(canvas) {
     rotSpeed += (targetRotSpeed - rotSpeed) * 0.04;
     if (autoRotate) targetRotY += rotSpeed;
 
-    // More responsive, less momentum
-    rotX += (targetRotX - rotX) * 0.12;
-    rotY += (targetRotY - rotY) * 0.12;
+    // Rotation lerp (skipped when GSAP fly is active)
+    if (!flyActive) {
+      rotX += (targetRotX - rotX) * 0.12;
+      rotY += (targetRotY - rotY) * 0.12;
+    }
 
-    // Smooth zoom: apply velocity with friction (no jitter)
-    targetCamDist *= 1 - zoomVelocity;
-    // Manual scroll capped at 90%; pin zoom can reach 100%
-    const zoomFloor = pinZoomActive ? EARTH_RADIUS * 1.15 : ZOOM_SCROLL_CAP;
-    targetCamDist = Math.max(zoomFloor, Math.min(EARTH_RADIUS * 7, targetCamDist));
-    // If user manually scrolls out past 90% cap, deactivate pin zoom
-    if (pinZoomActive && zoomVelocity > 0 && targetCamDist >= ZOOM_SCROLL_CAP) pinZoomActive = false;
-    zoomVelocity *= 0.85; // friction decay
-    if (Math.abs(zoomVelocity) < 0.000001) zoomVelocity = 0;
-    camDist += (targetCamDist - camDist) * 0.06;
+    // Zoom (skipped when GSAP fly is active — GSAP writes camDist directly)
+    if (!flyActive) {
+      targetCamDist *= 1 - zoomVelocity;
+      const zoomFloor = pinZoomActive ? EARTH_RADIUS * 1.15 : ZOOM_SCROLL_CAP;
+      targetCamDist = Math.max(zoomFloor, Math.min(EARTH_RADIUS * 7, targetCamDist));
+      if (pinZoomActive && zoomVelocity > 0 && targetCamDist >= ZOOM_SCROLL_CAP) pinZoomActive = false;
+      zoomVelocity *= 0.85;
+      if (Math.abs(zoomVelocity) < 0.000001) zoomVelocity = 0;
+      camDist += (targetCamDist - camDist) * 0.06;
+    }
 
     // Clouds drift very slightly relative to globe surface
     cloudMesh.rotation.y += 0.000008;
