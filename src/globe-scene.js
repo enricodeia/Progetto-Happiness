@@ -584,8 +584,8 @@ export function initGlobe(canvas) {
     autoRotate = false; clearTimeout(autoTimer);
     autoTimer = setTimeout(() => { autoRotate = true; }, 10000);
 
-    // Kill previous tweens
-    flyZoomTween?.kill(); flyRotTweenX?.kill(); flyRotTweenY?.kill();
+    // Kill previous tweens (including return-to-90% if switching pins)
+    returnTween?.kill(); flyZoomTween?.kill(); flyRotTweenX?.kill(); flyRotTweenY?.kill();
 
     // Animate rotation — GSAP writes rotX/rotY/targetRotX/targetRotY directly
     flyRotTweenX = gsap.to({ v: rotX }, {
