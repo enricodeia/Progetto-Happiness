@@ -10,9 +10,9 @@ const STEPS = [
   { pct: 97, pos: 100 },
 ];
 
-const SVG_W = 68;
-const SVG_H = 622;
-const PATH_D = 'M0.769531 0C14.1893 28.8865 29.0413 69.7802 41.2871 118.76C74.759 252.638 88.7837 447.025 0.763672 621.822';
+const SVG_W = 27;
+const SVG_H = 399;
+const PATH_D = 'M0.769531 0C25.7843 89.0525 43.7939 244.63 0.769531 398.217';
 
 // Map scroll percentage to visual position on path
 // Interpolates between step pct→pos pairs
