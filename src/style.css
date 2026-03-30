@@ -195,6 +195,8 @@ html, body, #root {
 
 @media (max-width: 768px) {
   .preloader__prompt-text { font-size: 18px; }
+  .preloader__content { margin-top: calc(8.4vh + 42px + 2.5vh); }
+  .sticker-peel { width: 170px !important; }
 }
 
 /* ============================================
