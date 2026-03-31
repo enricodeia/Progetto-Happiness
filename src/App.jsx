@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { gsap } from 'gsap';
 import { motion } from 'motion/react';
 import HoverCard from './components/HoverCard.jsx';
@@ -7,7 +7,7 @@ import { Howler } from 'howler';
 import Globe from './components/Globe.jsx';
 // CountUp moved to About overlay
 import Noise from './components/Noise.jsx';
-const AboutOverlay = lazy(() => import('./components/AboutOverlay.jsx'));
+import AboutOverlay from './components/AboutOverlay.jsx';
 import PillNav from './components/PillNav.jsx';
 import PanelCard from './components/PanelCard.jsx';
 import Bacheca from './components/Bacheca.jsx';
@@ -101,6 +101,7 @@ function App() {
   const [countryPos, setCountryPos] = useState({ x: 0, y: 0 });
   const [panelData, setPanelData] = useState(null);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [blogOpen, setBlogOpen] = useState(false);
   const [activeEp, setActiveEp] = useState(null);
   const [activeNav, setActiveNav] = useState('globe');
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -176,7 +177,124 @@ function App() {
 
   const sidebarRef = useRef(null);
   const sidebarShown = useRef(false);
+  const pageWrapperRef = useRef(null);
+  const aboutRef = useRef(null);
+  const blogRef = useRef(null);
+  const overlayPathRef = useRef(null);
+  const pageTransitioning = useRef(false);
   const isMobile = () => window.innerWidth <= 768;
+
+  // SVG path definitions for vertical page transition
+  const svgPaths = useRef({
+    step1: {
+      unfilled: 'M 0 100 V 100 Q 50 100 100 100 V 100 z',
+      curve1:   'M 0 100 V 50 Q 50 0 100 50 V 100 z',
+      curve2:   'M 0 100 V 50 Q 50 100 100 50 V 100 z',
+      filled:   'M 0 100 V 0 Q 50 0 100 0 V 100 z',
+    },
+    step2: {
+      filled:   'M 0 0 V 100 Q 50 100 100 100 V 0 z',
+      curve1:   'M 0 0 V 50 Q 50 0 100 50 V 0 z',
+      curve2:   'M 0 0 V 50 Q 50 100 100 50 V 0 z',
+      unfilled: 'M 0 0 V 0 Q 50 0 100 0 V 0 z',
+    },
+  }).current;
+
+  // Open About: SVG wave covers from bottom, switches page, uncovers from top
+  const openAbout = useCallback(() => {
+    if (pageTransitioning.current) return;
+    pageTransitioning.current = true;
+    const p = overlayPathRef.current;
+
+    gsap.timeline({ onComplete: () => { pageTransitioning.current = false; } })
+      .set(p, { attr: { d: svgPaths.step1.unfilled } })
+      .to(p, { duration: 0.8, ease: 'power4.in', attr: { d: svgPaths.step1.curve1 } }, 0)
+      .to(p, {
+        duration: 0.2, ease: 'power1', attr: { d: svgPaths.step1.filled },
+        onComplete: () => {
+          gsap.set(pageWrapperRef.current, { autoAlpha: 0 });
+          gsap.set(aboutRef.current, { autoAlpha: 1 });
+          setAboutOpen(true);
+          setActiveNav('about');
+          globeState.pause();
+        },
+      })
+      .set(p, { attr: { d: svgPaths.step2.filled } })
+      .to(p, { duration: 0.2, ease: 'sine.in', attr: { d: svgPaths.step2.curve1 } })
+      .to(p, { duration: 1, ease: 'power4', attr: { d: svgPaths.step2.unfilled } });
+  }, []);
+
+  // Close About: SVG wave covers from top, switches page, uncovers from bottom
+  const closeAbout = useCallback(() => {
+    if (pageTransitioning.current) return;
+    pageTransitioning.current = true;
+    const p = overlayPathRef.current;
+
+    gsap.timeline({ onComplete: () => { pageTransitioning.current = false; } })
+      .set(p, { attr: { d: svgPaths.step2.unfilled } })
+      .to(p, { duration: 0.8, ease: 'power4.in', attr: { d: svgPaths.step2.curve2 } }, 0)
+      .to(p, {
+        duration: 0.2, ease: 'power1', attr: { d: svgPaths.step2.filled },
+        onComplete: () => {
+          gsap.set(aboutRef.current, { autoAlpha: 0 });
+          gsap.set(pageWrapperRef.current, { autoAlpha: 1, yPercent: 0 });
+          setAboutOpen(false);
+          setActiveNav('globe');
+          globeState.resume();
+        },
+      })
+      .set(p, { attr: { d: svgPaths.step1.filled } })
+      .to(p, { duration: 0.2, ease: 'sine.in', attr: { d: svgPaths.step1.curve2 } })
+      .to(p, { duration: 1, ease: 'power4', attr: { d: svgPaths.step1.unfilled } });
+  }, []);
+
+  // Open Blog: SVG wave covers from TOP, switches page, uncovers from BOTTOM
+  const openBlog = useCallback(() => {
+    if (pageTransitioning.current) return;
+    pageTransitioning.current = true;
+    const p = overlayPathRef.current;
+
+    gsap.timeline({ onComplete: () => { pageTransitioning.current = false; } })
+      .set(p, { attr: { d: svgPaths.step2.unfilled } })
+      .to(p, { duration: 0.8, ease: 'power4.in', attr: { d: svgPaths.step2.curve1 } }, 0)
+      .to(p, {
+        duration: 0.2, ease: 'power1', attr: { d: svgPaths.step2.filled },
+        onComplete: () => {
+          gsap.set(pageWrapperRef.current, { autoAlpha: 0 });
+          gsap.set(blogRef.current, { autoAlpha: 1 });
+          setBlogOpen(true);
+          setActiveNav('blog');
+          globeState.pause();
+        },
+      })
+      .set(p, { attr: { d: svgPaths.step1.filled } })
+      .to(p, { duration: 0.2, ease: 'sine.in', attr: { d: svgPaths.step1.curve2 } })
+      .to(p, { duration: 1, ease: 'power4', attr: { d: svgPaths.step1.unfilled } });
+  }, []);
+
+  // Close Blog: SVG wave covers from bottom, switches page, uncovers from top
+  const closeBlog = useCallback(() => {
+    if (pageTransitioning.current) return;
+    pageTransitioning.current = true;
+    const p = overlayPathRef.current;
+
+    gsap.timeline({ onComplete: () => { pageTransitioning.current = false; } })
+      .set(p, { attr: { d: svgPaths.step1.unfilled } })
+      .to(p, { duration: 0.8, ease: 'power4.in', attr: { d: svgPaths.step1.curve1 } }, 0)
+      .to(p, {
+        duration: 0.2, ease: 'power1', attr: { d: svgPaths.step1.filled },
+        onComplete: () => {
+          gsap.set(blogRef.current, { autoAlpha: 0 });
+          gsap.set(pageWrapperRef.current, { autoAlpha: 1, yPercent: 0 });
+          setBlogOpen(false);
+          setActiveNav('globe');
+          globeState.resume();
+        },
+      })
+      .set(p, { attr: { d: svgPaths.step2.filled } })
+      .to(p, { duration: 0.2, ease: 'sine.in', attr: { d: svgPaths.step2.curve2 } })
+      .to(p, { duration: 1, ease: 'power4', attr: { d: svgPaths.step2.unfilled } });
+  }, []);
 
   const handlePreloaderComplete = useCallback(() => {
     setShowUI(true);
@@ -285,15 +403,17 @@ function App() {
           labelShift={navConfig.labelShift}
           logoSpinDuration={navConfig.logoSpinDuration}
           onItemClick={(id) => {
-            if (id === 'home') { setAboutOpen(false); setBachecaOpen(false); setActiveNav('home'); globeState.resume(); return; }
-            setActiveNav(id);
-            if (id === 'bacheca') setBachecaOpen(true);
-            else if (id === 'about') { setAboutOpen(true); globeState.pause(); }
-            else if (id === 'blog') window.open('https://progettohappiness.com/episodi/', '_blank');
+            if (id === 'home') {
+              if (aboutOpen) closeAbout();
+              else if (blogOpen) closeBlog();
+              setBachecaOpen(false);
+              return;
+            }
+            if (id === 'bacheca') { if (aboutOpen) closeAbout(); else if (blogOpen) closeBlog(); setBachecaOpen(true); return; }
+            if (id === 'about') { if (blogOpen) closeBlog(); if (!aboutOpen) openAbout(); return; }
+            if (id === 'blog') { if (aboutOpen) closeAbout(); if (!blogOpen) openBlog(); return; }
           }}
-          onItemHover={(id) => {
-            if (id === 'about') import('./components/AboutOverlay.jsx');
-          }}
+          onItemHover={() => {}}
         />
       )}
 
@@ -316,14 +436,14 @@ function App() {
           onItemClick={(item) => {
             const id = item.id;
             if (id === 'bacheca') setBachecaOpen(true);
-            else if (id === 'about') setAboutOpen(true);
-            else if (id === 'blog') window.open('https://progettohappiness.com/episodi/', '_blank');
+            else if (id === 'about') { if (!aboutOpen) openAbout(); }
+            else if (id === 'blog') { if (!blogOpen) openBlog(); }
           }}
         />
       )}
 
-      {/* ---- Globe page (slides left when bacheca opens, slides up when about opens) ---- */}
-      <div className={`page-wrapper ${bachecaOpen ? 'page-wrapper--slide-left' : ''} ${aboutOpen ? 'page-wrapper--about-out' : ''}`}>
+      {/* ---- Globe page ---- */}
+      <div ref={pageWrapperRef} className={`page-wrapper ${bachecaOpen ? 'page-wrapper--slide-left' : ''}`}>
         <Globe />
         <Noise patternSize={200} patternAlpha={12} patternRefreshInterval={6} />
         {showUI && <LocalClock scrollPct={scrollPct} />}
@@ -427,12 +547,13 @@ function App() {
         )}
 
         <PanelCard data={panelData} onClose={closeEpisodePanel} onNav={(dir) => {
-          const eps = globeState.markers.filter((m) => m.type === 'episode').sort((a, b) => a.data.id - b.data.id);
+          const type = panelData?.type || 'episode';
+          const items = globeState.markers.filter((m) => m.type === type).sort((a, b) => (a.data.id > b.data.id ? 1 : -1));
           const currentId = panelData?.data?.id;
           if (!currentId) return;
-          const idx = eps.findIndex((m) => m.data.id === currentId);
+          const idx = items.findIndex((m) => m.data.id === currentId);
           if (idx < 0) return;
-          const next = eps[(idx + dir + eps.length) % eps.length];
+          const next = items[(idx + dir + items.length) % items.length];
           if (next) openEpisodePanel(next);
         }} />
 
@@ -485,10 +606,47 @@ function App() {
       {/* ---- Bacheca (slides in from right) ---- */}
       <Bacheca visible={bachecaOpen} onBack={() => setBachecaOpen(false)} />
 
-      {/* About overlay — lazy loaded, pauses globe */}
-      <Suspense fallback={null}>
-        <AboutOverlay visible={aboutOpen} onClose={() => { setAboutOpen(false); setActiveNav('globe'); globeState.resume(); }} />
-      </Suspense>
+      {/* About overlay — GSAP page transition */}
+      <AboutOverlay ref={aboutRef} visible={aboutOpen} onClose={closeAbout} />
+
+      {/* Blog page — empty with nav */}
+      <div ref={blogRef} className="blog-page">
+        <PillNav
+          logo="/logo.webp"
+          logoAlt="Progetto Happiness"
+          items={[
+            { id: 'bacheca', label: 'Bacheca' },
+            { id: 'about', label: 'About' },
+            { id: 'blog', label: 'Blog' },
+          ]}
+          activeItem="blog"
+          pillColor={navConfig.pillColor}
+          pillTextColor={navConfig.pillTextColor}
+          hoverCircleColor={navConfig.hoverCircleColor}
+          hoverTextColor={navConfig.hoverTextColor}
+          navBg={navConfig.navBg}
+          navStroke={navConfig.navStroke}
+          enterDuration={navConfig.enterDuration}
+          leaveDuration={navConfig.leaveDuration}
+          enterEase={navConfig.enterEase}
+          leaveEase={navConfig.leaveEase}
+          circleScale={navConfig.circleScale}
+          labelShift={navConfig.labelShift}
+          logoSpinDuration={navConfig.logoSpinDuration}
+          onItemClick={(id) => {
+            if (id === 'blog') return;
+            if (id === 'home') { closeBlog(); return; }
+            if (id === 'about') { closeBlog(); setTimeout(() => openAbout(), 1200); return; }
+            if (id === 'bacheca') { closeBlog(); return; }
+          }}
+          onItemHover={() => {}}
+        />
+      </div>
+
+      {/* SVG page transition overlay */}
+      <svg className="page-transition-overlay" width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path ref={overlayPathRef} className="page-transition-overlay__path" vectorEffect="non-scaling-stroke" d="M 0 100 V 100 Q 50 100 100 100 V 100 z" />
+      </svg>
     </>
   );
 }

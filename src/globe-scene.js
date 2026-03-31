@@ -3,6 +3,7 @@ import { gsap } from 'gsap';
 import { feature } from 'topojson-client';
 import { latLngToECEF, EARTH_RADIUS } from './tiles-globe.js';
 import { episodes, happinessConcepts } from './data.js';
+import { geographyArticles } from './geography-data.js';
 
 export const globeState = {
   markers: [],
@@ -561,6 +562,87 @@ export function initGlobe(canvas) {
       dot.userData.basePosition = pos.clone();
       markers.push({ dot, type: 'concept', data: { ...c, id: 100 + i } });
     });
+    // ---- Geography article markers (white stalks + image pin) ----
+    const geoStalkColor = new THREE.Color('#ffffff');
+    const GEO_STALK_H = initCfg.stalkHeight * 0.6;
+    const GEO_PIN_SIZE = initCfg.pinSize * 2.5;
+
+    // Create circular image texture from URL
+    const makeCircleTex = (imgUrl, fallbackLetter) => {
+      const sz = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = sz; canvas.height = sz;
+      const ctx = canvas.getContext('2d');
+      // White circle bg
+      ctx.beginPath(); ctx.arc(sz / 2, sz / 2, sz / 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      // Fallback letter
+      ctx.fillStyle = '#2C2118';
+      ctx.font = `bold ${sz * 0.4}px sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(fallbackLetter, sz / 2, sz / 2);
+      const tex = new THREE.CanvasTexture(canvas);
+      // Load image async and update
+      if (imgUrl) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          ctx.clearRect(0, 0, sz, sz);
+          ctx.beginPath(); ctx.arc(sz / 2, sz / 2, sz / 2, 0, Math.PI * 2); ctx.clip();
+          const aspect = img.width / img.height;
+          let sx = 0, sy = 0, sw = img.width, sh = img.height;
+          if (aspect > 1) { sx = (img.width - img.height) / 2; sw = img.height; }
+          else { sy = (img.height - img.width) / 2; sh = img.width; }
+          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sz, sz);
+          // White border ring
+          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4;
+          ctx.beginPath(); ctx.arc(sz / 2, sz / 2, sz / 2 - 2, 0, Math.PI * 2); ctx.stroke();
+          tex.needsUpdate = true;
+        };
+        img.src = imgUrl;
+      }
+      return tex;
+    };
+
+    geographyArticles.forEach((art) => {
+      const dir = latLngToECEF(art.lat, art.lng, 0).normalize();
+      const baseAlt = EARTH_RADIUS + 3000;
+
+      // White stalk (same gradient technique as episodes)
+      const positions = new Float32Array(STALK_SEGMENTS * 3);
+      const colors = new Float32Array(STALK_SEGMENTS * 4);
+      for (let s = 0; s < STALK_SEGMENTS; s++) {
+        const t = s / (STALK_SEGMENTS - 1);
+        const alt = baseAlt + t * GEO_STALK_H;
+        const p = dir.clone().multiplyScalar(alt);
+        positions.set([p.x, p.y, p.z], s * 3);
+        const alpha = Math.pow(t, 0.7) * 0.5;
+        colors.set([1, 1, 1, alpha], s * 4); // white
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
+      const mat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false });
+      const line = new THREE.Line(geo, mat);
+      line.renderOrder = 2;
+      stalkGroup.add(line);
+
+      // Image pin at tip
+      const tipPos = dir.clone().multiplyScalar(baseAlt + GEO_STALK_H);
+      const tex = makeCircleTex(art.image, art.title[0]);
+      const pinMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, sizeAttenuation: true });
+      const pin = new THREE.Sprite(pinMat);
+      pin.scale.setScalar(GEO_PIN_SIZE);
+      pin.position.copy(tipPos);
+      pin.renderOrder = 4;
+      pin.userData = { type: 'geography', data: art, baseScale: 1, hoverRingScale: 0 };
+      scene.add(pin);
+
+      markers.push({ dot: pin, type: 'geography', data: art });
+      stalks.push({ line, dir, heightPct: 1, pin, baseAlt });
+    });
+
     clickableDots = markers.map((m) => m.dot);
     globeState.markers = markers;
 
