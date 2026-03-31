@@ -835,15 +835,18 @@ html, body, #root {
   display: flex; align-items: center; gap: 8px;
 }
 .audio-control {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center;
+  width: 40px; height: 40px; overflow: hidden;
   background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  border-radius: 100px; padding: 4px 12px 4px 4px;
-  transition: border-color 0.25s;
+  border-radius: 100px;
+  transition: width 0.4s cubic-bezier(0.33, 0, 0.2, 1), border-color 0.25s;
 }
-.audio-control:hover { border-color: rgba(255,255,255,0.25); }
+.audio-control:hover {
+  width: 140px; border-color: rgba(255,255,255,0.25);
+}
 .audio-toggle {
-  width: 32px; height: 32px; border-radius: 50%;
+  width: 40px; height: 40px; border-radius: 50%;
   border: none; background: transparent;
   color: var(--color-text); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -852,6 +855,7 @@ html, body, #root {
 .audio-toggle:hover { color: var(--color-primary); }
 .audio-slider {
   width: 70px; height: 3px; -webkit-appearance: none; appearance: none;
+  flex-shrink: 0; margin-right: 12px;
   background: rgba(255,255,255,0.15); border-radius: 2px; outline: none;
   cursor: pointer;
 }

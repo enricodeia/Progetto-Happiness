@@ -41,18 +41,25 @@ const EpisodeSearch = ({ onSelect }) => {
   const handleClose = () => {
     const el = wrapRef.current;
     if (!el) return;
+    // Fade out results first
+    if (resultsRef.current) gsap.to(resultsRef.current, { height: 0, opacity: 0, duration: 0.25, ease: 'power2.in' });
     gsap.to(el, {
-      width: 40, duration: 0.3, ease: 'power3.in',
+      width: 40, duration: 0.55, ease: 'circ.inOut',
       onComplete: () => { setOpen(false); setQuery(''); setResults([]); }
     });
   };
 
-  // Results height animation
+  // Results: container height + items slide up from below
   useEffect(() => {
     const el = resultsRef.current;
     if (!el) return;
     if (results.length > 0) {
-      gsap.to(el, { height: 'auto', opacity: 1, duration: 0.3, ease: 'power3.out' });
+      gsap.to(el, { height: 'auto', opacity: 1, duration: 0.35, ease: 'circ.out' });
+      // Stagger items from bottom
+      requestAnimationFrame(() => {
+        const items = el.querySelectorAll('.ep-search__result');
+        gsap.fromTo(items, { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: 'power3.out', stagger: 0.04 });
+      });
     } else {
       gsap.to(el, { height: 0, opacity: 0, duration: 0.2, ease: 'power2.in' });
     }
