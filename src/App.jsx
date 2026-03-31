@@ -106,7 +106,6 @@ function App() {
   const [scrollPct, setScrollPct] = useState(0);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(0.35);
-  const lowpassRef = useRef(null); // Web Audio lowpass filter for muffled effect
   const [navConfig] = useState({
     pillColor: '#ddd9c0',
     pillTextColor: '#2C2118',
@@ -214,63 +213,26 @@ function App() {
     }
   }, [scrollPct, showUI]);
 
-  // Muffled audio effect — lowpass filter via Howler's Web Audio context
-  const applyMuffle = useCallback((on) => {
-    const music = getBgMusic();
-    if (!music || !Howler.ctx) return;
-    try {
-      if (!lowpassRef.current) {
-        const ctx = Howler.ctx;
-        lowpassRef.current = ctx.createBiquadFilter();
-        lowpassRef.current.type = 'lowpass';
-        lowpassRef.current.frequency.value = 22000; // fully open
-        lowpassRef.current.Q.value = 0.5;
-        // Insert filter: Howler master gain → filter → destination
-        Howler.masterGain.disconnect();
-        Howler.masterGain.connect(lowpassRef.current);
-        lowpassRef.current.connect(ctx.destination);
-      }
-      const target = on ? 400 : 22000; // 400Hz = muffled, 22kHz = open
-      lowpassRef.current.frequency.cancelScheduledValues(Howler.ctx.currentTime);
-      lowpassRef.current.frequency.setValueAtTime(lowpassRef.current.frequency.value, Howler.ctx.currentTime);
-      lowpassRef.current.frequency.exponentialRampToValueAtTime(target, Howler.ctx.currentTime + 0.8);
-    } catch (e) { /* Web Audio not available */ }
-  }, []);
-
   const openEpisodePanel = useCallback((m) => {
     setPanelData(m);
     setActiveEp(m.data.id);
     setHoverCard(null);
 
-    // Show pulsing ring on active pin
     globeState.setActivePin?.(m);
 
-    // Muffled audio when card opens
-    applyMuffle(true);
-    const music = getBgMusic();
-    if (music && !music._muted) music.fade(music.volume(), volume * 0.4, 800);
-
-    // Fly to marker — on mobile offset upward so card doesn't cover pin
     if (globeState.flyToMarker) {
       globeState.flyToMarker(m, isMobile() ? 0.25 : 0);
     }
 
-    // Mobile: slide sidebar out to right
     if (isMobile() && sidebarRef.current) {
       gsap.to(sidebarRef.current, { x: '100vw', duration: 0.6, ease: 'circ.out', overwrite: true });
     }
-  }, [volume, applyMuffle]);
+  }, []);
 
-  // Close episode panel: bring sidebar back on mobile
   const closeEpisodePanel = useCallback(() => {
     setPanelData(null);
     setActiveEp(null);
     globeState.clearActivePin?.();
-
-    // Restore audio
-    applyMuffle(false);
-    const music = getBgMusic();
-    if (music && !music._muted) music.fade(music.volume(), volume, 800);
 
     if (isMobile() && sidebarRef.current) {
       gsap.to(sidebarRef.current, { x: 0, duration: 0.6, ease: 'circ.out', overwrite: true });

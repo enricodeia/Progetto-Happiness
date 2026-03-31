@@ -84,7 +84,7 @@ const Preloader = ({ onComplete }) => {
       audioEnabled = true;
       Howler.autoUnlock = true;
       bgMusic = new Howl({
-        src: ['/bg-music.mp3'],
+        src: ['/bg-audio.mp3'],
         loop: true,
         volume: 0,
         html5: true,
