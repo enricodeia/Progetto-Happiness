@@ -367,8 +367,10 @@ function App() {
         )}
 
         <PanelCard data={panelData} onClose={closeEpisodePanel} onNav={(dir) => {
-          const eps = globeState.markers.filter((m) => m.type === 'episode');
-          const idx = eps.findIndex((m) => m.data.id === activeEp);
+          const eps = globeState.markers.filter((m) => m.type === 'episode').sort((a, b) => a.data.id - b.data.id);
+          const currentId = panelData?.data?.id;
+          if (!currentId) return;
+          const idx = eps.findIndex((m) => m.data.id === currentId);
           if (idx < 0) return;
           const next = eps[(idx + dir + eps.length) % eps.length];
           if (next) openEpisodePanel(next);
