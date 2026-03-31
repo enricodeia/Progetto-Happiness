@@ -643,7 +643,7 @@ html, body, #root {
 }
 .panel__expand-btn:hover { opacity: 1; }
 .panel__actions {
-  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  display: flex; flex-direction: column; gap: 10px;
 }
 .panel__yt {
   display: inline-flex; align-items: center; gap: 6px;
