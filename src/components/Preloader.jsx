@@ -83,14 +83,45 @@ const Preloader = ({ onComplete }) => {
     if (withAudio) {
       audioEnabled = true;
       Howler.autoUnlock = true;
+
+      // Background music — loop with crossfade for seamless blend
       bgMusic = new Howl({
         src: ['/bg-audio.mp3'],
-        loop: true,
+        loop: false, // we handle looping manually for crossfade
         volume: 0,
         html5: true,
-        onplay: () => { bgMusic.fade(0, 0.35, 3000); },
+        onplay: () => { bgMusic.fade(0, 1.0, 2000); },
+        onend: () => {
+          // Seamless restart: create overlap by starting next iteration before end
+          bgMusic.play();
+        },
       });
+      // Crossfade: fade out near end, fade in on restart
+      const checkEnd = () => {
+        if (!bgMusic.playing()) return;
+        const dur = bgMusic.duration();
+        const pos = bgMusic.seek();
+        if (dur > 0 && pos > dur - 2.5) {
+          // Fade out last 2.5s
+          const remaining = dur - pos;
+          if (bgMusic.volume() > 0.05) {
+            bgMusic.fade(bgMusic.volume(), 0, remaining * 1000);
+          }
+        }
+        requestAnimationFrame(checkEnd);
+      };
+      bgMusic.once('play', () => requestAnimationFrame(checkEnd));
       bgMusic.play();
+
+      // "Benvenuti" one-shot after 1s delay
+      setTimeout(() => {
+        const benvenuti = new Howl({
+          src: ['/benvenuti.mp3'],
+          volume: 1.0,
+          html5: true,
+        });
+        benvenuti.play();
+      }, 1000);
     } else {
       audioEnabled = false;
       Howler.mute(true);

@@ -105,7 +105,7 @@ function App() {
   const [bachecaOpen, setBachecaOpen] = useState(false);
   const [scrollPct, setScrollPct] = useState(0);
   const [muted, setMuted] = useState(false);
-  const [volume, setVolume] = useState(0.35);
+  const [volume, setVolume] = useState(1.0);
   const [navConfig] = useState({
     pillColor: '#ddd9c0',
     pillTextColor: '#2C2118',
