@@ -203,6 +203,12 @@ export function initGlobe(canvas) {
 
   // ── Atmosphere glow ──
   const atmosMat = new THREE.ShaderMaterial({
+    uniforms: {
+      uIntensity: { value: 1.0 },
+      uPower: { value: 2.0 },
+      uFalloff: { value: 0.55 },
+      uColor: { value: new THREE.Color(0.3, 0.6, 1.0) },
+    },
     vertexShader: `
       varying vec3 vNormal;
       void main() {
@@ -211,16 +217,23 @@ export function initGlobe(canvas) {
       }
     `,
     fragmentShader: `
+      uniform float uIntensity;
+      uniform float uPower;
+      uniform float uFalloff;
+      uniform vec3 uColor;
       varying vec3 vNormal;
       void main() {
-        float intensity = pow(0.55 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
-        gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity;
+        float rim = pow(uFalloff - dot(vNormal, vec3(0.0, 0.0, 1.0)), uPower);
+        gl_FragColor = vec4(uColor, 1.0) * rim * uIntensity;
       }
     `,
     blending: THREE.AdditiveBlending, side: THREE.BackSide,
     transparent: true, depthWrite: false,
   });
-  scene.add(new THREE.Mesh(new THREE.SphereGeometry(EARTH_RADIUS * 1.12, 64, 32), atmosMat));
+  const atmosMesh = new THREE.Mesh(new THREE.SphereGeometry(EARTH_RADIUS * 1.12, 64, 32), atmosMat);
+  scene.add(atmosMesh);
+  globeState.atmosMat = atmosMat;
+  globeState.atmosMesh = atmosMesh;
 
   // Globe sphere — standard Three.js SphereGeometry with correct UV mapping
   // Rotated to align with our ECEF frame swap (geoX→Z, geoY→X, geoZ→Y)

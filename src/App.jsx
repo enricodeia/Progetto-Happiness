@@ -115,6 +115,27 @@ function App() {
     setSpecCfg(next);
     globeState.updateEarth?.(next);
   };
+  const [atmosCfg, setAtmosCfg] = useState({
+    intensity: 1.0,
+    power: 2.0,
+    falloff: 0.55,
+    color: '#4d99ff',
+    scale: 1.12,
+  });
+  const updateAtmos = (k, v) => {
+    const next = { ...atmosCfg, [k]: v };
+    setAtmosCfg(next);
+    const mat = globeState.atmosMat;
+    if (mat) {
+      mat.uniforms.uIntensity.value = next.intensity;
+      mat.uniforms.uPower.value = next.power;
+      mat.uniforms.uFalloff.value = next.falloff;
+      mat.uniforms.uColor.value.set(next.color);
+    }
+    if (globeState.atmosMesh) {
+      globeState.atmosMesh.scale.setScalar(next.scale / 1.12);
+    }
+  };
   const [navConfig] = useState({
     pillColor: '#ddd9c0',
     pillTextColor: '#2C2118',
@@ -453,6 +474,39 @@ function App() {
               Color
               <input type="color" value={specCfg.specularColor}
                 onChange={(e) => updateSpec('specularColor', e.target.value)}
+                style={{ width: 32, height: 20, border: 'none', background: 'none', cursor: 'pointer' }} />
+            </label>
+
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
+            <span style={{ color: '#4d99ff', fontWeight: 500, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' }}>Atmosphere</span>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Intensity
+              <input type="range" min="0" max="3" step="0.05" value={atmosCfg.intensity}
+                onChange={(e) => updateAtmos('intensity', +e.target.value)} style={{ width: 90 }} />
+            </label>
+            <span style={{ fontSize: 10, opacity: 0.5 }}>{atmosCfg.intensity.toFixed(2)}</span>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Power
+              <input type="range" min="0.5" max="6" step="0.1" value={atmosCfg.power}
+                onChange={(e) => updateAtmos('power', +e.target.value)} style={{ width: 90 }} />
+            </label>
+            <span style={{ fontSize: 10, opacity: 0.5 }}>{atmosCfg.power.toFixed(1)}</span>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Falloff
+              <input type="range" min="0.1" max="1.0" step="0.01" value={atmosCfg.falloff}
+                onChange={(e) => updateAtmos('falloff', +e.target.value)} style={{ width: 90 }} />
+            </label>
+            <span style={{ fontSize: 10, opacity: 0.5 }}>{atmosCfg.falloff.toFixed(2)}</span>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Scale
+              <input type="range" min="1.02" max="1.4" step="0.01" value={atmosCfg.scale}
+                onChange={(e) => updateAtmos('scale', +e.target.value)} style={{ width: 90 }} />
+            </label>
+            <span style={{ fontSize: 10, opacity: 0.5 }}>{atmosCfg.scale.toFixed(2)}</span>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Color
+              <input type="color" value={atmosCfg.color}
+                onChange={(e) => updateAtmos('color', e.target.value)}
                 style={{ width: 32, height: 20, border: 'none', background: 'none', cursor: 'pointer' }} />
             </label>
           </div>
