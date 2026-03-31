@@ -242,6 +242,15 @@ export function initGlobe(canvas) {
     color: 0xffffff, transparent: true, opacity: 1, depthWrite: false, shininess: 27,
   });
 
+  // Load specular map (ocean reflections)
+  new THREE.TextureLoader().load('/specular.webp', (tex) => {
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.anisotropy = 8;
+    sphereMat.specularMap = tex;
+    sphereMat.needsUpdate = true;
+  });
+
   const sphereGeo = new THREE.SphereGeometry(EARTH_RADIUS * 0.997, 128, 128);
   const globeMesh = new THREE.Mesh(sphereGeo, sphereMat);
   globeMesh.rotation.y = -Math.PI / 2;
@@ -601,6 +610,7 @@ export function initGlobe(canvas) {
       sunLight.intensity = c.sunIntensity ?? 3.1;
       sunLight.color.set(c.sunColor || '#ffffff');
       sphereMat.shininess = c.shininess ?? 42;
+      sphereMat.specular.set(c.specularColor || '#111111');
       sphereMat.emissive.set(c.emissive || '#000000');
       sphereMat.emissiveIntensity = c.emissiveIntensity ?? 0;
       innerSphereMat.color.set(c.shadowColor || '#000000');
@@ -1040,19 +1050,19 @@ export function initGlobe(canvas) {
       }
     }
 
-    // ---- Cloud fade: GSAP at 68% scroll (1% before "What Makes You Happy?" max) ----
-    if (scrollPct >= 68 && !cloudFadeActive) {
+    // ---- Cloud fade: GSAP at 84% scroll (synced with episodes panel) ----
+    if (scrollPct >= 84 && !cloudFadeActive) {
       cloudFadeActive = true;
       gsapCloudTween?.kill();
       gsapCloudTween = gsap.to(cloudState, {
-        opacity: 0, duration: 1.2, ease: 'cubic.out',
+        opacity: 0, duration: 2, ease: 'cubic.out',
         onUpdate: () => { cloudMat.opacity = cloudState.opacity; },
       });
-    } else if (scrollPct < 68 && cloudFadeActive) {
+    } else if (scrollPct < 84 && cloudFadeActive) {
       cloudFadeActive = false;
       gsapCloudTween?.kill();
       gsapCloudTween = gsap.to(cloudState, {
-        opacity: 0.4, duration: 1.2, ease: 'cubic.out',
+        opacity: 0.4, duration: 2, ease: 'cubic.out',
         onUpdate: () => { cloudMat.opacity = cloudState.opacity; },
       });
     }

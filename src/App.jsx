@@ -106,6 +106,15 @@ function App() {
   const [scrollPct, setScrollPct] = useState(0);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(1.0);
+  const [specCfg, setSpecCfg] = useState({
+    shininess: 27,
+    specularColor: '#333333',
+  });
+  const updateSpec = (k, v) => {
+    const next = { ...specCfg, [k]: v };
+    setSpecCfg(next);
+    globeState.updateEarth?.(next);
+  };
   const [navConfig] = useState({
     pillColor: '#ddd9c0',
     pillTextColor: '#2C2118',
@@ -422,6 +431,32 @@ function App() {
           const next = eps[(idx + dir + eps.length) % eps.length];
           if (next) openEpisodePanel(next);
         }} />
+
+        {/* Specular control panel */}
+        {showUI && (
+          <div style={{
+            position: 'fixed', bottom: 28, left: 28, zIndex: 9999,
+            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12,
+            padding: '14px 18px', fontFamily: 'var(--font-sans)', fontSize: 11,
+            color: '#aaa', display: 'flex', flexDirection: 'column', gap: 8, width: 200,
+          }}>
+            <span style={{ color: '#FDF4ED', fontWeight: 500, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' }}>Specular</span>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Shininess
+              <input type="range" min="0" max="150" value={specCfg.shininess}
+                onChange={(e) => updateSpec('shininess', +e.target.value)}
+                style={{ width: 100 }} />
+            </label>
+            <span style={{ fontSize: 10, opacity: 0.5 }}>{specCfg.shininess}</span>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Color
+              <input type="color" value={specCfg.specularColor}
+                onChange={(e) => updateSpec('specularColor', e.target.value)}
+                style={{ width: 32, height: 20, border: 'none', background: 'none', cursor: 'pointer' }} />
+            </label>
+          </div>
+        )}
 
         {/* Scroll line indicator — bottom center */}
         <div className={`scroll-line ${showUI ? 'scroll-line--visible' : ''}`}>

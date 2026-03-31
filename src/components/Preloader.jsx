@@ -121,7 +121,7 @@ const Preloader = ({ onComplete }) => {
           html5: true,
         });
         benvenuti.play();
-      }, 1000);
+      }, 600);
     } else {
       audioEnabled = false;
       Howler.mute(true);
