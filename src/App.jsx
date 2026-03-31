@@ -121,6 +121,8 @@ function App() {
     falloff: 0.55,
     color: '#4d99ff',
     scale: 1.12,
+    fadeStart: 50,
+    fadeEnd: 100,
   });
   const updateAtmos = (k, v) => {
     const next = { ...atmosCfg, [k]: v };
@@ -135,7 +137,11 @@ function App() {
     if (globeState.atmosMesh) {
       globeState.atmosMesh.scale.setScalar(next.scale / 1.12);
     }
+    // Pass config to render loop for scroll-based fade
+    globeState.atmosConfig = next;
   };
+  // Set initial config
+  useEffect(() => { globeState.atmosConfig = atmosCfg; }, []);
   const [navConfig] = useState({
     pillColor: '#ddd9c0',
     pillTextColor: '#2C2118',
@@ -509,6 +515,19 @@ function App() {
                 onChange={(e) => updateAtmos('color', e.target.value)}
                 style={{ width: 32, height: 20, border: 'none', background: 'none', cursor: 'pointer' }} />
             </label>
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '2px 0' }} />
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Fade start %
+              <input type="range" min="0" max="100" step="1" value={atmosCfg.fadeStart}
+                onChange={(e) => updateAtmos('fadeStart', +e.target.value)} style={{ width: 90 }} />
+            </label>
+            <span style={{ fontSize: 10, opacity: 0.5 }}>{atmosCfg.fadeStart}%</span>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Fade end %
+              <input type="range" min="0" max="100" step="1" value={atmosCfg.fadeEnd}
+                onChange={(e) => updateAtmos('fadeEnd', +e.target.value)} style={{ width: 90 }} />
+            </label>
+            <span style={{ fontSize: 10, opacity: 0.5 }}>{atmosCfg.fadeEnd}%</span>
           </div>
         )}
 

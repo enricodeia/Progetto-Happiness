@@ -1034,6 +1034,19 @@ export function initGlobe(canvas) {
     // Update scroll percentage
     updateScrollPct();
 
+    // Atmosphere intensity based on scroll
+    if (globeState.atmosMat && globeState.atmosConfig) {
+      const ac = globeState.atmosConfig;
+      const baseIntensity = ac.intensity ?? 1.0;
+      const fadeStart = ac.fadeStart ?? 0;
+      const fadeEnd = ac.fadeEnd ?? 100;
+      let atmosAlpha = 1.0;
+      if (fadeEnd > fadeStart && scrollPct >= fadeStart) {
+        atmosAlpha = 1.0 - Math.min(1, (scrollPct - fadeStart) / (fadeEnd - fadeStart));
+      }
+      globeState.atmosMat.uniforms.uIntensity.value = baseIntensity * atmosAlpha;
+    }
+
     // Keep ring sprite on active pin position
     if (globeState._activePin) {
       const pinPos = globeState._activePin.dot.position;

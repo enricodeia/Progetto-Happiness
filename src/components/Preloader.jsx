@@ -86,7 +86,7 @@ const Preloader = ({ onComplete }) => {
 
       // Background music — loop with crossfade for seamless blend
       bgMusic = new Howl({
-        src: ['/bg-audio.mp3'],
+        src: ['/background-space.mp3'],
         loop: false, // we handle looping manually for crossfade
         volume: 0,
         html5: true,
