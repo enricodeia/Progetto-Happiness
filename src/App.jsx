@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { gsap } from 'gsap';
 import { motion } from 'motion/react';
 import HoverCard from './components/HoverCard.jsx';
-import Preloader from './components/Preloader.jsx';
+import Preloader, { getBgMusic } from './components/Preloader.jsx';
+import { Howler } from 'howler';
 import Globe from './components/Globe.jsx';
 // CountUp moved to About overlay
 import Noise from './components/Noise.jsx';
@@ -103,6 +104,7 @@ function App() {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [bachecaOpen, setBachecaOpen] = useState(false);
   const [scrollPct, setScrollPct] = useState(0);
+  const [muted, setMuted] = useState(false);
   const [navConfig] = useState({
     pillColor: '#ddd9c0',
     pillTextColor: '#2C2118',
@@ -325,6 +327,37 @@ function App() {
           }}>
             {Math.round(scrollPct)}%
           </div>
+        )}
+
+        {/* Audio toggle — top right */}
+        {showUI && (
+          <button
+            className="audio-toggle"
+            onClick={() => {
+              const music = getBgMusic();
+              if (muted) {
+                // Unmute
+                if (music) { music.mute(false); music.fade(music.volume(), 0.35, 500); }
+                else { Howler.mute(false); }
+                setMuted(false);
+              } else {
+                // Mute
+                if (music) { music.fade(music.volume(), 0, 400); setTimeout(() => music.mute(true), 400); }
+                else { Howler.mute(true); }
+                setMuted(true);
+              }
+            }}
+          >
+            {muted ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M15.54 8.46a5 5 0 010 7.07"/>
+              </svg>
+            )}
+          </button>
         )}
 
         {/* Hero title over globe */}

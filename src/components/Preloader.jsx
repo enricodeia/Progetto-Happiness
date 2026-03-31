@@ -83,16 +83,16 @@ const Preloader = ({ onComplete }) => {
     if (withAudio) {
       audioEnabled = true;
       Howler.autoUnlock = true;
-      // Start background music with gentle fade-in
       bgMusic = new Howl({
         src: ['/bg-music.mp3'],
         loop: true,
         volume: 0,
-        html5: true, // stream instead of full decode — faster start
+        html5: true,
+        onplay: () => { bgMusic.fade(0, 0.35, 3000); },
       });
       bgMusic.play();
-      bgMusic.fade(0, 0.3, 3000); // fade to 30% over 3 seconds
     } else {
+      audioEnabled = false;
       Howler.mute(true);
     }
 

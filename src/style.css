@@ -764,6 +764,21 @@ html, body, #root {
 /* ============================================
    Scroll indicator (debug)
    ============================================ */
+.audio-toggle {
+  position: fixed; top: 24px; right: 24px; z-index: 60;
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  color: var(--color-text); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.25s;
+}
+.audio-toggle:hover {
+  border-color: rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.55);
+}
+
 .socials {
   position: fixed; bottom: 28px; right: 28px;
   z-index: 10; display: flex; gap: 1px;
