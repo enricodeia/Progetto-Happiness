@@ -565,11 +565,11 @@ export function initGlobe(canvas) {
     // ---- Geography article markers (white stalks + image pin) ----
     const geoStalkColor = new THREE.Color('#ffffff');
     const GEO_STALK_H = initCfg.stalkHeight * 0.6;
-    const GEO_PIN_SIZE = initCfg.pinSize * 2.5;
+    const GEO_PIN_SIZE = initCfg.pinSize * 4;
 
     // Create circular image texture from URL
     const makeCircleTex = (imgUrl, fallbackLetter) => {
-      const sz = 128;
+      const sz = 256;
       const canvas = document.createElement('canvas');
       canvas.width = sz; canvas.height = sz;
       const ctx = canvas.getContext('2d');
