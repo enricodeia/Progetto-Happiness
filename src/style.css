@@ -764,8 +764,77 @@ html, body, #root {
 /* ============================================
    Scroll indicator (debug)
    ============================================ */
-.audio-control {
+/* ============================================
+   Episode Search
+   ============================================ */
+.ep-search {
+  height: 40px; border-radius: 100px; overflow: visible;
+  background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  transition: border-color 0.2s;
+  position: relative;
+}
+.ep-search:hover, .ep-search:focus-within {
+  border-color: rgba(255,255,255,0.25);
+}
+.ep-search__btn {
+  width: 40px; height: 40px; border: none; background: none;
+  color: var(--color-text); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.ep-search__field {
+  display: flex; align-items: center; gap: 8px;
+  height: 40px; padding: 0 12px;
+}
+.ep-search__icon { color: var(--color-text-tertiary); flex-shrink: 0; }
+.ep-search__input {
+  flex: 1; border: none; background: none; outline: none;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 300;
+  color: var(--color-text); caret-color: var(--color-primary);
+}
+.ep-search__input::placeholder { color: var(--color-text-tertiary); }
+.ep-search__close {
+  width: 24px; height: 24px; border: none; background: none;
+  color: var(--color-text-tertiary); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.ep-search__close:hover { color: var(--color-text); }
+.ep-search__results {
+  position: absolute; top: 48px; left: 0; right: 0;
+  background: rgba(14, 12, 10, 0.92);
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.ep-search__result {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 8px 12px; border: none; background: none;
+  cursor: pointer; text-align: left;
+  transition: background 0.15s;
+}
+.ep-search__result:hover { background: rgba(255,255,255,0.06); }
+.ep-search__thumb {
+  width: 40px; height: 40px; border-radius: 8px;
+  object-fit: cover; flex-shrink: 0;
+}
+.ep-search__info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ep-search__ep {
+  font-family: var(--font-sans); font-size: 9px; font-weight: 500;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--color-primary); opacity: 0.6;
+}
+.ep-search__title {
+  font-family: var(--font-serif); font-size: 13px; font-weight: 200;
+  color: var(--color-text); line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.top-controls {
   position: fixed; top: 24px; right: 24px; z-index: 60;
+  display: flex; align-items: center; gap: 8px;
+}
+.audio-control {
   display: flex; align-items: center; gap: 8px;
   background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
@@ -862,10 +931,12 @@ html, body, #root {
 .about {
   position: fixed; inset: 0; z-index: 500;
   overflow: hidden;
-  animation: about-in 0.6s var(--ease) both;
+  transform: translateY(100vh);
+  transition: transform 0.7s cubic-bezier(0.33, 1, 0.68, 1);
 }
-
-@keyframes about-in { from { opacity: 0; } to { opacity: 1; } }
+.about--active {
+  transform: translateY(0);
+}
 
 .about__canvas {
   position: absolute; inset: 0;
@@ -1017,6 +1088,7 @@ html, body, #root {
   transition: transform 0.7s cubic-bezier(0.33, 1, 0.68, 1);
 }
 .page-wrapper--slide-left { transform: translateX(-100vw); }
+.page-wrapper--about-out { transform: translateY(-100vh); }
 
 /* ============================================
    Bacheca CTA

@@ -16,6 +16,7 @@ import BubbleMenu from './components/BubbleMenu.jsx';
 import ScrollBar from './components/ScrollBar.jsx';
 import LogoOverlay from './components/LogoOverlay.jsx';
 import HeroTitle from './components/HeroTitle.jsx';
+import EpisodeSearch from './components/EpisodeSearch.jsx';
 import { globeState } from './globe-scene.js';
 import { episodes, happinessConcepts } from './data.js';
 import DesignSystem from './components/DesignSystem.jsx';
@@ -106,38 +107,16 @@ function App() {
   const [scrollPct, setScrollPct] = useState(0);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(1.0);
-  const [specCfg, setSpecCfg] = useState({
-    shininess: 27,
-    specularColor: '#333333',
-  });
-  const updateSpec = (k, v) => {
-    const next = { ...specCfg, [k]: v };
-    setSpecCfg(next);
-    globeState.updateEarth?.(next);
-  };
-  const [atmosCfg, setAtmosCfg] = useState({
-    power: 2.0, falloff: 0.55, scale: 1.12,
-    steps: [
-      { pct: 0,  intensity: 1.0, color: '#4d99ff' },
-      { pct: 50, intensity: 0.6, color: '#4d99ff' },
-      { pct: 90, intensity: 0.2, color: '#3366cc' },
-    ],
-  });
-  const updateAtmos = (k, v) => {
-    const next = { ...atmosCfg, [k]: v };
-    setAtmosCfg(next);
-    globeState.atmosConfig = next;
-    const mat = globeState.atmosMat;
-    if (mat) { mat.uniforms.uPower.value = next.power; mat.uniforms.uFalloff.value = next.falloff; }
-    if (globeState.atmosMesh) globeState.atmosMesh.scale.setScalar(next.scale / 1.12);
-  };
-  const updateStep = (idx, k, v) => {
-    const steps = atmosCfg.steps.map((s, i) => i === idx ? { ...s, [k]: v } : s);
-    const next = { ...atmosCfg, steps };
-    setAtmosCfg(next);
-    globeState.atmosConfig = next;
-  };
-  useEffect(() => { globeState.atmosConfig = atmosCfg; }, []);
+  // Atmosphere keyframes — hardcoded after tuning
+  useEffect(() => {
+    globeState.atmosConfig = {
+      steps: [
+        { pct: 0,  intensity: 1.0, color: '#4d99ff' },
+        { pct: 50, intensity: 0.6, color: '#4d99ff' },
+        { pct: 90, intensity: 0.2, color: '#3366cc' },
+      ],
+    };
+  }, []);
   const [navConfig] = useState({
     pillColor: '#ddd9c0',
     pillTextColor: '#2C2118',
@@ -361,8 +340,13 @@ function App() {
           </div>
         )}
 
-        {/* Audio control — top right */}
+        {/* Top right controls: search + audio */}
         {showUI && (
+          <div className="top-controls">
+            <EpisodeSearch onSelect={(ep) => {
+              const m = globeState.markers.find((x) => x.data.id === ep.id);
+              if (m) openEpisodePanel(m);
+            }} />
           <div className="audio-control">
             <button
               className="audio-toggle"
@@ -406,6 +390,7 @@ function App() {
                 }
               }}
             />
+          </div>
           </div>
         )}
 
@@ -458,76 +443,6 @@ function App() {
           if (next) openEpisodePanel(next);
         }} />
 
-        {/* Specular control panel */}
-        {showUI && (
-          <div style={{
-            position: 'fixed', bottom: 28, left: 28, zIndex: 9999,
-            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12,
-            padding: '14px 18px', fontFamily: 'var(--font-sans)', fontSize: 11,
-            color: '#aaa', display: 'flex', flexDirection: 'column', gap: 8, width: 200,
-          }}>
-            <span style={{ color: '#FDF4ED', fontWeight: 500, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' }}>Specular</span>
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Shininess
-              <input type="range" min="0" max="150" value={specCfg.shininess}
-                onChange={(e) => updateSpec('shininess', +e.target.value)}
-                style={{ width: 100 }} />
-            </label>
-            <span style={{ fontSize: 10, opacity: 0.5 }}>{specCfg.shininess}</span>
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Color
-              <input type="color" value={specCfg.specularColor}
-                onChange={(e) => updateSpec('specularColor', e.target.value)}
-                style={{ width: 32, height: 20, border: 'none', background: 'none', cursor: 'pointer' }} />
-            </label>
-
-            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
-            <span style={{ color: '#4d99ff', fontWeight: 500, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' }}>Atmosphere</span>
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Power
-              <input type="range" min="0.5" max="6" step="0.1" value={atmosCfg.power}
-                onChange={(e) => updateAtmos('power', +e.target.value)} style={{ width: 90 }} />
-            </label>
-            <span style={{ fontSize: 10, opacity: 0.5 }}>{atmosCfg.power.toFixed(1)}</span>
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Falloff
-              <input type="range" min="0.1" max="1.0" step="0.01" value={atmosCfg.falloff}
-                onChange={(e) => updateAtmos('falloff', +e.target.value)} style={{ width: 90 }} />
-            </label>
-            <span style={{ fontSize: 10, opacity: 0.5 }}>{atmosCfg.falloff.toFixed(2)}</span>
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Scale
-              <input type="range" min="1.02" max="1.4" step="0.01" value={atmosCfg.scale}
-                onChange={(e) => updateAtmos('scale', +e.target.value)} style={{ width: 90 }} />
-            </label>
-            <span style={{ fontSize: 10, opacity: 0.5 }}>{atmosCfg.scale.toFixed(2)}</span>
-
-            {atmosCfg.steps.map((step, i) => (
-              <div key={i} style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 6, marginTop: 4 }}>
-                <span style={{ fontSize: 9, color: '#4d99ff', textTransform: 'uppercase', letterSpacing: 1 }}>Step {i + 1}</span>
-                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  Scroll %
-                  <input type="range" min="0" max="100" step="1" value={step.pct}
-                    onChange={(e) => updateStep(i, 'pct', +e.target.value)} style={{ width: 80 }} />
-                </label>
-                <span style={{ fontSize: 10, opacity: 0.5 }}>{step.pct}%</span>
-                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  Intensity
-                  <input type="range" min="0" max="3" step="0.05" value={step.intensity}
-                    onChange={(e) => updateStep(i, 'intensity', +e.target.value)} style={{ width: 80 }} />
-                </label>
-                <span style={{ fontSize: 10, opacity: 0.5 }}>{step.intensity.toFixed(2)}</span>
-                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  Color
-                  <input type="color" value={step.color}
-                    onChange={(e) => updateStep(i, 'color', e.target.value)}
-                    style={{ width: 28, height: 18, border: 'none', background: 'none', cursor: 'pointer' }} />
-                </label>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* Scroll line indicator — bottom center */}
         <div className={`scroll-line ${showUI ? 'scroll-line--visible' : ''}`}>
