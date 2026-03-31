@@ -986,8 +986,21 @@ export function initGlobe(canvas) {
   const cloudState = { opacity: 0.4 };
 
   let animTime = 0;
+  let animFrameId = null;
+  let paused = false;
+
+  globeState.pause = () => {
+    paused = true;
+    if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+  };
+  globeState.resume = () => {
+    if (!paused) return;
+    paused = false;
+    animFrameId = requestAnimationFrame(animate);
+  };
+
   function animate() {
-    requestAnimationFrame(animate);
+    animFrameId = requestAnimationFrame(animate);
     animTime += 0.016;
 
     // Stars twinkle + zodiac + sun position
@@ -1034,17 +1047,32 @@ export function initGlobe(canvas) {
     // Update scroll percentage
     updateScrollPct();
 
-    // Atmosphere intensity based on scroll
-    if (globeState.atmosMat && globeState.atmosConfig) {
-      const ac = globeState.atmosConfig;
-      const baseIntensity = ac.intensity ?? 1.0;
-      const fadeStart = ac.fadeStart ?? 0;
-      const fadeEnd = ac.fadeEnd ?? 100;
-      let atmosAlpha = 1.0;
-      if (fadeEnd > fadeStart && scrollPct >= fadeStart) {
-        atmosAlpha = 1.0 - Math.min(1, (scrollPct - fadeStart) / (fadeEnd - fadeStart));
+    // Atmosphere: interpolate intensity + color between 3 keyframe steps
+    if (globeState.atmosMat && globeState.atmosConfig?.steps) {
+      const steps = globeState.atmosConfig.steps;
+      const sp = scrollPct;
+      let intensity, r, g, b;
+      if (sp <= steps[0].pct) {
+        intensity = steps[0].intensity;
+        const c = new THREE.Color(steps[0].color);
+        r = c.r; g = c.g; b = c.b;
+      } else if (sp >= steps[steps.length - 1].pct) {
+        intensity = steps[steps.length - 1].intensity;
+        const c = new THREE.Color(steps[steps.length - 1].color);
+        r = c.r; g = c.g; b = c.b;
+      } else {
+        let seg = 0;
+        for (let i = 1; i < steps.length; i++) { if (sp < steps[i].pct) { seg = i - 1; break; } }
+        const a = steps[seg], bk = steps[seg + 1];
+        const t = (sp - a.pct) / (bk.pct - a.pct);
+        intensity = a.intensity + t * (bk.intensity - a.intensity);
+        const ca = new THREE.Color(a.color), cb = new THREE.Color(bk.color);
+        r = ca.r + t * (cb.r - ca.r);
+        g = ca.g + t * (cb.g - ca.g);
+        b = ca.b + t * (cb.b - ca.b);
       }
-      globeState.atmosMat.uniforms.uIntensity.value = baseIntensity * atmosAlpha;
+      globeState.atmosMat.uniforms.uIntensity.value = intensity;
+      globeState.atmosMat.uniforms.uColor.value.setRGB(r, g, b);
     }
 
     // Keep ring sprite on active pin position

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { gsap } from 'gsap';
 import { motion } from 'motion/react';
 import HoverCard from './components/HoverCard.jsx';
@@ -7,7 +7,7 @@ import { Howler } from 'howler';
 import Globe from './components/Globe.jsx';
 // CountUp moved to About overlay
 import Noise from './components/Noise.jsx';
-import AboutOverlay from './components/AboutOverlay.jsx';
+const AboutOverlay = lazy(() => import('./components/AboutOverlay.jsx'));
 import PillNav from './components/PillNav.jsx';
 import PanelCard from './components/PanelCard.jsx';
 import Bacheca from './components/Bacheca.jsx';
@@ -116,31 +116,27 @@ function App() {
     globeState.updateEarth?.(next);
   };
   const [atmosCfg, setAtmosCfg] = useState({
-    intensity: 1.0,
-    power: 2.0,
-    falloff: 0.55,
-    color: '#4d99ff',
-    scale: 1.12,
-    fadeStart: 50,
-    fadeEnd: 100,
+    power: 2.0, falloff: 0.55, scale: 1.12,
+    steps: [
+      { pct: 0,  intensity: 1.0, color: '#4d99ff' },
+      { pct: 50, intensity: 0.6, color: '#4d99ff' },
+      { pct: 90, intensity: 0.2, color: '#3366cc' },
+    ],
   });
   const updateAtmos = (k, v) => {
     const next = { ...atmosCfg, [k]: v };
     setAtmosCfg(next);
+    globeState.atmosConfig = next;
     const mat = globeState.atmosMat;
-    if (mat) {
-      mat.uniforms.uIntensity.value = next.intensity;
-      mat.uniforms.uPower.value = next.power;
-      mat.uniforms.uFalloff.value = next.falloff;
-      mat.uniforms.uColor.value.set(next.color);
-    }
-    if (globeState.atmosMesh) {
-      globeState.atmosMesh.scale.setScalar(next.scale / 1.12);
-    }
-    // Pass config to render loop for scroll-based fade
+    if (mat) { mat.uniforms.uPower.value = next.power; mat.uniforms.uFalloff.value = next.falloff; }
+    if (globeState.atmosMesh) globeState.atmosMesh.scale.setScalar(next.scale / 1.12);
+  };
+  const updateStep = (idx, k, v) => {
+    const steps = atmosCfg.steps.map((s, i) => i === idx ? { ...s, [k]: v } : s);
+    const next = { ...atmosCfg, steps };
+    setAtmosCfg(next);
     globeState.atmosConfig = next;
   };
-  // Set initial config
   useEffect(() => { globeState.atmosConfig = atmosCfg; }, []);
   const [navConfig] = useState({
     pillColor: '#ddd9c0',
@@ -309,11 +305,14 @@ function App() {
           labelShift={navConfig.labelShift}
           logoSpinDuration={navConfig.logoSpinDuration}
           onItemClick={(id) => {
-            if (id === 'home') { setAboutOpen(false); setBachecaOpen(false); setActiveNav('home'); return; }
+            if (id === 'home') { setAboutOpen(false); setBachecaOpen(false); setActiveNav('home'); globeState.resume(); return; }
             setActiveNav(id);
             if (id === 'bacheca') setBachecaOpen(true);
-            else if (id === 'about') setAboutOpen(true);
+            else if (id === 'about') { setAboutOpen(true); globeState.pause(); }
             else if (id === 'blog') window.open('https://progettohappiness.com/episodi/', '_blank');
+          }}
+          onItemHover={(id) => {
+            if (id === 'about') import('./components/AboutOverlay.jsx');
           }}
         />
       )}
@@ -343,8 +342,8 @@ function App() {
         />
       )}
 
-      {/* ---- Globe page (slides left when bacheca opens) ---- */}
-      <div className={`page-wrapper ${bachecaOpen ? 'page-wrapper--slide-left' : ''}`}>
+      {/* ---- Globe page (slides left when bacheca opens, slides up when about opens) ---- */}
+      <div className={`page-wrapper ${bachecaOpen ? 'page-wrapper--slide-left' : ''} ${aboutOpen ? 'page-wrapper--about-out' : ''}`}>
         <Globe />
         <Noise patternSize={200} patternAlpha={12} patternRefreshInterval={6} />
         {showUI && <LocalClock scrollPct={scrollPct} />}
@@ -486,12 +485,6 @@ function App() {
             <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
             <span style={{ color: '#4d99ff', fontWeight: 500, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' }}>Atmosphere</span>
             <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Intensity
-              <input type="range" min="0" max="3" step="0.05" value={atmosCfg.intensity}
-                onChange={(e) => updateAtmos('intensity', +e.target.value)} style={{ width: 90 }} />
-            </label>
-            <span style={{ fontSize: 10, opacity: 0.5 }}>{atmosCfg.intensity.toFixed(2)}</span>
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               Power
               <input type="range" min="0.5" max="6" step="0.1" value={atmosCfg.power}
                 onChange={(e) => updateAtmos('power', +e.target.value)} style={{ width: 90 }} />
@@ -509,25 +502,30 @@ function App() {
                 onChange={(e) => updateAtmos('scale', +e.target.value)} style={{ width: 90 }} />
             </label>
             <span style={{ fontSize: 10, opacity: 0.5 }}>{atmosCfg.scale.toFixed(2)}</span>
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Color
-              <input type="color" value={atmosCfg.color}
-                onChange={(e) => updateAtmos('color', e.target.value)}
-                style={{ width: 32, height: 20, border: 'none', background: 'none', cursor: 'pointer' }} />
-            </label>
-            <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '2px 0' }} />
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Fade start %
-              <input type="range" min="0" max="100" step="1" value={atmosCfg.fadeStart}
-                onChange={(e) => updateAtmos('fadeStart', +e.target.value)} style={{ width: 90 }} />
-            </label>
-            <span style={{ fontSize: 10, opacity: 0.5 }}>{atmosCfg.fadeStart}%</span>
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Fade end %
-              <input type="range" min="0" max="100" step="1" value={atmosCfg.fadeEnd}
-                onChange={(e) => updateAtmos('fadeEnd', +e.target.value)} style={{ width: 90 }} />
-            </label>
-            <span style={{ fontSize: 10, opacity: 0.5 }}>{atmosCfg.fadeEnd}%</span>
+
+            {atmosCfg.steps.map((step, i) => (
+              <div key={i} style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 6, marginTop: 4 }}>
+                <span style={{ fontSize: 9, color: '#4d99ff', textTransform: 'uppercase', letterSpacing: 1 }}>Step {i + 1}</span>
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  Scroll %
+                  <input type="range" min="0" max="100" step="1" value={step.pct}
+                    onChange={(e) => updateStep(i, 'pct', +e.target.value)} style={{ width: 80 }} />
+                </label>
+                <span style={{ fontSize: 10, opacity: 0.5 }}>{step.pct}%</span>
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  Intensity
+                  <input type="range" min="0" max="3" step="0.05" value={step.intensity}
+                    onChange={(e) => updateStep(i, 'intensity', +e.target.value)} style={{ width: 80 }} />
+                </label>
+                <span style={{ fontSize: 10, opacity: 0.5 }}>{step.intensity.toFixed(2)}</span>
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  Color
+                  <input type="color" value={step.color}
+                    onChange={(e) => updateStep(i, 'color', e.target.value)}
+                    style={{ width: 28, height: 18, border: 'none', background: 'none', cursor: 'pointer' }} />
+                </label>
+              </div>
+            ))}
           </div>
         )}
 
@@ -579,8 +577,10 @@ function App() {
       {/* ---- Bacheca (slides in from right) ---- */}
       <Bacheca visible={bachecaOpen} onBack={() => setBachecaOpen(false)} />
 
-      {/* About overlay */}
-      <AboutOverlay visible={aboutOpen} onClose={() => { setAboutOpen(false); setActiveNav('globe'); }} />
+      {/* About overlay — lazy loaded, pauses globe */}
+      <Suspense fallback={null}>
+        <AboutOverlay visible={aboutOpen} onClose={() => { setAboutOpen(false); setActiveNav('globe'); globeState.resume(); }} />
+      </Suspense>
     </>
   );
 }
