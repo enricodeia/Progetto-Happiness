@@ -352,7 +352,13 @@ export default function App() {
           <div className="country-label" style={{ left: countryPos.x, top: countryPos.y - 28 }}>{countryName}</div>
         )}
 
-        <PanelCard data={panelData} onClose={closeEpisodePanel} />
+        <PanelCard data={panelData} onClose={closeEpisodePanel} onNav={(dir) => {
+          const eps = globeState.markers.filter((m) => m.type === 'episode');
+          const idx = eps.findIndex((m) => m.data.id === activeEp);
+          if (idx < 0) return;
+          const next = eps[(idx + dir + eps.length) % eps.length];
+          if (next) openEpisodePanel(next);
+        }} />
 
         {/* Scroll line indicator — bottom center */}
         <div className={`scroll-line ${showUI ? 'scroll-line--visible' : ''}`}>
