@@ -105,7 +105,7 @@ const EpisodeSearch = ({ onSelect }) => {
             ref={inputRef}
             className="ep-search__input"
             type="text"
-            placeholder="Cerca episodio..."
+            placeholder=""
             value={query}
             onChange={(e) => search(e.target.value)}
           />
