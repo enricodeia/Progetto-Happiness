@@ -549,25 +549,27 @@ html, body, #root {
 /* ============================================
    Panel
    ============================================ */
-.panel {
+.panel-wrap {
   position: fixed; bottom: 28px; right: 28px;
-  width: 340px; max-height: 62vh; z-index: 100;
+  z-index: 100;
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.panel-nav {
+  width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.2s, border-color 0.2s;
+  margin-top: 120px; /* align with thumbnail area */
+}
+.panel-nav:hover {
+  background: rgba(0,0,0,0.7); border-color: rgba(255,255,255,0.3);
+}
+.panel {
+  width: 340px; max-height: 62vh;
   background: var(--color-card); border: 1px solid var(--color-border);
   border-radius: 24px; padding: 22px;
   backdrop-filter: blur(24px);
-}
-.panel__nav-row {
-  display: flex; align-items: center; gap: 8px; margin-top: 8px;
-}
-.panel__nav-row .panel__yt { flex: 1; }
-.panel-nav {
-  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-  border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.35);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: background 0.2s, border-color 0.2s;
-}
-.panel-nav:hover {
-  background: rgba(0,0,0,0.6); border-color: rgba(255,255,255,0.25);
 }
 
 .panel__close {
@@ -643,7 +645,7 @@ html, body, #root {
 }
 .panel__expand-btn:hover { opacity: 1; }
 .panel__actions {
-  display: flex; flex-direction: column; gap: 10px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
 }
 .panel__yt {
   display: inline-flex; align-items: center; gap: 6px;
@@ -1256,6 +1258,8 @@ html, body, #root {
   .stats__value { font-size: 18px; }
   .stats__divider { display: none; }
   .sidebar { width: calc(100% - 32px); left: 16px; bottom: 16px; max-height: 40vh; }
-  .panel { bottom: 16px; right: 16px; left: 16px; width: auto; max-height: 70vh; overflow-y: auto; }
+  .panel-wrap { bottom: 0; right: 0; left: 0; gap: 0; }
+  .panel { width: auto; max-height: 70vh; overflow-y: auto; flex: 1; margin: 16px; }
+  .panel-nav { width: 40px; height: 40px; margin-top: 100px; }
   .credit { display: none; }
 }
