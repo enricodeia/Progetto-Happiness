@@ -764,19 +764,35 @@ html, body, #root {
 /* ============================================
    Scroll indicator (debug)
    ============================================ */
-.audio-toggle {
+.audio-control {
   position: fixed; top: 24px; right: 24px; z-index: 60;
-  width: 40px; height: 40px; border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(0,0,0,0.35);
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border-radius: 100px; padding: 4px 12px 4px 4px;
+  transition: border-color 0.25s;
+}
+.audio-control:hover { border-color: rgba(255,255,255,0.25); }
+.audio-toggle {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: none; background: transparent;
   color: var(--color-text); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: all 0.25s;
+  transition: color 0.2s; flex-shrink: 0;
 }
-.audio-toggle:hover {
-  border-color: rgba(255,255,255,0.25);
-  background: rgba(0,0,0,0.55);
+.audio-toggle:hover { color: var(--color-primary); }
+.audio-slider {
+  width: 70px; height: 3px; -webkit-appearance: none; appearance: none;
+  background: rgba(255,255,255,0.15); border-radius: 2px; outline: none;
+  cursor: pointer;
+}
+.audio-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--color-text); border: none; cursor: pointer;
+}
+.audio-slider::-moz-range-thumb {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--color-text); border: none; cursor: pointer;
 }
 
 .socials {

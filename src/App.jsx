@@ -105,6 +105,8 @@ function App() {
   const [bachecaOpen, setBachecaOpen] = useState(false);
   const [scrollPct, setScrollPct] = useState(0);
   const [muted, setMuted] = useState(false);
+  const [volume, setVolume] = useState(0.35);
+  const lowpassRef = useRef(null); // Web Audio lowpass filter for muffled effect
   const [navConfig] = useState({
     pillColor: '#ddd9c0',
     pillTextColor: '#2C2118',
@@ -212,6 +214,29 @@ function App() {
     }
   }, [scrollPct, showUI]);
 
+  // Muffled audio effect — lowpass filter via Howler's Web Audio context
+  const applyMuffle = useCallback((on) => {
+    const music = getBgMusic();
+    if (!music || !Howler.ctx) return;
+    try {
+      if (!lowpassRef.current) {
+        const ctx = Howler.ctx;
+        lowpassRef.current = ctx.createBiquadFilter();
+        lowpassRef.current.type = 'lowpass';
+        lowpassRef.current.frequency.value = 22000; // fully open
+        lowpassRef.current.Q.value = 0.5;
+        // Insert filter: Howler master gain → filter → destination
+        Howler.masterGain.disconnect();
+        Howler.masterGain.connect(lowpassRef.current);
+        lowpassRef.current.connect(ctx.destination);
+      }
+      const target = on ? 400 : 22000; // 400Hz = muffled, 22kHz = open
+      lowpassRef.current.frequency.cancelScheduledValues(Howler.ctx.currentTime);
+      lowpassRef.current.frequency.setValueAtTime(lowpassRef.current.frequency.value, Howler.ctx.currentTime);
+      lowpassRef.current.frequency.exponentialRampToValueAtTime(target, Howler.ctx.currentTime + 0.8);
+    } catch (e) { /* Web Audio not available */ }
+  }, []);
+
   const openEpisodePanel = useCallback((m) => {
     setPanelData(m);
     setActiveEp(m.data.id);
@@ -219,6 +244,11 @@ function App() {
 
     // Show pulsing ring on active pin
     globeState.setActivePin?.(m);
+
+    // Muffled audio when card opens
+    applyMuffle(true);
+    const music = getBgMusic();
+    if (music && !music._muted) music.fade(music.volume(), volume * 0.4, 800);
 
     // Fly to marker — on mobile offset upward so card doesn't cover pin
     if (globeState.flyToMarker) {
@@ -229,13 +259,18 @@ function App() {
     if (isMobile() && sidebarRef.current) {
       gsap.to(sidebarRef.current, { x: '100vw', duration: 0.6, ease: 'circ.out', overwrite: true });
     }
-  }, []);
+  }, [volume, applyMuffle]);
 
   // Close episode panel: bring sidebar back on mobile
   const closeEpisodePanel = useCallback(() => {
     setPanelData(null);
     setActiveEp(null);
     globeState.clearActivePin?.();
+
+    // Restore audio
+    applyMuffle(false);
+    const music = getBgMusic();
+    if (music && !music._muted) music.fade(music.volume(), volume, 800);
 
     if (isMobile() && sidebarRef.current) {
       gsap.to(sidebarRef.current, { x: 0, duration: 0.6, ease: 'circ.out', overwrite: true });
@@ -329,35 +364,52 @@ function App() {
           </div>
         )}
 
-        {/* Audio toggle — top right */}
+        {/* Audio control — top right */}
         {showUI && (
-          <button
-            className="audio-toggle"
-            onClick={() => {
-              const music = getBgMusic();
-              if (muted) {
-                // Unmute
-                if (music) { music.mute(false); music.fade(music.volume(), 0.35, 500); }
-                else { Howler.mute(false); }
-                setMuted(false);
-              } else {
-                // Mute
-                if (music) { music.fade(music.volume(), 0, 400); setTimeout(() => music.mute(true), 400); }
-                else { Howler.mute(true); }
-                setMuted(true);
-              }
-            }}
-          >
-            {muted ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
-              </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M15.54 8.46a5 5 0 010 7.07"/>
-              </svg>
-            )}
-          </button>
+          <div className="audio-control">
+            <button
+              className="audio-toggle"
+              onClick={() => {
+                const music = getBgMusic();
+                if (muted) {
+                  if (music) { music.mute(false); music.fade(0, volume, 500); }
+                  else { Howler.mute(false); }
+                  setMuted(false);
+                } else {
+                  if (music) { music.fade(music.volume(), 0, 400); setTimeout(() => music.mute(true), 400); }
+                  else { Howler.mute(true); }
+                  setMuted(true);
+                }
+              }}
+            >
+              {muted ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M15.54 8.46a5 5 0 010 7.07"/>
+                </svg>
+              )}
+            </button>
+            <input
+              className="audio-slider"
+              type="range" min="0" max="1" step="0.01"
+              value={muted ? 0 : volume}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value);
+                setVolume(v);
+                const music = getBgMusic();
+                if (v === 0) {
+                  setMuted(true);
+                  if (music) music.mute(true);
+                } else {
+                  if (muted) { setMuted(false); if (music) music.mute(false); }
+                  if (music) music.volume(panelData ? v * 0.4 : v);
+                }
+              }}
+            />
+          </div>
         )}
 
         {/* Hero title over globe */}
