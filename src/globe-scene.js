@@ -745,24 +745,8 @@ export function initGlobe(canvas) {
         targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
         if (!pinZoomActive) {
           zoomVelocity -= dy * 0.0003 * zoomWeight;
-        } else if (zoomWeight > 0.3) {
-          if (dy > 0) {
-            // Swipe down = zoom out = close
-            window.dispatchEvent(new CustomEvent('globe:empty-click'));
-          } else if (dy < -3 && !bounceTween?.isActive()) {
-            // Swipe up = zoom in = bounce
-            const bounceDepth = PIN_ZOOM_DIST * 0.92;
-            bounceTween = gsap.to({ v: camDist }, {
-              v: bounceDepth, duration: 0.25, ease: 'power2.out',
-              onUpdate() { camDist = targetCamDist = this.targets()[0].v; },
-              onComplete() {
-                bounceTween = gsap.to({ v: camDist }, {
-                  v: PIN_ZOOM_DIST, duration: 0.5, ease: 'elastic.out(1, 0.4)',
-                  onUpdate() { camDist = targetCamDist = this.targets()[0].v; },
-                });
-              }
-            });
-          }
+        } else if (zoomWeight > 0.3 && dy > 0) {
+          window.dispatchEvent(new CustomEvent('globe:empty-click'));
         }
       } else {
         // Desktop: drag rotates both axes, scaled by zoom
@@ -884,29 +868,11 @@ export function initGlobe(canvas) {
 
   // Smooth zoom with accumulated velocity (like Lenis)
   let zoomVelocity = 0;
-  let bounceTween = null;
   canvas.addEventListener('wheel', (e) => {
     const delta = e.deltaY * 0.00015;
     if (pinZoomActive) {
-      if (delta > 0) {
-        // Zoom out — close panel
-        window.dispatchEvent(new CustomEvent('globe:empty-click'));
-        return;
-      }
-      // Zoom in — bounce effect (iOS overscroll feel)
-      if (bounceTween?.isActive()) return;
-      const bounceDepth = PIN_ZOOM_DIST * 0.92; // zoom in ~8% past limit
-      bounceTween = gsap.to({ v: camDist }, {
-        v: bounceDepth, duration: 0.25, ease: 'power2.out',
-        onUpdate() { camDist = targetCamDist = this.targets()[0].v; },
-        onComplete() {
-          bounceTween = gsap.to({ v: camDist }, {
-            v: PIN_ZOOM_DIST, duration: 0.5, ease: 'elastic.out(1, 0.4)',
-            onUpdate() { camDist = targetCamDist = this.targets()[0].v; },
-          });
-        }
-      });
-      return;
+      if (delta > 0) window.dispatchEvent(new CustomEvent('globe:empty-click'));
+      return; // block all zoom when card open
     }
     zoomVelocity += delta;
   }, { passive: true });
@@ -934,28 +900,9 @@ export function initGlobe(canvas) {
       const dist = Math.sqrt(dx * dx + dy * dy);
       const delta = lastTouchDist - dist;
       if (pinZoomActive) {
-        if (delta > 0) {
-          // Pinch-out — close panel
-          window.dispatchEvent(new CustomEvent('globe:empty-click'));
-          lastTouchDist = dist;
-          return;
-        }
-        // Pinch-in — bounce
-        if (!bounceTween?.isActive()) {
-          const bounceDepth = PIN_ZOOM_DIST * 0.92;
-          bounceTween = gsap.to({ v: camDist }, {
-            v: bounceDepth, duration: 0.25, ease: 'power2.out',
-            onUpdate() { camDist = targetCamDist = this.targets()[0].v; },
-            onComplete() {
-              bounceTween = gsap.to({ v: camDist }, {
-                v: PIN_ZOOM_DIST, duration: 0.5, ease: 'elastic.out(1, 0.4)',
-                onUpdate() { camDist = targetCamDist = this.targets()[0].v; },
-              });
-            }
-          });
-        }
+        if (delta > 0) window.dispatchEvent(new CustomEvent('globe:empty-click'));
         lastTouchDist = dist;
-        return;
+        return; // block all zoom when card open
       }
       zoomVelocity += delta * 0.0003;
       lastTouchDist = dist;

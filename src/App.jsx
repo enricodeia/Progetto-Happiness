@@ -17,6 +17,7 @@ import LogoOverlay from './components/LogoOverlay.jsx';
 import HeroTitle from './components/HeroTitle.jsx';
 import { globeState } from './globe-scene.js';
 import { episodes, happinessConcepts } from './data.js';
+import DesignSystem from './components/DesignSystem.jsx';
 
 function LocalClock({ scrollPct = 0 }) {
   const [time, setTime] = useState('');
@@ -76,7 +77,20 @@ function SidebarItem({ ep, isActive, onClick, index }) {
   );
 }
 
-export default function App() {
+// Wrapper: hidden design system page via #design-system
+function AppRouter() {
+  const [isDesignSystem, setIsDesignSystem] = useState(window.location.hash === '#design-system');
+  useEffect(() => {
+    const onHash = () => setIsDesignSystem(window.location.hash === '#design-system');
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  if (isDesignSystem) return <DesignSystem />;
+  return <App />;
+}
+export { AppRouter as default };
+
+function App() {
   const [loaded, setLoaded] = useState(false);
   const [showUI, setShowUI] = useState(false);
   const [hoverCard, setHoverCard] = useState(null);
