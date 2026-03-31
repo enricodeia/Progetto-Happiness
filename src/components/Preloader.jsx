@@ -80,8 +80,21 @@ const Preloader = ({ onComplete }) => {
   }, [showPrompt]);
 
   const launchSite = useCallback((withAudio) => {
-    if (withAudio) { audioEnabled = true; Howler.autoUnlock = true; }
-    else { Howler.mute(true); }
+    if (withAudio) {
+      audioEnabled = true;
+      Howler.autoUnlock = true;
+      // Start background music with gentle fade-in
+      bgMusic = new Howl({
+        src: ['/bg-music.mp3'],
+        loop: true,
+        volume: 0,
+        html5: true, // stream instead of full decode — faster start
+      });
+      bgMusic.play();
+      bgMusic.fade(0, 0.3, 3000); // fade to 30% over 3 seconds
+    } else {
+      Howler.mute(true);
+    }
 
     const el = containerRef.current;
     if (!el) { onComplete(); return; }
