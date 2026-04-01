@@ -565,18 +565,23 @@ export function initGlobe(canvas) {
     // ---- Geography article markers (white stalks + image pin) ----
     const geoStalkColor = new THREE.Color('#ffffff');
     const GEO_STALK_H = initCfg.stalkHeight * 0.6;
-    const GEO_PIN_SIZE = initCfg.pinSize * 12;
+    const GEO_PIN_SIZE = initCfg.pinSize * 15;
 
     // Diamond/rhombus texture — white rotated square
     const diamondCanvas = document.createElement('canvas');
     diamondCanvas.width = 128; diamondCanvas.height = 128;
     const dctx = diamondCanvas.getContext('2d');
-    const c = 64;
+    const cx = 64, r = 58, rnd = 10;
     dctx.beginPath();
-    dctx.moveTo(c, 4);       // top
-    dctx.lineTo(c + 60, c);  // right
-    dctx.lineTo(c, c + 60);  // bottom
-    dctx.lineTo(c - 60, c);  // left
+    // Rounded diamond via quadratic curves at each corner
+    dctx.moveTo(cx, cx - r + rnd);
+    dctx.quadraticCurveTo(cx, cx - r, cx + rnd, cx - r + rnd);       // top
+    dctx.lineTo(cx + r - rnd, cx - rnd);
+    dctx.quadraticCurveTo(cx + r, cx, cx + r - rnd, cx + rnd);       // right
+    dctx.lineTo(cx + rnd, cx + r - rnd);
+    dctx.quadraticCurveTo(cx, cx + r, cx - rnd, cx + r - rnd);       // bottom
+    dctx.lineTo(cx - r + rnd, cx + rnd);
+    dctx.quadraticCurveTo(cx - r, cx, cx - r + rnd, cx - rnd);       // left
     dctx.closePath();
     dctx.fillStyle = '#ffffff';
     dctx.fill();
