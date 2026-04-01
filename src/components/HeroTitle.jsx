@@ -125,30 +125,35 @@ const HeroTitle = ({ config, smileConfig }) => {
   // Subtitle fades out on scroll
   const subtitleFade = scrollPct <= 25 ? 1 : scrollPct >= 40 ? 0 : 1 - (scrollPct - 25) / 15;
 
-  // "What Makes You Happy?" — GSAP stagger reveal + scroll fade out
+  // "What Makes You Happy?" reveals on scroll — per-word stagger
   const smileRevealStart = sc.revealStart ?? 60;
-  const smileRevealed = useRef(false);
+  const smileRevealEnd = sc.revealEnd ?? 75;
+  const smileStagger = 3; // scroll % between each word's start
+  const smileWordDur = 8; // scroll % for each word to fully appear
 
-  useEffect(() => {
-    if (scrollPct >= smileRevealStart && !smileRevealed.current) {
-      smileRevealed.current = true;
-      const words = smileWordsRef.current.filter(Boolean);
-      gsap.set(words, { opacity: 0, y: 25 });
-      gsap.to(words, { opacity: 1, y: 0, duration: 0.6, ease: 'circ.out', stagger: 0.1 });
-    } else if (scrollPct < smileRevealStart - 5 && smileRevealed.current) {
-      smileRevealed.current = false;
-      const words = smileWordsRef.current.filter(Boolean);
-      gsap.to(words, { opacity: 0, y: 25, duration: 0.3, ease: 'power2.in' });
+  // Per-word opacity + Y offset
+  const smileWords = SMILE_WORDS.map((word, i) => {
+    const wordStart = smileRevealStart + i * smileStagger;
+    const wordEnd = wordStart + smileWordDur;
+    let t = 0;
+    if (scrollPct >= wordEnd) t = 1;
+    else if (scrollPct > wordStart) t = (scrollPct - wordStart) / (wordEnd - wordStart);
+    const eased = t * t * (3 - 2 * t); // smoothstep
+    const op = eased;
+    const dy = (1 - eased) * -50;
+
+    // Fade out phase
+    let fadeOp = 1;
+    if (scrollPct > (sc.fadeStart ?? 90)) {
+      const fadeEnd = sc.fadeEnd ?? 98;
+      fadeOp = scrollPct >= fadeEnd ? 0 : 1 - (scrollPct - (sc.fadeStart ?? 90)) / (fadeEnd - (sc.fadeStart ?? 90));
     }
-  }, [scrollPct, smileRevealStart]);
 
-  // Fade out on scroll
-  let smileOp = 1;
-  if (scrollPct < smileRevealStart) smileOp = 0;
-  else if (scrollPct > (sc.fadeStart ?? 90)) {
-    const fadeEnd = sc.fadeEnd ?? 98;
-    smileOp = scrollPct >= fadeEnd ? 0 : 1 - (scrollPct - (sc.fadeStart ?? 90)) / (fadeEnd - (sc.fadeStart ?? 90));
-  }
+    return { word, op: op * fadeOp, dy };
+  });
+
+  // Overall SVG visibility (show container when any word is active)
+  const smileOp = smileWords.some((w) => w.op > 0.01) ? 1 : 0;
 
   return (
     <div className="hero-title" style={{
@@ -197,9 +202,9 @@ const HeroTitle = ({ config, smileConfig }) => {
         </defs>
         <text fontSize={sc.fontSize ?? 64}>
           <textPath href="#smile-curve" startOffset="50%" textAnchor="middle">
-            {SMILE_WORDS.map((word, i) => (
-              <tspan key={i} ref={(el) => { smileWordsRef.current[i] = el; }} style={{ opacity: 0 }}>
-                {word}{i < SMILE_WORDS.length - 1 ? ' ' : ''}
+            {smileWords.map((w, i) => (
+              <tspan key={i} dy={w.dy} opacity={w.op}>
+                {w.word}{i < smileWords.length - 1 ? ' ' : ''}
               </tspan>
             ))}
           </textPath>
