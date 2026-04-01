@@ -565,45 +565,22 @@ export function initGlobe(canvas) {
     // ---- Geography article markers (white stalks + image pin) ----
     const geoStalkColor = new THREE.Color('#ffffff');
     const GEO_STALK_H = initCfg.stalkHeight * 0.6;
-    const GEO_PIN_SIZE = initCfg.pinSize * 4;
+    const GEO_PIN_SIZE = initCfg.pinSize * 5;
 
-    // Create circular image texture from URL
-    const makeCircleTex = (imgUrl, fallbackLetter) => {
-      const sz = 256;
-      const canvas = document.createElement('canvas');
-      canvas.width = sz; canvas.height = sz;
-      const ctx = canvas.getContext('2d');
-      // White circle bg
-      ctx.beginPath(); ctx.arc(sz / 2, sz / 2, sz / 2, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      // Fallback letter
-      ctx.fillStyle = '#2C2118';
-      ctx.font = `bold ${sz * 0.4}px sans-serif`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(fallbackLetter, sz / 2, sz / 2);
-      const tex = new THREE.CanvasTexture(canvas);
-      // Load image async and update
-      if (imgUrl) {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          ctx.clearRect(0, 0, sz, sz);
-          ctx.beginPath(); ctx.arc(sz / 2, sz / 2, sz / 2, 0, Math.PI * 2); ctx.clip();
-          const aspect = img.width / img.height;
-          let sx = 0, sy = 0, sw = img.width, sh = img.height;
-          if (aspect > 1) { sx = (img.width - img.height) / 2; sw = img.height; }
-          else { sy = (img.height - img.width) / 2; sh = img.width; }
-          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sz, sz);
-          // White border ring
-          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4;
-          ctx.beginPath(); ctx.arc(sz / 2, sz / 2, sz / 2 - 2, 0, Math.PI * 2); ctx.stroke();
-          tex.needsUpdate = true;
-        };
-        img.src = imgUrl;
-      }
-      return tex;
-    };
+    // Diamond/rhombus texture — white rotated square
+    const diamondCanvas = document.createElement('canvas');
+    diamondCanvas.width = 128; diamondCanvas.height = 128;
+    const dctx = diamondCanvas.getContext('2d');
+    const c = 64;
+    dctx.beginPath();
+    dctx.moveTo(c, 4);       // top
+    dctx.lineTo(c + 60, c);  // right
+    dctx.lineTo(c, c + 60);  // bottom
+    dctx.lineTo(c - 60, c);  // left
+    dctx.closePath();
+    dctx.fillStyle = '#ffffff';
+    dctx.fill();
+    const diamondTex = new THREE.CanvasTexture(diamondCanvas);
 
     geographyArticles.forEach((art) => {
       const dir = latLngToECEF(art.lat, art.lng, 0).normalize();
@@ -628,10 +605,9 @@ export function initGlobe(canvas) {
       line.renderOrder = 2;
       stalkGroup.add(line);
 
-      // Image pin at tip
+      // Diamond pin at tip
       const tipPos = dir.clone().multiplyScalar(baseAlt + GEO_STALK_H);
-      const tex = makeCircleTex(art.image, art.title[0]);
-      const pinMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, sizeAttenuation: true });
+      const pinMat = new THREE.SpriteMaterial({ map: diamondTex, color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false, sizeAttenuation: true });
       const pin = new THREE.Sprite(pinMat);
       pin.scale.setScalar(GEO_PIN_SIZE);
       pin.position.copy(tipPos);
