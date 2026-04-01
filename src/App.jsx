@@ -180,120 +180,99 @@ function App() {
   const pageWrapperRef = useRef(null);
   const aboutRef = useRef(null);
   const blogRef = useRef(null);
-  const overlayPathRef = useRef(null);
   const pageTransitioning = useRef(false);
   const isMobile = () => window.innerWidth <= 768;
 
-  // SVG path definitions for vertical page transition
-  const svgPaths = useRef({
-    step1: {
-      unfilled: 'M 0 100 V 100 Q 50 100 100 100 V 100 z',
-      curve1:   'M 0 100 V 50 Q 50 0 100 50 V 100 z',
-      curve2:   'M 0 100 V 50 Q 50 100 100 50 V 100 z',
-      filled:   'M 0 100 V 0 Q 50 0 100 0 V 100 z',
-    },
-    step2: {
-      filled:   'M 0 0 V 100 Q 50 100 100 100 V 0 z',
-      curve1:   'M 0 0 V 50 Q 50 0 100 50 V 0 z',
-      curve2:   'M 0 0 V 50 Q 50 100 100 50 V 0 z',
-      unfilled: 'M 0 0 V 0 Q 50 0 100 0 V 0 z',
-    },
-  }).current;
+  // SVG path keyframes for wave transition
+  const P = {
+    botStart: 'M 0 100 V 100 Q 50 100 100 100 V 100 z',
+    botMid:   'M 0 100 V 50 Q 50 0 100 50 V 100 z',
+    botFull:  'M 0 100 V 0 Q 50 0 100 0 V 100 z',
+    topFull:  'M 0 0 V 100 Q 50 100 100 100 V 0 z',
+    topMid:   'M 0 0 V 50 Q 50 100 100 50 V 0 z',
+    topStart: 'M 0 0 V 0 Q 50 0 100 0 V 0 z',
+  };
 
-  // Open About: SVG wave covers from bottom, switches page, uncovers from top
+  const runWaveTransition = (direction, onSwitch) => {
+    const el = document.getElementById('page-transition-path');
+    console.log('[wave] el=', el, 'direction=', direction);
+    if (!el) { onSwitch(); pageTransitioning.current = false; return; }
+
+    const isBottom = direction === 'bottom';
+    const tl = gsap.timeline({
+      onComplete: () => { pageTransitioning.current = false; console.log('[wave] done'); },
+    });
+
+    if (isBottom) {
+      // Cover from bottom, uncover from top
+      el.setAttribute('d', P.botStart);
+      tl.to(el, { duration: 0.6, ease: 'circ.in', attr: { d: P.botMid } })
+        .to(el, { duration: 0.3, ease: 'power2.inOut', attr: { d: P.botFull }, onComplete: onSwitch })
+        .set(el, { attr: { d: P.topFull } })
+        .to(el, { duration: 0.3, ease: 'power2.inOut', attr: { d: P.topMid } })
+        .to(el, { duration: 0.6, ease: 'circ.out', attr: { d: P.topStart } });
+    } else {
+      // Cover from top, uncover from bottom
+      el.setAttribute('d', P.topStart);
+      tl.to(el, { duration: 0.6, ease: 'circ.in', attr: { d: P.topMid } })
+        .to(el, { duration: 0.3, ease: 'power2.inOut', attr: { d: P.topFull }, onComplete: onSwitch })
+        .set(el, { attr: { d: P.botFull } })
+        .to(el, { duration: 0.3, ease: 'power2.inOut', attr: { d: P.botMid } })
+        .to(el, { duration: 0.6, ease: 'circ.out', attr: { d: P.botStart } });
+    }
+  };
+
+  // DOM queries as fallback (refs can be null with forwardRef + lazy timing)
+  const getAbout = () => aboutRef.current || document.querySelector('.about');
+  const getBlog = () => blogRef.current || document.querySelector('.blog-page');
+  const getPageWrapper = () => pageWrapperRef.current;
+
   const openAbout = useCallback(() => {
     if (pageTransitioning.current) return;
     pageTransitioning.current = true;
-    const p = overlayPathRef.current;
-
-    gsap.timeline({ onComplete: () => { pageTransitioning.current = false; } })
-      .set(p, { attr: { d: svgPaths.step1.unfilled } })
-      .to(p, { duration: 0.8, ease: 'power4.in', attr: { d: svgPaths.step1.curve1 } }, 0)
-      .to(p, {
-        duration: 0.2, ease: 'power1', attr: { d: svgPaths.step1.filled },
-        onComplete: () => {
-          gsap.set(pageWrapperRef.current, { autoAlpha: 0 });
-          gsap.set(aboutRef.current, { autoAlpha: 1 });
-          setAboutOpen(true);
-          setActiveNav('about');
-          globeState.pause();
-        },
-      })
-      .set(p, { attr: { d: svgPaths.step2.filled } })
-      .to(p, { duration: 0.2, ease: 'sine.in', attr: { d: svgPaths.step2.curve1 } })
-      .to(p, { duration: 1, ease: 'power4', attr: { d: svgPaths.step2.unfilled } });
+    runWaveTransition('bottom', () => {
+      gsap.set(getPageWrapper(), { autoAlpha: 0 });
+      gsap.set(getAbout(), { autoAlpha: 1, yPercent: 0 });
+      setAboutOpen(true);
+      setActiveNav('about');
+      globeState.pause();
+    });
   }, []);
 
-  // Close About: SVG wave covers from top, switches page, uncovers from bottom
   const closeAbout = useCallback(() => {
     if (pageTransitioning.current) return;
     pageTransitioning.current = true;
-    const p = overlayPathRef.current;
-
-    gsap.timeline({ onComplete: () => { pageTransitioning.current = false; } })
-      .set(p, { attr: { d: svgPaths.step2.unfilled } })
-      .to(p, { duration: 0.8, ease: 'power4.in', attr: { d: svgPaths.step2.curve2 } }, 0)
-      .to(p, {
-        duration: 0.2, ease: 'power1', attr: { d: svgPaths.step2.filled },
-        onComplete: () => {
-          gsap.set(aboutRef.current, { autoAlpha: 0 });
-          gsap.set(pageWrapperRef.current, { autoAlpha: 1, yPercent: 0 });
-          setAboutOpen(false);
-          setActiveNav('globe');
-          globeState.resume();
-        },
-      })
-      .set(p, { attr: { d: svgPaths.step1.filled } })
-      .to(p, { duration: 0.2, ease: 'sine.in', attr: { d: svgPaths.step1.curve2 } })
-      .to(p, { duration: 1, ease: 'power4', attr: { d: svgPaths.step1.unfilled } });
+    runWaveTransition('top', () => {
+      gsap.set(getAbout(), { autoAlpha: 0 });
+      gsap.set(getPageWrapper(), { autoAlpha: 1, yPercent: 0 });
+      setAboutOpen(false);
+      setActiveNav('globe');
+      globeState.resume();
+    });
   }, []);
 
-  // Open Blog: SVG wave covers from TOP, switches page, uncovers from BOTTOM
   const openBlog = useCallback(() => {
     if (pageTransitioning.current) return;
     pageTransitioning.current = true;
-    const p = overlayPathRef.current;
-
-    gsap.timeline({ onComplete: () => { pageTransitioning.current = false; } })
-      .set(p, { attr: { d: svgPaths.step2.unfilled } })
-      .to(p, { duration: 0.8, ease: 'power4.in', attr: { d: svgPaths.step2.curve1 } }, 0)
-      .to(p, {
-        duration: 0.2, ease: 'power1', attr: { d: svgPaths.step2.filled },
-        onComplete: () => {
-          gsap.set(pageWrapperRef.current, { autoAlpha: 0 });
-          gsap.set(blogRef.current, { autoAlpha: 1 });
-          setBlogOpen(true);
-          setActiveNav('blog');
-          globeState.pause();
-        },
-      })
-      .set(p, { attr: { d: svgPaths.step1.filled } })
-      .to(p, { duration: 0.2, ease: 'sine.in', attr: { d: svgPaths.step1.curve2 } })
-      .to(p, { duration: 1, ease: 'power4', attr: { d: svgPaths.step1.unfilled } });
+    runWaveTransition('top', () => {
+      gsap.set(getPageWrapper(), { autoAlpha: 0 });
+      gsap.set(getBlog(), { autoAlpha: 1, yPercent: 0 });
+      setBlogOpen(true);
+      setActiveNav('blog');
+      globeState.pause();
+    });
   }, []);
 
-  // Close Blog: SVG wave covers from bottom, switches page, uncovers from top
   const closeBlog = useCallback(() => {
     if (pageTransitioning.current) return;
     pageTransitioning.current = true;
-    const p = overlayPathRef.current;
-
-    gsap.timeline({ onComplete: () => { pageTransitioning.current = false; } })
-      .set(p, { attr: { d: svgPaths.step1.unfilled } })
-      .to(p, { duration: 0.8, ease: 'power4.in', attr: { d: svgPaths.step1.curve1 } }, 0)
-      .to(p, {
-        duration: 0.2, ease: 'power1', attr: { d: svgPaths.step1.filled },
-        onComplete: () => {
-          gsap.set(blogRef.current, { autoAlpha: 0 });
-          gsap.set(pageWrapperRef.current, { autoAlpha: 1, yPercent: 0 });
-          setBlogOpen(false);
-          setActiveNav('globe');
-          globeState.resume();
-        },
-      })
-      .set(p, { attr: { d: svgPaths.step2.filled } })
-      .to(p, { duration: 0.2, ease: 'sine.in', attr: { d: svgPaths.step2.curve2 } })
-      .to(p, { duration: 1, ease: 'power4', attr: { d: svgPaths.step2.unfilled } });
+    runWaveTransition('bottom', () => {
+      gsap.set(getBlog(), { autoAlpha: 0 });
+      gsap.set(getPageWrapper(), { autoAlpha: 1, yPercent: 0 });
+      setBlogOpen(false);
+      setActiveNav('globe');
+      globeState.resume();
+    });
   }, []);
 
   const handlePreloaderComplete = useCallback(() => {
@@ -403,6 +382,7 @@ function App() {
           labelShift={navConfig.labelShift}
           logoSpinDuration={navConfig.logoSpinDuration}
           onItemClick={(id) => {
+            console.log('[PillNav click]', id, 'aboutOpen=', aboutOpen, 'blogOpen=', blogOpen);
             if (id === 'home') {
               if (aboutOpen) closeAbout();
               else if (blogOpen) closeBlog();
@@ -410,8 +390,8 @@ function App() {
               return;
             }
             if (id === 'bacheca') { if (aboutOpen) closeAbout(); else if (blogOpen) closeBlog(); setBachecaOpen(true); return; }
-            if (id === 'about') { if (blogOpen) closeBlog(); if (!aboutOpen) openAbout(); return; }
-            if (id === 'blog') { if (aboutOpen) closeAbout(); if (!blogOpen) openBlog(); return; }
+            if (id === 'about') { console.log('[about click] calling openAbout'); openAbout(); return; }
+            if (id === 'blog') { console.log('[blog click] calling openBlog'); openBlog(); return; }
           }}
           onItemHover={() => {}}
         />
@@ -450,16 +430,6 @@ function App() {
         {/* {showUI && <ScrollPath />} */}
         {showUI && <ScrollBar />}
         {showUI && <LogoOverlay scrollPct={scrollPct} />}
-        {showUI && (
-          <div style={{
-            position: 'fixed', top: 16, right: 16, zIndex: 9999,
-            fontFamily: 'monospace', fontSize: 13, color: '#FFDD00',
-            background: 'rgba(0,0,0,0.5)', padding: '4px 10px',
-            borderRadius: 6, pointerEvents: 'none', backdropFilter: 'blur(4px)',
-          }}>
-            {Math.round(scrollPct)}%
-          </div>
-        )}
 
         {/* Top right controls: search + audio */}
         {showUI && (
@@ -645,7 +615,7 @@ function App() {
 
       {/* SVG page transition overlay */}
       <svg className="page-transition-overlay" width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <path ref={overlayPathRef} className="page-transition-overlay__path" vectorEffect="non-scaling-stroke" d="M 0 100 V 100 Q 50 100 100 100 V 100 z" />
+        <path id="page-transition-path" vectorEffect="non-scaling-stroke" d="M 0 100 V 100 Q 50 100 100 100 V 100 z" fill="#FFDD00" />
       </svg>
     </>
   );
