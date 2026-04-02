@@ -63,8 +63,6 @@ const PanelCard = ({ data, onClose, onNav }) => {
 
   const navigate = useCallback((dir) => { navDirRef.current = dir; onNav?.(dir); }, [onNav]);
 
-  // ── Image loaded state ──
-  useEffect(() => { setImgLoaded(false); }, [data]);
 
   // ── Share with toast ──
   const handleShare = useCallback(() => {
