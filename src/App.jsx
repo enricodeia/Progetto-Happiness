@@ -8,6 +8,7 @@ import Globe from './components/Globe.jsx';
 // CountUp moved to About overlay
 import Noise from './components/Noise.jsx';
 import AboutOverlay from './components/AboutOverlay.jsx';
+import BlogPage from './components/BlogPage.jsx';
 import PillNav from './components/PillNav.jsx';
 import PanelCard from './components/PanelCard.jsx';
 import Bacheca from './components/Bacheca.jsx';
@@ -18,6 +19,7 @@ import LogoOverlay from './components/LogoOverlay.jsx';
 import HeroTitle from './components/HeroTitle.jsx';
 import EpisodeSearch from './components/EpisodeSearch.jsx';
 import SoundWaves from './components/SoundWaves.jsx';
+import { playClick } from './click-sound.js';
 import { globeState } from './globe-scene.js';
 import { episodes, happinessConcepts } from './data.js';
 import DesignSystem from './components/DesignSystem.jsx';
@@ -207,17 +209,17 @@ function App() {
       // Cover from bottom, uncover from top
       el.setAttribute('d', P.botStart);
       tl.to(el, { duration: 0.6, ease: 'circ.in', attr: { d: P.botMid } })
-        .to(el, { duration: 0.3, ease: 'power2.inOut', attr: { d: P.botFull }, onComplete: onSwitch })
+        .to(el, { duration: 0.3, ease: 'circ.inOut', attr: { d: P.botFull }, onComplete: onSwitch })
         .set(el, { attr: { d: P.topFull } })
-        .to(el, { duration: 0.3, ease: 'power2.inOut', attr: { d: P.topMid } })
+        .to(el, { duration: 0.3, ease: 'circ.inOut', attr: { d: P.topMid } })
         .to(el, { duration: 0.6, ease: 'circ.out', attr: { d: P.topStart } });
     } else {
       // Cover from top, uncover from bottom
       el.setAttribute('d', P.topStart);
       tl.to(el, { duration: 0.6, ease: 'circ.in', attr: { d: P.topMid } })
-        .to(el, { duration: 0.3, ease: 'power2.inOut', attr: { d: P.topFull }, onComplete: onSwitch })
+        .to(el, { duration: 0.3, ease: 'circ.inOut', attr: { d: P.topFull }, onComplete: onSwitch })
         .set(el, { attr: { d: P.botFull } })
-        .to(el, { duration: 0.3, ease: 'power2.inOut', attr: { d: P.botMid } })
+        .to(el, { duration: 0.3, ease: 'circ.inOut', attr: { d: P.botMid } })
         .to(el, { duration: 0.6, ease: 'circ.out', attr: { d: P.botStart } });
     }
   };
@@ -323,6 +325,7 @@ function App() {
   }, [scrollPct, showUI]);
 
   const openEpisodePanel = useCallback((m) => {
+    playClick();
     setPanelData(m);
     setActiveEp(m.data.id);
     setHoverCard(null);
@@ -382,16 +385,15 @@ function App() {
           labelShift={navConfig.labelShift}
           logoSpinDuration={navConfig.logoSpinDuration}
           onItemClick={(id) => {
-            console.log('[PillNav click]', id, 'aboutOpen=', aboutOpen, 'blogOpen=', blogOpen);
             if (id === 'home') {
               if (aboutOpen) closeAbout();
               else if (blogOpen) closeBlog();
               setBachecaOpen(false);
               return;
             }
-            if (id === 'bacheca') { if (aboutOpen) closeAbout(); else if (blogOpen) closeBlog(); setBachecaOpen(true); return; }
-            if (id === 'about') { console.log('[about click] calling openAbout'); openAbout(); return; }
-            if (id === 'blog') { console.log('[blog click] calling openBlog'); openBlog(); return; }
+            if (id === 'bacheca') { setBachecaOpen(true); return; }
+            if (id === 'about') { setBachecaOpen(false); openAbout(); return; }
+            if (id === 'blog') { setBachecaOpen(false); openBlog(); return; }
           }}
           onItemHover={() => {}}
         />
@@ -423,7 +425,7 @@ function App() {
       )}
 
       {/* ---- Globe page ---- */}
-      <div ref={pageWrapperRef} className={`page-wrapper ${bachecaOpen ? 'page-wrapper--slide-left' : ''}`}>
+      <div ref={pageWrapperRef} className="page-wrapper">
         <Globe />
         <Noise patternSize={200} patternAlpha={12} patternRefreshInterval={6} />
         {showUI && <LocalClock scrollPct={scrollPct} />}
@@ -577,41 +579,17 @@ function App() {
       <Bacheca visible={bachecaOpen} onBack={() => setBachecaOpen(false)} />
 
       {/* About overlay — GSAP page transition */}
-      <AboutOverlay ref={aboutRef} visible={aboutOpen} onClose={closeAbout} />
+      <AboutOverlay ref={aboutRef} visible={aboutOpen} onClose={closeAbout} onBacheca={() => setBachecaOpen(true)} onBlog={() => { closeAbout(); setTimeout(openBlog, 1200); }} />
 
-      {/* Blog page — empty with nav */}
-      <div ref={blogRef} className="blog-page">
-        <PillNav
-          logo="/logo.webp"
-          logoAlt="Progetto Happiness"
-          items={[
-            { id: 'bacheca', label: 'Bacheca' },
-            { id: 'about', label: 'About' },
-            { id: 'blog', label: 'Blog' },
-          ]}
-          activeItem="blog"
-          pillColor={navConfig.pillColor}
-          pillTextColor={navConfig.pillTextColor}
-          hoverCircleColor={navConfig.hoverCircleColor}
-          hoverTextColor={navConfig.hoverTextColor}
-          navBg={navConfig.navBg}
-          navStroke={navConfig.navStroke}
-          enterDuration={navConfig.enterDuration}
-          leaveDuration={navConfig.leaveDuration}
-          enterEase={navConfig.enterEase}
-          leaveEase={navConfig.leaveEase}
-          circleScale={navConfig.circleScale}
-          labelShift={navConfig.labelShift}
-          logoSpinDuration={navConfig.logoSpinDuration}
-          onItemClick={(id) => {
-            if (id === 'blog') return;
-            if (id === 'home') { closeBlog(); return; }
-            if (id === 'about') { closeBlog(); setTimeout(() => openAbout(), 1200); return; }
-            if (id === 'bacheca') { closeBlog(); return; }
-          }}
-          onItemHover={() => {}}
-        />
-      </div>
+      {/* Blog page — Geografia della Felicità */}
+      <BlogPage
+        ref={blogRef}
+        visible={blogOpen}
+        onClose={closeBlog}
+        onBacheca={() => setBachecaOpen(true)}
+        onAbout={() => { closeBlog(); setTimeout(openAbout, 1200); }}
+        navConfig={navConfig}
+      />
 
       {/* SVG page transition overlay */}
       <svg className="page-transition-overlay" width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
