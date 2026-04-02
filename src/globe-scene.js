@@ -435,7 +435,7 @@ export function initGlobe(canvas) {
         return;
       }
 
-      const baseScale = marker.dot.scale.x * 2.5;
+      const baseScale = initCfg.pinSize * 2.5;
 
       bracketSprite.position.copy(marker.dot.position);
       bracketSprite.visible = true;
