@@ -390,109 +390,73 @@ export function initGlobe(canvas) {
     pdc.fill();
     const pinDotTex = new THREE.CanvasTexture(pinDotCanvas);
 
-    // ---- Active pin indicator: static ring + pulse ring ----
-    // Thin ring with soft glow
-    const makeRingTex = (size, radius, lineW, glowW) => {
-      const c = document.createElement('canvas');
-      c.width = size; c.height = size;
-      const ctx = c.getContext('2d');
-      const cx = size / 2;
-      // Outer glow
-      if (glowW > 0) {
-        ctx.beginPath(); ctx.arc(cx, cx, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-        ctx.lineWidth = lineW + glowW;
-        ctx.stroke();
-      }
-      // Core ring
-      ctx.beginPath(); ctx.arc(cx, cx, radius, 0, Math.PI * 2);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = lineW;
-      ctx.stroke();
-      return new THREE.CanvasTexture(c);
+    // ---- Active pin indicator: bracket SVG that spins ----
+    // Rasterize the bracket SVG to canvas texture
+    const bracketCanvas = document.createElement('canvas');
+    bracketCanvas.width = 128; bracketCanvas.height = 128;
+    const bctx = bracketCanvas.getContext('2d');
+    const bracketSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 64 64" fill="none"><path d="M7.36242 48.876C6.77724 49.193 7.02993 49.8887 7.22942 50.1969C8.29344 51.98 16.2066 64 31.7671 64C47.3275 64 55.0413 51.4518 55.7063 50.5272C56.2382 49.7875 55.9279 49.2944 55.7063 49.1403C55.4624 48.9862 54.8152 48.5855 54.1768 48.2157C53.5384 47.8458 52.9355 48.5018 52.7139 48.876C50.5859 52.1782 43.4175 58.7826 31.7671 58.7826C17.204 58.7826 10.6208 49.0741 10.0888 48.4137C9.66318 47.8854 9.02481 47.9734 8.75881 48.0835C8.53717 48.2156 7.9476 48.559 7.36242 48.876Z" fill="#FFDD00"/><path d="M55.6376 15.124C56.2228 14.807 55.9701 14.1113 55.7706 13.8031C54.7066 12.02 46.7934 0 31.2329 0C15.6725 0 7.95871 12.5482 7.29374 13.4728C6.76175 14.2125 7.07208 14.7056 7.29374 14.8597C7.53756 15.0138 8.18481 15.4145 8.82319 15.7843C9.46156 16.1542 10.0645 15.4982 10.2861 15.124C12.4141 11.8218 19.5825 5.21741 31.2329 5.21741C45.796 5.21741 52.3792 14.9259 52.9112 15.5863C53.3368 16.1146 53.9752 16.0266 54.2412 15.9165C54.4628 15.7844 55.0524 15.441 55.6376 15.124Z" fill="#FFDD00"/></svg>`;
+    const bracketImg = new Image();
+    const bracketTex = new THREE.CanvasTexture(bracketCanvas);
+    bracketImg.onload = () => {
+      bctx.drawImage(bracketImg, 0, 0, 128, 128);
+      bracketTex.needsUpdate = true;
     };
+    bracketImg.src = 'data:image/svg+xml;base64,' + btoa(bracketSvg);
 
-    // Static ring (always visible when pin selected)
-    const staticRingTex = makeRingTex(128, 52, 1.5, 6);
-    const staticRingMat = new THREE.SpriteMaterial({
-      map: staticRingTex, color: 0xFFDD00, transparent: true, opacity: 0, depthWrite: false, sizeAttenuation: true,
+    const bracketMat = new THREE.SpriteMaterial({
+      map: bracketTex, transparent: true, opacity: 0, depthWrite: false, sizeAttenuation: true,
     });
-    const staticRing = new THREE.Sprite(staticRingMat);
-    staticRing.renderOrder = 5;
-    staticRing.visible = false;
-    scene.add(staticRing);
-
-    // Pulse ring (expands + fades in loop)
-    const pulseRingTex = makeRingTex(128, 54, 1, 0);
-    const pulseRingMat = new THREE.SpriteMaterial({
-      map: pulseRingTex, color: 0xFFDD00, transparent: true, opacity: 0, depthWrite: false, sizeAttenuation: true,
-    });
-    const pulseRing = new THREE.Sprite(pulseRingMat);
-    pulseRing.renderOrder = 5;
-    pulseRing.visible = false;
-    scene.add(pulseRing);
+    const bracketSprite = new THREE.Sprite(bracketMat);
+    bracketSprite.renderOrder = 5;
+    bracketSprite.visible = false;
+    scene.add(bracketSprite);
 
     let activePin = null;
-    let pulseTween = null;
-    let staticFadeTween = null;
+    let spinTween = null;
+    let fadeTween = null;
+    let spinAngle = { v: 0 };
     globeState._activePin = null;
-    globeState._staticRing = staticRing;
-    globeState._pulseRing = pulseRing;
+    globeState._staticRing = bracketSprite;
+    globeState._pulseRing = null; // no pulse ring anymore
 
     globeState.setActivePin = (marker) => {
       if (marker === activePin) return;
       activePin = marker;
       globeState._activePin = marker;
-      pulseTween?.kill();
-      staticFadeTween?.kill();
+      spinTween?.kill();
+      fadeTween?.kill();
 
       if (!marker) {
-        // Fade out
-        staticFadeTween = gsap.to(staticRingMat, {
+        fadeTween = gsap.to(bracketMat, {
           opacity: 0, duration: 0.3, ease: 'power2.in',
-          onComplete: () => { staticRing.visible = false; }
+          onComplete: () => { bracketSprite.visible = false; }
         });
-        pulseRing.visible = false;
-        pulseRingMat.opacity = 0;
         return;
       }
 
-      const baseScale = marker.dot.scale.x * 1.8;
+      const baseScale = marker.dot.scale.x * 2.5;
 
-      // Position both rings
-      staticRing.position.copy(marker.dot.position);
-      pulseRing.position.copy(marker.dot.position);
+      bracketSprite.position.copy(marker.dot.position);
+      bracketSprite.visible = true;
+      bracketSprite.scale.setScalar(baseScale);
+      bracketSprite.material.rotation = 0;
+      fadeTween = gsap.to(bracketMat, { opacity: 0.9, duration: 0.4, ease: 'power2.out' });
 
-      // Static ring: fade in, stays
-      staticRing.visible = true;
-      staticRing.scale.setScalar(baseScale);
-      staticFadeTween = gsap.to(staticRingMat, { opacity: 0.7, duration: 0.4, ease: 'power2.out' });
-
-      // Pulse ring: expand + fade loop
-      pulseRing.visible = true;
-      const runPulse = () => {
-        pulseRing.scale.setScalar(baseScale);
-        pulseRingMat.opacity = 0.5;
-        pulseTween = gsap.to({ s: baseScale, o: 0.5 }, {
-          s: baseScale * 3, o: 0, duration: 1.8, ease: 'power1.out',
-          onUpdate() {
-            pulseRing.scale.setScalar(this.targets()[0].s);
-            pulseRingMat.opacity = this.targets()[0].o;
-          },
-          onComplete: runPulse,
-        });
-      };
-      runPulse();
+      // Continuous slow spin
+      spinAngle.v = 0;
+      spinTween = gsap.to(spinAngle, {
+        v: Math.PI * 2, duration: 8, ease: 'none', repeat: -1,
+        onUpdate() { bracketSprite.material.rotation = spinAngle.v; },
+      });
     };
 
     globeState.clearActivePin = () => {
       activePin = null;
       globeState._activePin = null;
-      pulseTween?.kill();
-      staticFadeTween?.kill();
-      // Fade out both
-      gsap.to(staticRingMat, { opacity: 0, duration: 0.3, ease: 'power2.in', onComplete: () => { staticRing.visible = false; } });
-      gsap.to(pulseRingMat, { opacity: 0, duration: 0.2, ease: 'power2.in', onComplete: () => { pulseRing.visible = false; } });
+      spinTween?.kill();
+      fadeTween?.kill();
+      gsap.to(bracketMat, { opacity: 0, duration: 0.3, ease: 'power2.in', onComplete: () => { bracketSprite.visible = false; } });
     };
 
     // ---- Stalks + Pin markers (episodes) ----
@@ -1142,7 +1106,6 @@ export function initGlobe(canvas) {
     if (globeState._activePin) {
       const pinPos = globeState._activePin.dot.position;
       if (globeState._staticRing?.visible) globeState._staticRing.position.copy(pinPos);
-      if (globeState._pulseRing?.visible) globeState._pulseRing.position.copy(pinPos);
     }
 
     // ---- Texture fade: GSAP at scroll trigger ----
