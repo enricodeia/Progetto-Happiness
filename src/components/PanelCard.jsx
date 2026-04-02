@@ -11,7 +11,7 @@ const PanelCard = ({ data, onClose, onNav }) => {
   const itemsRef = useRef([]);
   const [visible, setVisible] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [imgLoaded, setImgLoaded] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(true);
   const [shareToast, setShareToast] = useState(false);
   const prevDataRef = useRef(null);
   const descRef = useRef(null);
@@ -108,7 +108,11 @@ const PanelCard = ({ data, onClose, onNav }) => {
     closingRef.current = false;
     setVisible(true);
     setExpanded(false);
+    setShowSkeleton(true);
     isOpenRef.current = true;
+    // Fallback: hide skeleton after 300ms for cards without images
+    const hasImg = data?.data?.thumb || data?.data?.image;
+    if (!hasImg) setTimeout(() => setShowSkeleton(false), 300);
 
     requestAnimationFrame(() => {
       const el = panelRef.current;
@@ -193,16 +197,38 @@ const PanelCard = ({ data, onClose, onNav }) => {
     <div className="panel" ref={panelRef} style={{ overflow: 'hidden', height: 0, opacity: 0 }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div className="panel__content">
 
+      {/* Skeleton loader — overlays content until image loads */}
+      {showSkeleton && (
+        <div className="panel__skeleton">
+          {(d.thumb || d.image) && <div className="panel__skel panel__skel--thumb" />}
+          <div className="panel__skel panel__skel--tag" />
+          <div className="panel__skel panel__skel--title" />
+          <div className="panel__skel panel__skel--title2" />
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '10px 0' }} />
+          <div className="panel__skel panel__skel--line" />
+          <div className="panel__skel panel__skel--line" />
+          <div className="panel__skel panel__skel--line-sm" />
+        </div>
+      )}
+
+      {/* Hidden preload image */}
+      {(d.thumb || d.image) && showSkeleton && (
+        <img src={d.thumb || d.image} alt="" style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
+          onLoad={() => { setShowSkeleton(false); }}
+          onError={() => setShowSkeleton(false)}
+        />
+      )}
+
+      {/* Real content — hidden while skeleton is showing */}
+      {!showSkeleton && <>
       {/* Thumb with Ken Burns */}
       {(d.thumb || d.image) && (
         <div className="panel__thumb" ref={(el) => { itemsRef.current[0] = el; }} style={hiddenStyle}>
           <img
-            className={`panel__thumb-img ${imgLoaded ? 'panel__thumb-img--loaded' : ''}`}
+            className="panel__thumb-img panel__thumb-img--loaded"
             ref={thumbRef}
             src={d.thumb || d.image}
             alt=""
-            loading="lazy"
-            onLoad={() => setImgLoaded(true)}
           />
           {isEp && <span className="panel__thumb-ep">{String(d.id).padStart(2, '0')}</span>}
         </div>
@@ -273,6 +299,7 @@ const PanelCard = ({ data, onClose, onNav }) => {
           )}
         </div>
       )}
+      </>}
 
       </div>{/* end panel__content */}
 

@@ -631,6 +631,16 @@ html, body, #root {
   display: flex; align-items: center; gap: 4px;
 }
 .panel__nav-current { color: var(--color-text); font-weight: 500; }
+
+/* Skeleton loaders */
+@keyframes panel-shimmer { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+.panel__skel { animation: panel-shimmer 1.5s ease infinite; border-radius: 6px; background: rgba(255,255,255,0.04); }
+.panel__skel--thumb { width: 100%; height: 180px; border-radius: 16px; margin-bottom: 14px; }
+.panel__skel--tag { width: 40%; height: 10px; margin-bottom: 10px; }
+.panel__skel--title { width: 85%; height: 18px; margin-bottom: 8px; }
+.panel__skel--title2 { width: 55%; height: 18px; margin-bottom: 14px; }
+.panel__skel--line { width: 100%; height: 10px; margin-bottom: 6px; }
+.panel__skel--line-sm { width: 70%; height: 10px; }
 .panel__nav-sep { opacity: 0.3; }
 
 .panel__close {
@@ -1315,6 +1325,12 @@ html, body, #root {
 .blog-page__article-btn:hover {
   background: var(--hover-circle, #FFDD00);
   color: var(--hover-text, #2C2118);
+}
+
+/* Scramble text char spans */
+.blog-page__article-info span > span {
+  display: inline-block;
+  min-width: 0.25em;
 }
 
 /* Counter — bottom right */
