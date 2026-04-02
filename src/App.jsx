@@ -19,6 +19,7 @@ import LogoOverlay from './components/LogoOverlay.jsx';
 import HeroTitle from './components/HeroTitle.jsx';
 import EpisodeSearch from './components/EpisodeSearch.jsx';
 import SoundWaves from './components/SoundWaves.jsx';
+import PinBubble from './components/PinBubble.jsx';
 import { playClick } from './click-sound.js';
 import { globeState } from './globe-scene.js';
 import { episodes, happinessConcepts } from './data.js';
@@ -197,28 +198,28 @@ function App() {
 
   const runWaveTransition = (direction, onSwitch) => {
     const el = document.getElementById('page-transition-path');
-    console.log('[wave] el=', el, 'direction=', direction);
     if (!el) { onSwitch(); pageTransitioning.current = false; return; }
 
     const isBottom = direction === 'bottom';
     const tl = gsap.timeline({
-      onComplete: () => { pageTransitioning.current = false; console.log('[wave] done'); },
+      onComplete: () => { pageTransitioning.current = false; },
     });
 
     if (isBottom) {
-      // Cover from bottom, uncover from top
       el.setAttribute('d', P.botStart);
       tl.to(el, { duration: 0.6, ease: 'circ.in', attr: { d: P.botMid } })
-        .to(el, { duration: 0.3, ease: 'circ.inOut', attr: { d: P.botFull }, onComplete: onSwitch })
-        .set(el, { attr: { d: P.topFull } })
+        .to(el, { duration: 0.3, ease: 'circ.inOut', attr: { d: P.botFull } })
+        // Switch while fully covered — use requestAnimationFrame to not block
+        .call(() => { requestAnimationFrame(onSwitch); })
+        .set(el, { attr: { d: P.topFull } }, '+=0.05')
         .to(el, { duration: 0.3, ease: 'circ.inOut', attr: { d: P.topMid } })
         .to(el, { duration: 0.6, ease: 'circ.out', attr: { d: P.topStart } });
     } else {
-      // Cover from top, uncover from bottom
       el.setAttribute('d', P.topStart);
       tl.to(el, { duration: 0.6, ease: 'circ.in', attr: { d: P.topMid } })
-        .to(el, { duration: 0.3, ease: 'circ.inOut', attr: { d: P.topFull }, onComplete: onSwitch })
-        .set(el, { attr: { d: P.botFull } })
+        .to(el, { duration: 0.3, ease: 'circ.inOut', attr: { d: P.topFull } })
+        .call(() => { requestAnimationFrame(onSwitch); })
+        .set(el, { attr: { d: P.botFull } }, '+=0.05')
         .to(el, { duration: 0.3, ease: 'circ.inOut', attr: { d: P.botMid } })
         .to(el, { duration: 0.6, ease: 'circ.out', attr: { d: P.botStart } });
     }
@@ -510,8 +511,11 @@ function App() {
           </div>
         </aside>
 
-        {hoverCard && (
+        {hoverCard && !panelData && (
           <HoverCard data={hoverCard.data} type={hoverCard.type} x={hoverCard.x} y={hoverCard.y} />
+        )}
+        {hoverCard && panelData && hoverCard.data?.id !== panelData.data?.id && (
+          <PinBubble data={hoverCard.data} type={hoverCard.type} x={hoverCard.x} y={hoverCard.y} />
         )}
 
         {countryName && (
