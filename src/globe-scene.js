@@ -405,7 +405,7 @@ export function initGlobe(canvas) {
     bracketImg.src = 'data:image/svg+xml;base64,' + btoa(bracketSvg);
 
     const bracketMat = new THREE.SpriteMaterial({
-      map: bracketTex, transparent: true, opacity: 0, depthWrite: false, sizeAttenuation: true,
+      map: bracketTex, transparent: true, opacity: 0, depthWrite: false, sizeAttenuation: false,
     });
     const bracketSprite = new THREE.Sprite(bracketMat);
     bracketSprite.renderOrder = 5;
@@ -435,11 +435,9 @@ export function initGlobe(canvas) {
         return;
       }
 
-      const baseScale = initCfg.pinSize * 2.5;
-
       bracketSprite.position.copy(marker.dot.position);
       bracketSprite.visible = true;
-      bracketSprite.scale.setScalar(baseScale);
+      bracketSprite.scale.setScalar(0.055); // fixed screen size (NDC units)
       bracketSprite.material.rotation = 0;
       fadeTween = gsap.to(bracketMat, { opacity: 0.9, duration: 0.4, ease: 'power2.out' });
 
