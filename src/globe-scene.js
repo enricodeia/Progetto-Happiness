@@ -420,6 +420,24 @@ export function initGlobe(canvas) {
     globeState._staticRing = bracketSprite;
     globeState._pulseRing = null; // no pulse ring anymore
 
+    // Dim/undim all other pins
+    const dimOtherPins = (activeMarker) => {
+      markers.forEach((m) => {
+        const mat = m.dot.material;
+        if (!mat) return;
+        const target = (m === activeMarker) ? 1.0 : 0.5;
+        gsap.to(mat, { opacity: target, duration: 0.4, ease: 'power2.out' });
+      });
+    };
+    const undimAllPins = () => {
+      markers.forEach((m) => {
+        const mat = m.dot.material;
+        if (!mat) return;
+        const base = m.type === 'geography' ? 0.9 : 1.0;
+        gsap.to(mat, { opacity: base, duration: 0.4, ease: 'power2.out' });
+      });
+    };
+
     globeState.setActivePin = (marker) => {
       if (marker === activePin) return;
       activePin = marker;
@@ -432,12 +450,16 @@ export function initGlobe(canvas) {
           opacity: 0, duration: 0.3, ease: 'power2.in',
           onComplete: () => { bracketSprite.visible = false; }
         });
+        undimAllPins();
         return;
       }
 
+      // Dim others, keep selected at full
+      dimOtherPins(marker);
+
       bracketSprite.position.copy(marker.dot.position);
       bracketSprite.visible = true;
-      bracketSprite.scale.setScalar(0.055); // fixed screen size (NDC units)
+      bracketSprite.scale.setScalar(0.055);
       bracketSprite.material.rotation = 0;
       fadeTween = gsap.to(bracketMat, { opacity: 0.9, duration: 0.4, ease: 'power2.out' });
 
@@ -455,6 +477,7 @@ export function initGlobe(canvas) {
       spinTween?.kill();
       fadeTween?.kill();
       gsap.to(bracketMat, { opacity: 0, duration: 0.3, ease: 'power2.in', onComplete: () => { bracketSprite.visible = false; } });
+      undimAllPins();
     };
 
     // ---- Stalks + Pin markers (episodes) ----
