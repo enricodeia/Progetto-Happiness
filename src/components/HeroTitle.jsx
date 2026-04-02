@@ -138,7 +138,7 @@ const HeroTitle = ({ config, smileConfig }) => {
     let t = 0;
     if (scrollPct >= wordEnd) t = 1;
     else if (scrollPct > wordStart) t = (scrollPct - wordStart) / (wordEnd - wordStart);
-    const eased = t * t * (3 - 2 * t); // smoothstep
+    const eased = 1 - Math.pow(1 - t, 3); // cubic ease-out
     const op = eased;
     const dy = (1 - eased) * -50;
 
