@@ -108,9 +108,10 @@ const PanelCard = ({ data, onClose, onNav }) => {
     setExpanded(false);
     setShowSkeleton(true);
     isOpenRef.current = true;
-    // Fallback: hide skeleton after 300ms for cards without images
+    // Fallback: hide skeleton for cards without images (300ms) or slow loads (3s)
     const hasImg = data?.data?.thumb || data?.data?.image;
     if (!hasImg) setTimeout(() => setShowSkeleton(false), 300);
+    else setTimeout(() => setShowSkeleton(false), 3000); // safety timeout
 
     requestAnimationFrame(() => {
       const el = panelRef.current;
@@ -211,8 +212,9 @@ const PanelCard = ({ data, onClose, onNav }) => {
 
       {/* Hidden preload image */}
       {(d.thumb || d.image) && showSkeleton && (
-        <img src={d.thumb || d.image} alt="" style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
-          onLoad={() => { setShowSkeleton(false); }}
+        <img src={d.thumb || d.image} alt="" crossOrigin="anonymous"
+          style={{ position: 'fixed', top: -9999, left: -9999, width: 1, height: 1, opacity: 0.01 }}
+          onLoad={() => setShowSkeleton(false)}
           onError={() => setShowSkeleton(false)}
         />
       )}
