@@ -34,15 +34,26 @@ const Preloader = ({ onComplete }) => {
   const set = (k, v) => setCfg((p) => ({ ...p, [k]: v }));
 
   useEffect(() => {
-    const assets = [
-      '/earth-8k.webp', '/clouds.webp', '/logo.webp',
+    // Images: preload as Image objects so browser decodes them
+    const images = ['/earth-8k.webp', '/clouds.webp', '/logo.webp', '/specular.webp'];
+    // JSON data: fetch only
+    const jsons = [
       'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json',
       'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json',
     ];
+    const total = images.length + jsons.length;
     let loaded = 0, realProgress = 0, displayProgress = 0, animFrame = null;
-    assets.forEach((url) =>
-      fetch(url).then(() => { loaded++; realProgress = Math.round((loaded / assets.length) * 100); })
-        .catch(() => { loaded++; realProgress = Math.round((loaded / assets.length) * 100); })
+
+    // Preload images via Image() — forces decode
+    images.forEach((url) => {
+      const img = new Image();
+      img.onload = img.onerror = () => { loaded++; realProgress = Math.round((loaded / total) * 100); };
+      img.src = url;
+    });
+    // Fetch JSON
+    jsons.forEach((url) =>
+      fetch(url).then(() => { loaded++; realProgress = Math.round((loaded / total) * 100); })
+        .catch(() => { loaded++; realProgress = Math.round((loaded / total) * 100); })
     );
     if (document.fonts?.ready) document.fonts.ready.then(() => {});
 
