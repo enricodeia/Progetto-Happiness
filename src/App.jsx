@@ -426,7 +426,7 @@ function App() {
       )}
 
       {/* ---- Globe page ---- */}
-      <div ref={pageWrapperRef} className="page-wrapper">
+      <div ref={pageWrapperRef} className={`page-wrapper ${bachecaOpen ? 'page-wrapper--slide-left' : ''}`}>
         <Globe />
         <Noise patternSize={200} patternAlpha={12} patternRefreshInterval={6} />
         {showUI && <LocalClock scrollPct={scrollPct} />}

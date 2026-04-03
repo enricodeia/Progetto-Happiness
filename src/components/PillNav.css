@@ -4,7 +4,7 @@
   position: fixed;
   top: 20px;
   left: 28px;
-  z-index: 99;
+  z-index: 12000;
 }
 @media (max-width: 768px) {
   .pill-nav-container { width: calc(100% - 32px); left: 16px; }
