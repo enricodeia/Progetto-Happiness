@@ -737,10 +737,7 @@ html, body, #root {
 .panel__expand-btn:hover { opacity: 1; }
 .panel__flag { margin-right: 4px; }
 .panel__actions {
-  display: flex; flex-direction: column; gap: 10px;
-}
-.panel__actions-row {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 10px;
 }
 .panel__share {
   width: 36px; height: 36px; border-radius: 50%;
