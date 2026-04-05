@@ -103,6 +103,7 @@ function App() {
   const [countryName, setCountryName] = useState(null);
   const [countryPos, setCountryPos] = useState({ x: 0, y: 0 });
   const [panelData, setPanelData] = useState(null);
+  const [panelKey, setPanelKey] = useState(0);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [blogOpen, setBlogOpen] = useState(false);
   const [activeEp, setActiveEp] = useState(null);
@@ -278,6 +279,28 @@ function App() {
     });
   }, []);
 
+  const openBacheca = useCallback(() => {
+    if (pageTransitioning.current) return;
+    pageTransitioning.current = true;
+    runWaveTransition('top', () => {
+      gsap.set(getPageWrapper(), { autoAlpha: 0 });
+      setBachecaOpen(true);
+      setActiveNav('bacheca');
+      globeState.pause();
+    });
+  }, []);
+
+  const closeBacheca = useCallback(() => {
+    if (pageTransitioning.current) return;
+    pageTransitioning.current = true;
+    runWaveTransition('bottom', () => {
+      gsap.set(getPageWrapper(), { autoAlpha: 1, yPercent: 0 });
+      setBachecaOpen(false);
+      setActiveNav('globe');
+      globeState.resume();
+    });
+  }, []);
+
   const handlePreloaderComplete = useCallback(() => {
     setShowUI(true);
   }, []);
@@ -327,7 +350,10 @@ function App() {
 
   const openEpisodePanel = useCallback((m) => {
     playClick();
-    setPanelData(m);
+    setPanelData((prev) => {
+      if (!prev) setPanelKey((k) => k + 1);
+      return m;
+    });
     setActiveEp(m.data.id);
     setHoverCard(null);
 
@@ -392,9 +418,9 @@ function App() {
               setBachecaOpen(false);
               return;
             }
-            if (id === 'bacheca') { setBachecaOpen(true); return; }
-            if (id === 'about') { setBachecaOpen(false); openAbout(); return; }
-            if (id === 'blog') { setBachecaOpen(false); openBlog(); return; }
+            if (id === 'bacheca') { openBacheca(); return; }
+            if (id === 'about') { if (bachecaOpen) closeBacheca(); openAbout(); return; }
+            if (id === 'blog') { if (bachecaOpen) closeBacheca(); openBlog(); return; }
           }}
           onItemHover={() => {}}
         />
@@ -418,7 +444,7 @@ function App() {
           pillGap={bubbleConfig.gap}
           onItemClick={(item) => {
             const id = item.id;
-            if (id === 'bacheca') setBachecaOpen(true);
+            if (id === 'bacheca') openBacheca();
             else if (id === 'about') { if (!aboutOpen) openAbout(); }
             else if (id === 'blog') { if (!blogOpen) openBlog(); }
           }}
@@ -426,7 +452,7 @@ function App() {
       )}
 
       {/* ---- Globe page ---- */}
-      <div ref={pageWrapperRef} className={`page-wrapper ${bachecaOpen ? 'page-wrapper--slide-left' : ''}`}>
+      <div ref={pageWrapperRef} className="page-wrapper">
         <Globe />
         <Noise patternSize={200} patternAlpha={12} patternRefreshInterval={6} />
         {showUI && <LocalClock scrollPct={scrollPct} />}
@@ -522,7 +548,7 @@ function App() {
           <div className="country-label" style={{ left: countryPos.x, top: countryPos.y - 28 }}>{countryName}</div>
         )}
 
-        <PanelCard data={panelData} onClose={closeEpisodePanel} onNav={(dir) => {
+        <PanelCard key={panelKey} data={panelData} onClose={closeEpisodePanel} onNav={(dir) => {
           const type = panelData?.type || 'episode';
           const items = globeState.markers.filter((m) => m.type === type).sort((a, b) => (a.data.id > b.data.id ? 1 : -1));
           const currentId = panelData?.data?.id;
@@ -580,17 +606,17 @@ function App() {
       </div>
 
       {/* ---- Bacheca (slides in from right) ---- */}
-      <Bacheca visible={bachecaOpen} onBack={() => setBachecaOpen(false)} />
+      <Bacheca visible={bachecaOpen} onBack={closeBacheca} />
 
       {/* About overlay — GSAP page transition */}
-      <AboutOverlay ref={aboutRef} visible={aboutOpen} onClose={closeAbout} onBacheca={() => setBachecaOpen(true)} onBlog={() => { closeAbout(); setTimeout(openBlog, 1200); }} />
+      <AboutOverlay ref={aboutRef} visible={aboutOpen} onClose={closeAbout} onBacheca={openBacheca} onBlog={() => { closeAbout(); setTimeout(openBlog, 1200); }} />
 
       {/* Blog page — Geografia della Felicità */}
       <BlogPage
         ref={blogRef}
         visible={blogOpen}
         onClose={closeBlog}
-        onBacheca={() => setBachecaOpen(true)}
+        onBacheca={openBacheca}
         onAbout={() => { closeBlog(); setTimeout(openAbout, 1200); }}
         navConfig={navConfig}
       />
