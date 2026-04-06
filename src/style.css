@@ -940,7 +940,7 @@ html, body, #root {
 }
 
 .top-controls {
-  position: fixed; top: 24px; right: 24px; z-index: 200;
+  position: fixed; top: 24px; right: 24px; z-index: 500;
   display: flex; align-items: center; gap: 8px;
 }
 .audio-control {
@@ -1452,19 +1452,17 @@ html, body, #root {
    ============================================ */
 .bacheca {
   position: fixed; top: 12px; left: 12px; right: 12px; bottom: 12px;
-  transform: translateX(110vw);
-  transition: transform 0.7s cubic-bezier(0.33, 1, 0.68, 1);
   background: #F6E3D5;
   border-radius: 20px;
   z-index: 9000;
   overflow: hidden;
   cursor: grab;
 }
-.bacheca--visible { transform: translateX(0); }
+.bacheca--visible { /* shown by wave transition */ }
 .bacheca--dragging { cursor: grabbing; }
 
 .bacheca__back {
-  position: absolute; top: 20px; left: 20px; z-index: 56;
+  position: absolute; top: 20px; right: 20px; z-index: 56;
   display: flex; align-items: center; gap: 6px;
   padding: 8px 16px; border-radius: 100px;
   border: 1.3px solid rgba(44, 33, 24, 0.15);

@@ -5,7 +5,7 @@
   align-items: center;
   justify-content: flex-end;
   pointer-events: none;
-  z-index: 99;
+  z-index: 500;
 }
 
 @media (max-width: 768px) {
