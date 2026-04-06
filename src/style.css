@@ -1706,4 +1706,12 @@ html, body, #root {
   .panel { bottom: 16px; right: 16px; left: 16px; width: auto; max-height: 70vh; overflow-y: auto; }
   .top-controls { right: 66px; top: 22px; }
   .credit { display: none; }
+
+  /* Bacheca mobile: full screen, no margins */
+  .bacheca { top: 0; left: 0; right: 0; bottom: 0; border-radius: 0; }
+  .bacheca__back { top: 16px; right: 16px; padding: 6px 12px; font-size: 10px; }
+  .bacheca__add-btn { top: 16px; right: 16px; padding: 7px 14px; font-size: 10px; }
+  .bacheca__counter { bottom: 16px; font-size: 10px; }
+  .bacheca__question { font-size: clamp(28px, 7vw, 44px); max-width: 85vw; }
+  .bacheca__tooltip { max-width: 200px !important; font-size: 12px; }
 }
