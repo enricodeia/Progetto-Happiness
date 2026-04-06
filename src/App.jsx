@@ -1,19 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { gsap } from 'gsap';
 import { motion } from 'motion/react';
 import HoverCard from './components/HoverCard.jsx';
 import Preloader, { getBgMusic } from './components/Preloader.jsx';
 import { Howler } from 'howler';
 import Globe from './components/Globe.jsx';
-// CountUp moved to About overlay
 import Noise from './components/Noise.jsx';
-import AboutOverlay from './components/AboutOverlay.jsx';
-import BlogPage from './components/BlogPage.jsx';
 import PillNav from './components/PillNav.jsx';
 import PanelCard from './components/PanelCard.jsx';
-import Bacheca from './components/Bacheca.jsx';
 import BubbleMenu from './components/BubbleMenu.jsx';
-// import ScrollPath from './components/ScrollPath.jsx';
 import ScrollBar from './components/ScrollBar.jsx';
 import LogoOverlay from './components/LogoOverlay.jsx';
 import HeroTitle from './components/HeroTitle.jsx';
@@ -23,7 +18,12 @@ import PinBubble from './components/PinBubble.jsx';
 import { playClick } from './click-sound.js';
 import { globeState } from './globe-scene.js';
 import { episodes, happinessConcepts } from './data.js';
-import DesignSystem from './components/DesignSystem.jsx';
+
+// Lazy-loaded pages (not needed at first render)
+const AboutOverlay = lazy(() => import('./components/AboutOverlay.jsx'));
+const BlogPage = lazy(() => import('./components/BlogPage.jsx'));
+const Bacheca = lazy(() => import('./components/Bacheca.jsx'));
+const DesignSystem = lazy(() => import('./components/DesignSystem.jsx'));
 
 function LocalClock({ scrollPct = 0 }) {
   const [time, setTime] = useState('');
@@ -91,7 +91,7 @@ function AppRouter() {
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
-  if (isDesignSystem) return <DesignSystem />;
+  if (isDesignSystem) return <Suspense fallback={null}><DesignSystem /></Suspense>;
   return <App />;
 }
 export { AppRouter as default };
@@ -413,12 +413,12 @@ function App() {
           logoSpinDuration={navConfig.logoSpinDuration}
           onItemClick={(id) => {
             if (id === 'home') {
-              if (aboutOpen) closeAbout();
+              if (bachecaOpen) closeBacheca();
+              else if (aboutOpen) closeAbout();
               else if (blogOpen) closeBlog();
-              setBachecaOpen(false);
               return;
             }
-            if (id === 'bacheca') { openBacheca(); return; }
+            if (id === 'bacheca') { if (!bachecaOpen) openBacheca(); return; }
             if (id === 'about') { if (bachecaOpen) closeBacheca(); openAbout(); return; }
             if (id === 'blog') { if (bachecaOpen) closeBacheca(); openBlog(); return; }
           }}
@@ -606,20 +606,26 @@ function App() {
       </div>
 
       {/* ---- Bacheca (slides in from right) ---- */}
-      <Bacheca visible={bachecaOpen} onBack={closeBacheca} />
+      <Suspense fallback={null}>
+        <Bacheca visible={bachecaOpen} onBack={closeBacheca} />
+      </Suspense>
 
       {/* About overlay — GSAP page transition */}
-      <AboutOverlay ref={aboutRef} visible={aboutOpen} onClose={closeAbout} onBacheca={openBacheca} onBlog={() => { closeAbout(); setTimeout(openBlog, 1200); }} />
+      <Suspense fallback={null}>
+        <AboutOverlay ref={aboutRef} visible={aboutOpen} onClose={closeAbout} onBacheca={openBacheca} onBlog={() => { closeAbout(); setTimeout(openBlog, 1200); }} />
+      </Suspense>
 
       {/* Blog page — Geografia della Felicità */}
-      <BlogPage
-        ref={blogRef}
-        visible={blogOpen}
-        onClose={closeBlog}
-        onBacheca={openBacheca}
-        onAbout={() => { closeBlog(); setTimeout(openAbout, 1200); }}
-        navConfig={navConfig}
-      />
+      <Suspense fallback={null}>
+        <BlogPage
+          ref={blogRef}
+          visible={blogOpen}
+          onClose={closeBlog}
+          onBacheca={openBacheca}
+          onAbout={() => { closeBlog(); setTimeout(openAbout, 1200); }}
+          navConfig={navConfig}
+        />
+      </Suspense>
 
       {/* SVG page transition overlay */}
       <svg className="page-transition-overlay" width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
