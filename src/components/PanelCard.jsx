@@ -113,10 +113,12 @@ const PanelCard = ({ data, onClose, onNav }) => {
     if (!hasImg) setTimeout(() => setShowSkeleton(false), 300);
     else setTimeout(() => setShowSkeleton(false), 3000); // safety timeout
 
-    requestAnimationFrame(() => {
+    // Double rAF ensures React has committed DOM + refs are assigned
+    requestAnimationFrame(() => requestAnimationFrame(() => {
       const el = panelRef.current;
       if (!el) return;
       const items = itemsRef.current.filter(Boolean);
+      if (items.length === 0) return; // refs not ready yet
       gsap.killTweensOf(el);
       gsap.killTweensOf(items);
       const mobile = window.innerWidth <= 768;
@@ -144,7 +146,7 @@ const PanelCard = ({ data, onClose, onNav }) => {
         gsap.fromTo(items, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: 'power4.out', stagger: 0.05, delay: mobile ? 0.25 : 0.12 });
         if (descRef.current) descRef.current.style.maxHeight = '80px';
       }
-    });
+    }));
   }, [data]);
 
   const toggleExpand = () => {
@@ -196,39 +198,17 @@ const PanelCard = ({ data, onClose, onNav }) => {
     <div className="panel" ref={panelRef} style={{ overflow: 'hidden', height: 0, opacity: 0 }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div className="panel__content">
 
-      {/* Skeleton loader — overlays content until image loads */}
-      {showSkeleton && (
-        <div className="panel__skeleton">
-          {(d.thumb || d.image) && <div className="panel__skel panel__skel--thumb" />}
-          <div className="panel__skel panel__skel--tag" />
-          <div className="panel__skel panel__skel--title" />
-          <div className="panel__skel panel__skel--title2" />
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '10px 0' }} />
-          <div className="panel__skel panel__skel--line" />
-          <div className="panel__skel panel__skel--line" />
-          <div className="panel__skel panel__skel--line-sm" />
-        </div>
-      )}
-
-      {/* Hidden preload image */}
-      {(d.thumb || d.image) && showSkeleton && (
-        <img src={d.thumb || d.image} alt="" crossOrigin="anonymous"
-          style={{ position: 'fixed', top: -9999, left: -9999, width: 1, height: 1, opacity: 0.01 }}
-          onLoad={() => setShowSkeleton(false)}
-          onError={() => setShowSkeleton(false)}
-        />
-      )}
-
-      {/* Real content — hidden while skeleton is showing */}
-      {!showSkeleton && <>
-      {/* Thumb with Ken Burns */}
+      {/* Thumb with blur→unblur on load */}
       {(d.thumb || d.image) && (
         <div className="panel__thumb" ref={(el) => { itemsRef.current[0] = el; }} style={hiddenStyle}>
           <img
-            className="panel__thumb-img panel__thumb-img--loaded"
+            className={`panel__thumb-img ${showSkeleton ? '' : 'panel__thumb-img--loaded'}`}
             ref={thumbRef}
             src={d.thumb || d.image}
             alt=""
+            loading="lazy"
+            onLoad={() => setShowSkeleton(false)}
+            onError={() => setShowSkeleton(false)}
           />
           {isEp && <span className="panel__thumb-ep">{String(d.id).padStart(2, '0')}</span>}
         </div>
@@ -297,7 +277,6 @@ const PanelCard = ({ data, onClose, onNav }) => {
           )}
         </div>
       )}
-      </>}
 
       </div>{/* end panel__content */}
 
