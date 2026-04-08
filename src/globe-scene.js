@@ -5,6 +5,10 @@ import { latLngToECEF, EARTH_RADIUS } from './tiles-globe.js';
 import { episodes, happinessConcepts } from './data.js';
 import { geographyArticles } from './geography-data.js';
 
+// Promise that resolves when all critical assets are loaded
+let resolveReady;
+export const globeReady = new Promise((r) => { resolveReady = r; });
+
 export const globeState = {
   markers: [],
   flyToMarker: null,
@@ -251,6 +255,11 @@ export function initGlobe(canvas) {
   const innerSphereMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
   scene.add(new THREE.Mesh(new THREE.SphereGeometry(EARTH_RADIUS * 0.995, 64, 64), innerSphereMat));
 
+  // Critical asset loading tracker
+  let criticalLoaded = 0;
+  const CRITICAL_TOTAL = 4; // earth, specular, clouds, countries
+  const markCritical = () => { criticalLoaded++; if (criticalLoaded >= CRITICAL_TOTAL) resolveReady(); };
+
   // Outer textured sphere — Phong for day/night lighting, depthWrite false so dots stay on top
   const sphereMat = new THREE.MeshPhongMaterial({
     color: 0xffffff, transparent: true, opacity: 1, depthWrite: false, shininess: 27,
@@ -263,6 +272,7 @@ export function initGlobe(canvas) {
     tex.anisotropy = 8;
     sphereMat.specularMap = tex;
     sphereMat.needsUpdate = true;
+    markCritical();
   });
 
   const sphereGeo = new THREE.SphereGeometry(EARTH_RADIUS * 0.997, 128, 128);
@@ -286,6 +296,7 @@ export function initGlobe(canvas) {
     tex.colorSpace = THREE.SRGBColorSpace;
     cloudMat.map = tex;
     cloudMat.needsUpdate = true;
+    markCritical();
   });
 
   // Hit sphere for raycasting
@@ -309,7 +320,8 @@ export function initGlobe(canvas) {
       ]);
       topo110 = await r1.json();
       topo50 = await r2.json();
-    } catch (e) { return; }
+      markCritical();
+    } catch (e) { markCritical(); return; }
 
     const features110 = feature(topo110, topo110.objects.countries).features;
     const features50 = feature(topo50, topo50.objects.countries).features;
@@ -624,6 +636,7 @@ export function initGlobe(canvas) {
       sphereMat.map = tex;
       sphereMat.color.set('#ffffff');
       sphereMat.needsUpdate = true;
+      markCritical();
     });
 
     // Live config update from panel — applies immediately

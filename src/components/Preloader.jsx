@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { Howl, Howler } from 'howler';
 import StickerPeel from './StickerPeel.jsx';
+import { globeReady } from '../globe-scene.js';
 
 let audioEnabled = false;
 let bgMusic = null;
@@ -34,30 +35,25 @@ const Preloader = ({ onComplete }) => {
   const set = (k, v) => setCfg((p) => ({ ...p, [k]: v }));
 
   useEffect(() => {
-    // Images: preload as Image objects so browser decodes them
-    const images = ['/earth-8k.webp', '/clouds.webp', '/logo.webp', '/specular.webp'];
-    // JSON data: fetch only
-    const jsons = [
-      'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json',
-      'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json',
-    ];
-    const total = images.length + jsons.length;
-    let loaded = 0, realProgress = 0, displayProgress = 0, animFrame = null;
+    // Wait for globe-scene to finish loading all critical assets (earth, specular, clouds, countries)
+    let realProgress = 0, displayProgress = 0, animFrame = null;
 
-    // Preload images via Image() — forces decode
-    images.forEach((url) => {
-      const img = new Image();
-      img.onload = img.onerror = () => { loaded++; realProgress = Math.round((loaded / total) * 100); };
-      img.src = url;
-    });
-    // Fetch JSON
-    jsons.forEach((url) =>
-      fetch(url).then(() => { loaded++; realProgress = Math.round((loaded / total) * 100); })
-        .catch(() => { loaded++; realProgress = Math.round((loaded / total) * 100); })
-    );
+    // Smooth fake progress that ramps toward 85%, then jumps to 100 when globe is truly ready
+    let globeDone = false;
+    const startTime = Date.now();
+    const fakeProgress = () => {
+      if (globeDone) return 100;
+      const elapsed = (Date.now() - startTime) / 1000;
+      // Fast at first (0→60% in 2s), then slows (60→85% over next 6s)
+      return Math.min(85, 60 * (1 - Math.exp(-elapsed / 1.2)) + 25 * (1 - Math.exp(-elapsed / 4)));
+    };
+
+    globeReady.then(() => { globeDone = true; realProgress = 100; });
     if (document.fonts?.ready) document.fonts.ready.then(() => {});
+    // Safety: if globe takes too long, force 100% after 12s
 
     function tick() {
+      realProgress = Math.max(realProgress, Math.round(fakeProgress()));
       if (displayProgress < realProgress) {
         displayProgress += (realProgress - displayProgress) * 0.08;
         if (realProgress - displayProgress < 1) displayProgress = realProgress;
@@ -77,7 +73,7 @@ const Preloader = ({ onComplete }) => {
       }
     }
     animFrame = requestAnimationFrame(tick);
-    const fallback = setTimeout(() => { realProgress = 100; }, 8000);
+    const fallback = setTimeout(() => { realProgress = 100; }, 12000);
     return () => { cancelAnimationFrame(animFrame); clearTimeout(fallback); };
   }, []);
 
