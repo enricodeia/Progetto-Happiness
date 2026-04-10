@@ -3,6 +3,7 @@ import { gsap } from 'gsap';
 import { containsBadWords } from '../badwords';
 import BachecaRings from './BachecaRings';
 import BachecaDots, { dotIndexToWorld, worldToScreen, COLS, ROWS, TOTAL } from './BachecaDots';
+import { FAKE_MESSAGES, FAKE_COLORS } from '../fakeMessages';
 import './Bacheca.css';
 
 const MAX_CHARS = 200;
@@ -31,6 +32,15 @@ const Bacheca = ({ visible, onBack }) => {
   // Rings exit
   const [ringsExiting, setRingsExiting] = useState(false);
   const [ringsGone, setRingsGone] = useState(false);
+
+  // Tuning (final hardcoded values)
+  const tuning = useRef({
+    bgAlpha: 0.16, drawAlpha: 0.80, occAlpha: 1.00,
+    basePt: 1.5, occSize: 3.00, targetSize: 2.00,
+    highlight: 0.40, shadow: 0.00, gradient: 0.90,
+    tipFontSize: 18, tipMaxWidth: 350, tipPadding: 17, tipBgAlpha: 0.94,
+    fakeCount: 290,
+  }).current;
 
   // Form
   const [name, setName]         = useState('');
@@ -62,20 +72,36 @@ const Bacheca = ({ visible, onBack }) => {
   const feedbackRef  = useRef(null);
   const posted       = useRef({ name: '', text: '' });
 
-  /* ── Supabase ── */
+  /* ── Supabase (REST) ──
+   * Read: via view `bacheca_public` (device_id hidden)
+   * Write: via RPC `bacheca_post` (server-side validation + rate-limit)
+   * Check: via RPC `bacheca_check_device`
+   */
   const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
   const SUPA_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  const supa = useCallback(async (path, opts = {}) => {
+  const supaGet = useCallback(async (path) => {
     if (!SUPA_URL || !SUPA_KEY) return null;
     try {
       const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
-        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json', Prefer: opts.prefer || '' },
-        ...opts,
+        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
       });
       if (!res.ok) return null;
-      const t = await res.text();
-      return t ? JSON.parse(t) : null;
+      return await res.json();
     } catch { return null; }
+  }, [SUPA_URL, SUPA_KEY]);
+  const supaRpc = useCallback(async (fn, params) => {
+    if (!SUPA_URL || !SUPA_KEY) return { error: 'no_config' };
+    try {
+      const res = await fetch(`${SUPA_URL}/rest/v1/rpc/${fn}`, {
+        method: 'POST',
+        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      const body = await res.text();
+      const data = body ? JSON.parse(body) : null;
+      if (!res.ok) return { error: data?.message || data?.hint || `http_${res.status}` };
+      return { data };
+    } catch (e) { return { error: e?.message || 'network' }; }
   }, [SUPA_URL, SUPA_KEY]);
 
   /* ═══ Load ═══ */
@@ -83,11 +109,11 @@ const Bacheca = ({ visible, onBack }) => {
     if (!visible) { setStep('loading'); setZoomPhase('idle'); setTargetDot(null); setRingsExiting(false); setRingsGone(false); return; }
     (async () => {
       try {
-        const rows = await supa('bacheca?select=dot_index,text,author,color&order=dot_index.asc');
+        const rows = await supaGet('bacheca_public?select=dot_index,text,author,color&order=created_at.asc');
         const occ = new Set();
         const msgs = new Map();
         const cols = new Map();
-        if (rows) rows.forEach(r => {
+        if (Array.isArray(rows)) rows.forEach(r => {
           occ.add(r.dot_index);
           msgs.set(r.dot_index, { text: r.text, author: r.author });
           if (r.color) cols.set(r.dot_index, r.color);
@@ -96,12 +122,12 @@ const Bacheca = ({ visible, onBack }) => {
         setDotMessages(msgs);
         setDotColors(cols);
 
-        const check = await supa(`bacheca?device_id=eq.${deviceId.current}&select=dot_index`);
-        const dbPosted = check && check.length > 0;
+        const { data: myDot } = await supaRpc('bacheca_check_device', { p_device_id: deviceId.current });
+        const dbPosted = typeof myDot === 'number';
         setHasPosted(dbPosted);
 
         if (dbPosted) {
-          setTargetDot(check[0].dot_index);
+          setTargetDot(myDot);
           setZoomPhase('free');
           setStep('explore');
         } else {
@@ -109,12 +135,13 @@ const Bacheca = ({ visible, onBack }) => {
         }
       } catch { setStep('intro'); }
     })();
-  }, [visible, supa]);
+  }, [visible, supaGet, supaRpc]);
 
   /* ═══ Animations ═══ */
   useEffect(() => {
     if (step !== 'intro' || !introRef.current) return;
-    const kids = introRef.current.children;
+    const kids = Array.from(introRef.current.children || []);
+    if (kids.length === 0) return;
     gsap.set(kids, { y: 40, opacity: 0 });
     gsap.to(kids, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', stagger: 0.15, delay: 0.15 });
   }, [step]);
@@ -177,11 +204,20 @@ const Bacheca = ({ visible, onBack }) => {
     const freeDark = darkDotsRef.current.find(i => !occupiedDots.has(i));
     const dotIdx = freeDark !== undefined ? freeDark : 0;
 
-    await supa('bacheca', {
-      method: 'POST',
-      body: JSON.stringify({ dot_index: dotIdx, text: trimText, author: trimName, device_id: deviceId.current, color: selectedColor }),
-      prefer: 'return=representation',
+    const { error } = await supaRpc('bacheca_post', {
+      p_dot_index: dotIdx,
+      p_text: trimText,
+      p_author: trimName,
+      p_color: selectedColor,
+      p_device_id: deviceId.current,
     });
+    if (error) {
+      if (error.includes('rate_limited')) setFilterError('Troppi tentativi. Riprova tra qualche minuto.');
+      else if (error.includes('already_posted')) setFilterError('Hai già lasciato il tuo messaggio sulla bacheca.');
+      else if (error.includes('invalid_')) setFilterError('Messaggio non valido. Controlla nome e testo.');
+      else setFilterError('Errore di connessione. Riprova.');
+      return;
+    }
 
     const newOcc = new Set(occupiedDots);
     newOcc.add(dotIdx);
@@ -199,7 +235,28 @@ const Bacheca = ({ visible, onBack }) => {
   const handleDarkDotsReady = useCallback((indices) => {
     darkDotsRef.current = indices;
     console.log(`[Bacheca] ${indices.length} dark drawing dots`);
-  }, []);
+    // Seed fake messages sequentially from bottom-left
+    // (indices already sorted bottom-row first, left→right in BachecaDots)
+    // Skip seeding when Supabase is configured — use real data instead
+    const supaConfigured = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+    const n = supaConfigured ? 0 : Math.min(tuning.fakeCount | 0, indices.length);
+    if (n > 0) {
+      const msgs = new Map();
+      const cols = new Map();
+      const occ = new Set();
+      for (let k = 0; k < n; k++) {
+        const dotIdx = indices[k];
+        const m = FAKE_MESSAGES[k % FAKE_MESSAGES.length];
+        const c = FAKE_COLORS[k % FAKE_COLORS.length];
+        occ.add(dotIdx);
+        msgs.set(dotIdx, { text: m.text, author: m.author });
+        cols.set(dotIdx, c);
+      }
+      setOccupiedDots(occ);
+      setDotMessages(msgs);
+      setDotColors(cols);
+    }
+  }, [tuning.fakeCount]);
   const handleDotHover = useCallback((idx, x, y) => {
     setTooltip(idx !== null && dotMessages.has(idx) ? { dotIndex: idx, x, y } : null);
   }, [dotMessages]);
@@ -224,30 +281,39 @@ const Bacheca = ({ visible, onBack }) => {
         targetDot={targetDot}
         zoomPhase={zoomPhase}
         onZoomComplete={handleZoomComplete}
-        panEnabled={step === 'explore' || step === 'result'}
+        panEnabled={step === 'explore' || step === 'result' || step === 'intro'}
         onCameraChange={handleCamera}
         onDarkDotsReady={handleDarkDotsReady}
         onDotHover={handleDotHover}
         onDotTap={handleDotTap}
+        tuning={tuning}
       />
 
       {/* Tooltip */}
       {tooltip && dotMessages.has(tooltip.dotIndex) && (
-        <div className="bacheca__tooltip" style={{ position: 'fixed', zIndex: 120, left: tooltip.x + 16, top: tooltip.y - 8 }}>
-          <p className="bacheca__tooltip-text">"{dotMessages.get(tooltip.dotIndex).text}"</p>
-          <span className="bacheca__tooltip-author">— {dotMessages.get(tooltip.dotIndex).author}</span>
+        <div className="bacheca__tooltip" style={{
+          position: 'fixed', zIndex: 120,
+          left: tooltip.x + 16, top: tooltip.y - 8,
+          maxWidth: tuning.tipMaxWidth,
+          padding: `${tuning.tipPadding}px ${tuning.tipPadding + 4}px`,
+          background: `rgba(255,255,255,${tuning.tipBgAlpha})`,
+        }}>
+          <p className="bacheca__tooltip-text" style={{ fontSize: tuning.tipFontSize, lineHeight: 1.45 }}>
+            "{dotMessages.get(tooltip.dotIndex).text}"
+          </p>
+          <span className="bacheca__tooltip-author" style={{ fontSize: Math.max(9, tuning.tipFontSize - 4) }}>
+            — {dotMessages.get(tooltip.dotIndex).author}
+          </span>
         </div>
       )}
 
-      {/* Counter */}
-      {(step === 'explore') && (
-        <div className="bacheca__counter" style={{ position: 'absolute', zIndex: 102 }}>
-          {occupiedDots.size.toLocaleString('it-IT')} / 100.000 messaggi
-        </div>
-      )}
+      {/* Counter (unica occorrenza) */}
+      <div className="bacheca__counter" style={{ position: 'absolute', zIndex: 102 }}>
+        {occupiedDots.size.toLocaleString('it-IT')} / 100.000 messaggi
+      </div>
 
-      {/* Back button */}
-      {(step === 'explore' || step === 'result') && (
+      {/* Back button — top right */}
+      {(step === 'explore' || step === 'result' || step === 'intro') && (
         <button className="bacheca__back" style={{ zIndex: 110 }} onClick={onBack}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
@@ -396,13 +462,6 @@ const Bacheca = ({ visible, onBack }) => {
             <h2 className="bacheca__feedback-title">Grazie, {posted.current.name}</h2>
             <p className="bacheca__feedback-sub">Posiziona il tuo messaggio sulla bacheca</p>
           </div>
-        </div>
-      )}
-
-      {/* Counter */}
-      {step === 'explore' && (
-        <div className="bacheca__counter" style={{ position: 'absolute', zIndex: 102 }}>
-          {tickets.length.toLocaleString('it-IT')} messaggi sulla bacheca
         </div>
       )}
 
