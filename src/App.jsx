@@ -395,7 +395,7 @@ function App() {
           items={[
             { id: 'bacheca', label: 'Bacheca' },
             { id: 'about', label: 'About' },
-            { id: 'blog', label: 'Blog' },
+            { id: 'blog', label: 'Progetti' },
           ]}
           activeItem={activeNav}
           pillColor={navConfig.pillColor}
@@ -432,7 +432,7 @@ function App() {
           items={[
             { label: 'Bacheca', href: '#', ariaLabel: 'Bacheca', rotation: bubbleConfig.rotation, hoverStyles: { bgColor: '#FFDD00', textColor: '#2C2118' }, id: 'bacheca' },
             { label: 'About', href: '#', ariaLabel: 'About', rotation: -bubbleConfig.rotation, hoverStyles: { bgColor: '#F6E3D5', textColor: '#2C2118' }, id: 'about' },
-            { label: 'Blog', href: '#', ariaLabel: 'Blog', rotation: bubbleConfig.rotation, hoverStyles: { bgColor: '#ef4444', textColor: '#ffffff' }, id: 'blog' },
+            { label: 'Progetti', href: '#', ariaLabel: 'Progetti', rotation: bubbleConfig.rotation, hoverStyles: { bgColor: '#ef4444', textColor: '#ffffff' }, id: 'blog' },
           ]}
           menuAriaLabel="Toggle navigation"
           menuBg={bubbleConfig.menuBg}
