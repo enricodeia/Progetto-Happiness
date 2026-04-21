@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#efe6d6"/>
+      <stop offset="1" stop-color="#e3d6bf"/>
+    </linearGradient>
+    <radialGradient id="skin" cx="0.5" cy="0.35" r="0.45">
+      <stop offset="0" stop-color="#e6c8a8"/>
+      <stop offset="1" stop-color="#c9a88a"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg)"/>
+  <g opacity="0.55">
+    <ellipse cx="120" cy="560" rx="90" ry="180" fill="#7fa88a"/>
+    <ellipse cx="680" cy="620" rx="80" ry="150" fill="#8fb59a"/>
+  </g>
+  <g>
+    <ellipse cx="400" cy="380" rx="140" ry="170" fill="url(#skin)"/>
+    <path d="M 260 320 Q 260 220 400 210 Q 540 220 540 340 Q 560 500 520 560 Q 500 500 480 440 Q 420 460 320 450 Q 280 520 270 560 Q 240 500 260 320 Z" fill="#4a3a2a"/>
+    <path d="M 280 580 L 320 760 L 320 1000 L 480 1000 L 480 760 L 520 580 Q 460 620 400 620 Q 340 620 280 580 Z" fill="#cde0f2"/>
+  </g>
+  <text x="400" y="970" font-family="Georgia" font-size="18" fill="#4a6fb8" text-anchor="middle" opacity="0.5">placeholder – replace public/carla.jpg</text>
+</svg>

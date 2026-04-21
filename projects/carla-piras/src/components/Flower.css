@@ -1,0 +1,41 @@
+.flower {
+  height: auto;
+  color: var(--blue-900);
+  opacity: 0.9;
+  display: block;
+  flex-shrink: 0;
+}
+
+.flower-field {
+  position: absolute;
+  left: 40px;
+  bottom: 108px;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  max-width: calc(100vw - 80px);
+  flex-wrap: nowrap;
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .flower-field {
+    left: 22px;
+    bottom: 168px;
+    max-width: calc(100vw - 44px);
+  }
+}
+
+.fl-stem,
+.fl-leaf,
+.fl-petal,
+.fl-center {
+  will-change: stroke-dashoffset;
+}
+
+@media (max-width: 900px) {
+  .flower {
+    width: 40px;
+  }
+}

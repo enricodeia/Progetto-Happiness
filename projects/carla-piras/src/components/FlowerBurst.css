@@ -1,0 +1,21 @@
+.flower-burst {
+  position: fixed;
+  inset: 0;
+  z-index: 19;
+  pointer-events: none;
+  color: var(--blue-900);
+}
+
+.fb-flower {
+  position: absolute;
+  height: auto;
+  display: block;
+  transform-origin: 50% 100%;
+  will-change: opacity, transform;
+}
+
+@media (max-width: 700px) {
+  .fb-flower {
+    width: calc(var(--fb-size, 48px) * 0.8);
+  }
+}
