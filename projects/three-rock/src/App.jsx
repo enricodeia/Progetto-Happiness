@@ -582,7 +582,7 @@ export default function App() {
 
   return (
     <>
-      <Leva hidden={!levaVisible} collapsed={false} oneLineLabels />
+      {levaVisible && <Leva hidden={false} collapsed={false} oneLineLabels />}
       <HeroIntro
         revealed={introRevealed}
         resetting={resetting}

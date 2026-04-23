@@ -198,7 +198,7 @@ export default function AppD() {
 
   return (
     <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', background: '#000' }}>
-      <Leva hidden={!levaVisible} collapsed={false} oneLineLabels />
+      {levaVisible && <Leva hidden={false} collapsed={false} oneLineLabels />}
 
       {/* Background video stack — full screen, behind everything. */}
       <ClientVideoBg

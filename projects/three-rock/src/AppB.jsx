@@ -452,6 +452,19 @@ export default function AppB() {
   const [introRevealed, setIntroRevealed] = useState(false)
   const [resetting, setResetting] = useState(false)
 
+  // Defer Canvas creation to an idle frame so initial TBT/LCP aren't blocked
+  // by three.js setup, shader compilation, and HDR parsing. The DOM background
+  // renders immediately; the Canvas layer fades in ~300 ms later.
+  const [canvasMounted, setCanvasMounted] = useState(false)
+  useEffect(() => {
+    const ric = window.requestIdleCallback || ((fn) => setTimeout(fn, 300))
+    const handle = ric(() => setCanvasMounted(true), { timeout: 600 })
+    return () => {
+      const cancel = window.cancelIdleCallback || clearTimeout
+      cancel(handle)
+    }
+  }, [])
+
   // Pill list hover → feeds ClientPreview + ClientShaderBg + CustomCursor (hoverActive only,
   // no sticky morph).
   const [hoveredClientId, setHoveredClientId] = useState(null)
@@ -710,14 +723,21 @@ export default function AppB() {
 
   return (
     <>
-      <Leva hidden={!levaVisible} collapsed={false} oneLineLabels />
-      <LevaPanel
-        store={fxStore}
-        hidden={!levaVisible}
-        oneLineLabels
-        collapsed={false}
-        titleBar={{ title: 'Shader FX', drag: true }}
-      />
+      {/* Leva panels only mount after the user presses "c". Keeping them
+          unmounted avoids injecting the Leva stylesheet (which loads Google
+          Fonts Inter) and creating their DOM on initial load. */}
+      {levaVisible && (
+        <>
+          <Leva hidden={false} collapsed={false} oneLineLabels />
+          <LevaPanel
+            store={fxStore}
+            hidden={false}
+            oneLineLabels
+            collapsed={false}
+            titleBar={{ title: 'Shader FX', drag: true }}
+          />
+        </>
+      )}
       <HeroIntro
         revealed={introRevealed}
         resetting={resetting}
@@ -950,14 +970,16 @@ export default function AppB() {
         />
       )}
 
+      {canvasMounted && (
       <Canvas
         shadows
-        dpr={[1, 2]}
+        dpr={[1, 1.75]}
         camera={{ position: [0, 0.4, 4.3], fov: 35 }}
         style={{ position: 'fixed', inset: 0, zIndex: 5 }}
         gl={{
           antialias: true,
           alpha: true,
+          powerPreference: 'high-performance',
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: cam.exposure,
           outputColorSpace: THREE.SRGBColorSpace,
@@ -1096,12 +1118,13 @@ export default function AppB() {
           autoRotateSpeed={shape.autoRotateSpeed}
           stateRef={cameraStateRef}
         />
-        <EffectComposer multisampling={4}>
+        <EffectComposer multisampling={0}>
           {fx.caOn && <ChromaticAberration offset={[fx.caOffsetX, fx.caOffsetY]} />}
           {fx.vignOn && <Vignette offset={fx.vignOffset} darkness={fx.vignDark} eskil={false} />}
           <ToneMapping blendFunction={BlendFunction.NORMAL} />
         </EffectComposer>
       </Canvas>
+      )}
 
       {/* Pill list — compact, wrapped in 2 rows, centered at bottom */}
       <ClientPillList
