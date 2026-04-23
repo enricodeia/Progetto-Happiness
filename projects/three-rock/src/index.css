@@ -1,0 +1,91 @@
+@font-face {
+  font-family: 'PP Eiko';
+  src: url('/fonts/PPEiko-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Basis Grotesque Pro';
+  src: url('/fonts/BasisGrotesqueArabicPro-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #root { width: 100%; height: 100%; overflow: hidden; background: #000; }
+body { font-family: 'Basis Grotesque Pro', -apple-system, BlinkMacSystemFont, sans-serif; color: #fff; }
+canvas { display: block; touch-action: none; }
+
+.nav {
+  position: fixed;
+  top: 28px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.nav__logo {
+  color: #f5f6f8;
+  width: 88px;
+  height: auto;
+  opacity: 0.92;
+  pointer-events: auto;
+}
+
+.hero {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 12;
+  pointer-events: none;
+  padding: 0 24px;
+}
+
+.hero__title {
+  font-family: 'PP Eiko', serif;
+  font-weight: 100;
+  font-style: normal;
+  font-size: clamp(48px, 8vw, 128px);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  color: #ecedf0;
+  text-align: center;
+  text-wrap: balance;
+  mix-blend-mode: difference;
+  opacity: 0.95;
+}
+
+.hero__title em {
+  font-style: italic;
+}
+
+.hud {
+  position: fixed;
+  left: 24px;
+  bottom: 20px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  z-index: 10;
+}
+
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
