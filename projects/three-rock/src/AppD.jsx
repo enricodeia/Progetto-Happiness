@@ -119,7 +119,7 @@ export default function AppD() {
       const tag = (e.target?.tagName || '').toLowerCase()
       if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return
       if (e.key === 'c' || e.key === 'C') setLevaVisible((v) => !v)
-      else if (e.key === '1') navigate('/')
+      else if (e.key === '1') navigate('/a')
       else if (e.key === '2') navigate('/b')
       else if (e.key === '3') navigate('/c')
       else if (e.key === '4') navigate('/d')

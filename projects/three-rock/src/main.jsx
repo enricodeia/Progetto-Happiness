@@ -11,7 +11,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<App />} />
+        {/* Default route shows Version B. Version A lives at /a. */}
+        <Route path="/" element={<AppB />} />
+        <Route path="/a" element={<App />} />
         <Route path="/b" element={<AppB />} />
         <Route path="/c" element={<AppC />} />
         <Route path="/d" element={<AppD />} />
