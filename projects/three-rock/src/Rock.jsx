@@ -177,7 +177,6 @@ function buildArmGeometry({ depth, bevelSize, bevelThickness, bevelSegments, tar
   const bb = geo.boundingBox
   geo.translate(0, 0, -(bb.max.z + bb.min.z) / 2)
   geo.computeVertexNormals()
-  geo.computeTangents()
   return geo
 }
 
