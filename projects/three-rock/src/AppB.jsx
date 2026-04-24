@@ -8,7 +8,7 @@ import CustomCursor from './CustomCursor.jsx'
 import AnimatedLines from './AnimatedLines.jsx'
 import ClientImageBg from './ClientImageBg.jsx'
 import VideoContainer from './VideoContainer.jsx'
-import TopNav from './TopNav.jsx'
+import TopNavC from './TopNavC.jsx'
 import { useNavigate } from 'react-router-dom'
 import { CLIENTS } from './logos.js'
 
@@ -299,28 +299,29 @@ export default function AppB() {
       videoCrossfadeS:   { value: 1.0, min: 0.05, max: 3, step: 0.05, label: 'video crossfade s' },
     }, { collapsed: false }),
     'B · Top Nav': folder({
-      navTopVh:         { value: 1.4, min: 0, max: 10, step: 0.05, label: 'top vh' },
-      navSidePadVw:     { value: 1.3, min: 0, max: 10, step: 0.05, label: 'side pad vw' },
-      // Left pill ("Menu" — small, tight)
+      // Matches Version C exactly — same TopNavC component (right→left CTA).
+      navTopVh:         { value: 1.2, min: 0, max: 10, step: 0.05, label: 'top vh' },
+      navSidePadVw:     { value: 1.1, min: 0, max: 10, step: 0.05, label: 'side pad vw' },
       navMenuOn:        { value: true, label: 'menu pill' },
       navMenuLabel:     { value: 'Menu', label: 'menu label' },
-      navMenuFontVw:    { value: 0.75, min: 0.4, max: 2, step: 0.01, label: 'menu font vw' },
-      navMenuPadYVw:    { value: 0.55, min: 0.1, max: 2, step: 0.02, label: 'menu pad y vw' },
-      navMenuPadXVw:    { value: 0.95, min: 0.2, max: 3, step: 0.02, label: 'menu pad x vw' },
-      // Right cluster (location + envelope button)
+      navMenuFontVw:    { value: 0.7,  min: 0.4, max: 2, step: 0.01, label: 'menu font vw' },
+      navMenuPadYVw:    { value: 0.45, min: 0.1, max: 2, step: 0.02, label: 'menu pad y vw' },
+      navMenuPadXVw:    { value: 0.85, min: 0.2, max: 3, step: 0.02, label: 'menu pad x vw' },
       navRightOn:       { value: true, label: 'right cluster' },
       navLocationLabel: { value: 'YYZ 1:58 PM', label: 'location / time' },
-      navLocationFontVw:{ value: 0.75, min: 0.4, max: 2, step: 0.01, label: 'location font vw' },
-      navLocationGapVw: { value: 0.9,  min: 0.1, max: 4, step: 0.05, label: 'gap vw (text ↔ btn)' },
-      navCtaCirclePx:   { value: 36,   min: 24, max: 80, step: 1, label: 'cta circle px' },
+      navLocationFontVw:{ value: 0.7,  min: 0.4, max: 2, step: 0.01, label: 'location font vw' },
+      navLocationGapVw: { value: 0.8,  min: 0.1, max: 4, step: 0.05, label: 'gap vw (text ↔ btn)' },
+      navCtaCirclePx:   { value: 32,   min: 20, max: 80, step: 1, label: 'cta circle px' },
       navCtaExpanded:   { value: 'Get in Touch', label: 'cta expanded label' },
-      navCtaFontVw:     { value: 0.75, min: 0.4, max: 2, step: 0.01, label: 'cta font vw' },
-      navCtaPadYVw:     { value: 0.45, min: 0.1, max: 2, step: 0.02, label: 'cta pad y vw' },
-      navCtaPadXVw:     { value: 0.9,  min: 0.2, max: 3, step: 0.02, label: 'cta pad x vw' },
+      navCtaFontVw:     { value: 0.7,  min: 0.4, max: 2, step: 0.01, label: 'cta font vw' },
+      navCtaPadXVw:     { value: 0.95, min: 0.2, max: 3, step: 0.02, label: 'cta pad x vw (horizontal)' },
+      navCtaLabelGapPx: { value: 8,    min: 0, max: 24, step: 1, label: 'cta icon↔label gap px' },
       navCtaIconPx:     { value: 14,   min: 10, max: 32, step: 1, label: 'cta icon px' },
       navBlurPx:        { value: 4,    min: 0, max: 20, step: 0.5, label: 'backdrop blur px' },
       navRevealS:       { value: 1.0,  min: 0.1, max: 3, step: 0.05, label: 'reveal s' },
       navRevealDelayS:  { value: 0.35, min: 0, max: 3, step: 0.05, label: 'reveal delay s' },
+      navHoverDurationS:{ value: 0.5,  min: 0.05, max: 2, step: 0.01, label: 'hover duration s' },
+      navCtaLabelDelay: { value: 0.12, min: 0, max: 1, step: 0.01, label: 'cta label fade delay s' },
     }, { collapsed: true }),
     'B · Top Nav — Colors': folder({
       // MENU pill (left) — idle + hover
@@ -816,8 +817,9 @@ export default function AppB() {
         letterEntryStaggerMs={preloader.letterEntryStaggerMs}
       />
 
-      {/* Top nav — "Menu" pill (left) + location / time + envelope CTA (right) — metalab.com */}
-      <TopNav
+      {/* Version C nav reused — smaller pills, CTA expands horizontally
+          right → left on hover (no vertical morph). */}
+      <TopNavC
         revealed={introRevealed}
         resetting={resetting}
         topVh={versionB.navTopVh}
@@ -840,8 +842,8 @@ export default function AppB() {
         ctaCircleSizePx={versionB.navCtaCirclePx}
         ctaExpandedLabel={versionB.navCtaExpanded}
         ctaFontVw={versionB.navCtaFontVw}
-        ctaPadYVw={versionB.navCtaPadYVw}
         ctaPadXVw={versionB.navCtaPadXVw}
+        ctaLabelGapPx={versionB.navCtaLabelGapPx}
         ctaIdleBg={versionB.navCtaIdleBg}
         ctaIdleBorder={versionB.navCtaIdleBorder}
         ctaHoverBg={versionB.navCtaHoverBg}
@@ -849,6 +851,7 @@ export default function AppB() {
         ctaIconSize={versionB.navCtaIconPx}
         ctaBlurPx={versionB.navBlurPx}
         hoverDurationS={versionB.navHoverDurationS}
+        ctaLabelFadeDelayS={versionB.navCtaLabelDelay}
         durationS={versionB.navRevealS}
         delayS={versionB.navRevealDelayS}
       />
