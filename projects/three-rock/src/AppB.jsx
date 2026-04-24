@@ -334,8 +334,7 @@ export default function AppB() {
       navCtaIdleBorder:     { value: 'rgba(255,255,255,0)',    label: 'cta · idle border' },
       navCtaHoverBg:        { value: 'rgba(255,255,255,0)',    label: 'cta · hover bg' },
       navCtaHoverBorder:    { value: 'rgba(255,255,255,0.9)',  label: 'cta · hover border' },
-      // Hover easing + duration (shared by both pills)
-      navHoverDurationS:    { value: 0.45, min: 0.05, max: 2, step: 0.01, label: 'hover duration s' },
+      navCtaIconColor:      { value: '#ffffff',                label: 'cta · icon color' },
     }, { collapsed: true }),
     'B · Bottom Gradient': folder({
       gradOn:        { value: true, label: 'enabled' },
@@ -849,6 +848,7 @@ export default function AppB() {
         ctaHoverBg={versionB.navCtaHoverBg}
         ctaHoverBorder={versionB.navCtaHoverBorder}
         ctaIconSize={versionB.navCtaIconPx}
+        ctaIconColor={versionB.navCtaIconColor}
         ctaBlurPx={versionB.navBlurPx}
         hoverDurationS={versionB.navHoverDurationS}
         ctaLabelFadeDelayS={versionB.navCtaLabelDelay}

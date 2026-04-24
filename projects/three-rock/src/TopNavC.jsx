@@ -59,6 +59,7 @@ export default function TopNavC({
   ctaHoverBg = 'transparent',
   ctaHoverBorder = 'rgba(255,255,255,0.9)',
   ctaIconSize = 14,
+  ctaIconColor = '#ffffff',
   ctaBlurPx = 4,
   // Reveal
   fromY = 20,
@@ -195,7 +196,7 @@ export default function TopNavC({
               overflow: 'hidden',
             }}
           >
-            <EnvelopeIcon size={ctaIconSize} />
+            <EnvelopeIcon size={ctaIconSize} color={ctaIconColor} />
             <span
               style={{
                 display: 'inline-block',

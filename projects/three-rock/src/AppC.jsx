@@ -394,6 +394,7 @@ export default function AppB() {
       navCtaPadXVw:     { value: 0.95, min: 0.2, max: 3, step: 0.02, label: 'cta pad x vw (horizontal)' },
       navCtaLabelGapPx: { value: 8,    min: 0, max: 24, step: 1, label: 'cta icon↔label gap px' },
       navCtaIconPx:     { value: 14,   min: 10, max: 32, step: 1, label: 'cta icon px' },
+      navCtaIconColor:  { value: '#ffffff', label: 'cta icon color' },
       navBlurPx:        { value: 4,    min: 0, max: 20, step: 0.5, label: 'backdrop blur px' },
       navRevealS:       { value: 1.0,  min: 0.1, max: 3, step: 0.05, label: 'reveal s' },
       navRevealDelayS:  { value: 0.35, min: 0, max: 3, step: 0.05, label: 'reveal delay s' },
@@ -454,10 +455,38 @@ export default function AppB() {
   const p4 = usePieceControls('Piece 4', PIECE_DEFAULTS[3])
   const rawPieces = [p1, p2, p3, p4]
   // Per-piece intro progress (0 = at offset origin, 1 = at default). Driven
-  // by the RAF tween further below; merged into each piece's config so the
-  // Piece component in Rock.jsx can interpolate position + rotation.
+  // by the RAF tween further below.
   const [pieceIntroProgress, setPieceIntroProgress] = useState([1, 1, 1, 1])
-  const pieces = rawPieces.map((p, i) => ({ ...p, introProgress: pieceIntroProgress[i] ?? 1 }))
+  // Bake the intro offset into each piece's effective position / rotation
+  // BEFORE passing pieces downstream. This matters because MaskedVideo builds
+  // its cutout from each piece's position + rotation.z — so if the 3D logo
+  // is mid-flight (introProgress < 1) but pieces still report their default
+  // values, the video leaks through the empty space. By baking the offset
+  // here, Rock + MaskedVideo both see the same animated transform and the
+  // mask tracks the logo perfectly throughout the intro.
+  const pieces = rawPieces.map((p, i) => {
+    const prog = pieceIntroProgress[i] ?? 1
+    const k = 1 - prog
+    const off    = p.introOffset    || { x: 0, y: 0, z: 0 }
+    const rotOff = p.introRotOffset || { x: 0, y: 0, z: 0 }
+    return {
+      ...p,
+      position: {
+        x: p.position.x + off.x * k,
+        y: p.position.y + off.y * k,
+        z: p.position.z + off.z * k,
+      },
+      rotation: {
+        x: p.rotation.x + rotOff.x * k,
+        y: p.rotation.y + rotOff.y * k,
+        z: p.rotation.z + rotOff.z * k,
+      },
+      // Piece component also knows how to interpolate via introProgress, but
+      // we've already baked it in, so tell it to render as-is (no extra
+      // offset). Keeps the backwards-compat path working for other callers.
+      introProgress: 1,
+    }
+  })
 
   const logoCentroid = useMemo(() => {
     const enabled = pieces.filter((p) => p.enabled)
@@ -538,6 +567,12 @@ export default function AppB() {
       })
     })
   }, [])
+
+  // Dedicated "replay intro" button in its own tiny Leva folder — must be
+  // declared AFTER replayIntro so the closure sees the correct reference.
+  useControls('C · Intro · Replay', {
+    replayLogoIntro: button(() => replayIntro()),
+  }, { collapsed: false })
 
   const preloader = useControls('✦ Preloader', {
     Overlay: folder({
@@ -830,6 +865,7 @@ export default function AppB() {
         ctaPadXVw={versionB.navCtaPadXVw}
         ctaLabelGapPx={versionB.navCtaLabelGapPx}
         ctaIconSize={versionB.navCtaIconPx}
+        ctaIconColor={versionB.navCtaIconColor}
         ctaBlurPx={versionB.navBlurPx}
         durationS={versionB.navRevealS}
         delayS={versionB.navRevealDelayS}
