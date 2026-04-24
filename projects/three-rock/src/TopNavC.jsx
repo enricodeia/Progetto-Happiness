@@ -200,8 +200,17 @@ export default function TopNavC({
             <span
               style={{
                 display: 'inline-block',
+                // At idle, clamp the label to zero width so the icon sits
+                // perfectly centred inside the circle. At hover the width
+                // relaxes to auto (content-sized) in sync with the button
+                // width expansion, and the label fades in.
+                maxWidth: ctaHover ? '200px' : '0px',
                 opacity: ctaHover ? 1 : 0,
-                transition: `opacity ${hoverDurationS * 0.7}s ${hoverEasing} ${ctaHover ? ctaLabelFadeDelayS : 0}s`,
+                overflow: 'hidden',
+                transition: [
+                  `opacity ${hoverDurationS * 0.7}s ${hoverEasing} ${ctaHover ? ctaLabelFadeDelayS : 0}s`,
+                  `max-width ${hoverDurationS}s ${hoverEasing}`,
+                ].join(', '),
                 whiteSpace: 'nowrap',
                 pointerEvents: 'none',
               }}
