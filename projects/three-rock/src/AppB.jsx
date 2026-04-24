@@ -322,6 +322,20 @@ export default function AppB() {
       navRevealS:       { value: 1.0,  min: 0.1, max: 3, step: 0.05, label: 'reveal s' },
       navRevealDelayS:  { value: 0.35, min: 0, max: 3, step: 0.05, label: 'reveal delay s' },
     }, { collapsed: true }),
+    'B · Top Nav — Colors': folder({
+      // MENU pill (left) — idle + hover
+      navMenuIdleBg:        { value: 'rgba(255,255,255,0.08)', label: 'menu · idle bg' },
+      navMenuIdleBorder:    { value: 'rgba(255,255,255,0)',    label: 'menu · idle border' },
+      navMenuHoverBg:       { value: 'rgba(255,255,255,0)',    label: 'menu · hover bg' },
+      navMenuHoverBorder:   { value: 'rgba(255,255,255,0.9)',  label: 'menu · hover border' },
+      // ENVELOPE CTA (right) — idle + hover
+      navCtaIdleBg:         { value: 'rgba(255,255,255,0.08)', label: 'cta · idle bg' },
+      navCtaIdleBorder:     { value: 'rgba(255,255,255,0)',    label: 'cta · idle border' },
+      navCtaHoverBg:        { value: 'rgba(255,255,255,0)',    label: 'cta · hover bg' },
+      navCtaHoverBorder:    { value: 'rgba(255,255,255,0.9)',  label: 'cta · hover border' },
+      // Hover easing + duration (shared by both pills)
+      navHoverDurationS:    { value: 0.45, min: 0.05, max: 2, step: 0.01, label: 'hover duration s' },
+    }, { collapsed: true }),
     'B · Bottom Gradient': folder({
       gradOn:        { value: true, label: 'enabled' },
       gradColor:     { value: '#000000', label: 'color' },
@@ -465,12 +479,16 @@ export default function AppB() {
 
   // Numeric 1 / 2 / 3 / 4 switch between the variants (stealth shortcut; the
   // control panels are removed for the director review).
+  // Leva control panels are hidden by default. Press "c" to toggle.
+  // Numeric 1 / 2 / 3 / 4 switch between the variants.
+  const [levaVisible, setLevaVisible] = useState(false)
   const navigate = useNavigate()
   useEffect(() => {
     const onKey = (e) => {
       const tag = (e.target?.tagName || '').toLowerCase()
       if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return
-      if (e.key === '1') navigate('/a')
+      if (e.key === 'c' || e.key === 'C') setLevaVisible((v) => !v)
+      else if (e.key === '1') navigate('/a')
       else if (e.key === '2') navigate('/b')
       else if (e.key === '3') navigate('/c')
       else if (e.key === '4') navigate('/d')
@@ -766,6 +784,20 @@ export default function AppB() {
         </div>
       </div>
 
+      {/* Leva panels mount only when the user presses "c". Keeps the review
+          build clean while leaving a developer escape hatch. */}
+      {levaVisible && (
+        <>
+          <Leva hidden={false} collapsed={false} oneLineLabels />
+          <LevaPanel
+            store={fxStore}
+            hidden={false}
+            oneLineLabels
+            collapsed={false}
+            titleBar={{ title: 'Shader FX', drag: true }}
+          />
+        </>
+      )}
       <HeroIntro
         revealed={introRevealed}
         resetting={resetting}
@@ -807,6 +839,10 @@ export default function AppB() {
         menuFontVw={versionB.navMenuFontVw}
         menuPadYVw={versionB.navMenuPadYVw}
         menuPadXVw={versionB.navMenuPadXVw}
+        menuIdleBg={versionB.navMenuIdleBg}
+        menuIdleBorder={versionB.navMenuIdleBorder}
+        menuHoverBg={versionB.navMenuHoverBg}
+        menuHoverBorder={versionB.navMenuHoverBorder}
         menuBlurPx={versionB.navBlurPx}
         rightOn={versionB.navRightOn}
         locationLabel={versionB.navLocationLabel}
@@ -817,8 +853,13 @@ export default function AppB() {
         ctaFontVw={versionB.navCtaFontVw}
         ctaPadYVw={versionB.navCtaPadYVw}
         ctaPadXVw={versionB.navCtaPadXVw}
+        ctaIdleBg={versionB.navCtaIdleBg}
+        ctaIdleBorder={versionB.navCtaIdleBorder}
+        ctaHoverBg={versionB.navCtaHoverBg}
+        ctaHoverBorder={versionB.navCtaHoverBorder}
         ctaIconSize={versionB.navCtaIconPx}
         ctaBlurPx={versionB.navBlurPx}
+        hoverDurationS={versionB.navHoverDurationS}
         durationS={versionB.navRevealS}
         delayS={versionB.navRevealDelayS}
       />
