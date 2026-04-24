@@ -381,49 +381,79 @@ export default function AppB() {
   const [introRevealed, setIntroRevealed] = useState(false)
   const [resetting, setResetting] = useState(false)
 
-  // --- Reel prefetch -------------------------------------------------------
-  // Start downloading the hero reel video immediately, outside the Canvas,
-  // so it arrives in the browser cache before MaskedVideo tries to play it.
-  // When the prefetch's canplay fires we flip reelPrefetchReady to true, which
-  // gates both the Canvas mount (below) and the splash overlay (further down).
-  const [reelPrefetchReady, setReelPrefetchReady] = useState(false)
-  const prefetchVideoRef = useRef(null)
+  // --- Full media preload gate ---------------------------------------------
+  // The splash stays on screen until *everything* the page will need is
+  // already in the HTTP cache: the hero reel, every pill image, every pill
+  // video. No lazy loading — by the time the user sees the page, every
+  // hover interaction is a cache hit.
+  //
+  // Timeout cap of 15s so a user on a flaky connection never sees an
+  // infinite splash.
+  const [allMediaReady, setAllMediaReady] = useState(false)
+  const mediaProgressRef = useRef({ done: 0, total: 0 })
+  const [progress, setProgress] = useState(0)
   useEffect(() => {
-    const v = document.createElement('video')
-    v.src = '/bg-video.mp4'
-    v.preload = 'auto'
-    v.muted = true
-    v.playsInline = true
-    v.crossOrigin = 'anonymous'
-    const onReady = () => setReelPrefetchReady(true)
-    v.addEventListener('canplay', onReady, { once: true })
-    v.addEventListener('loadeddata', onReady, { once: true })
-    // Fallback: even if canplay never fires (rare), unblock after 4s so the
-    // user never sees a stuck splash.
-    const fallback = setTimeout(() => setReelPrefetchReady(true), 4000)
-    prefetchVideoRef.current = v
-    try { v.load() } catch {}
+    const controllers = []
+    const totalAssets = 1 + CLIENTS.reduce((n, c) => n + (c.image ? 1 : 0) + (c.video ? 1 : 0), 0)
+    mediaProgressRef.current = { done: 0, total: totalAssets }
+    let cancelled = false
+
+    const bump = () => {
+      if (cancelled) return
+      mediaProgressRef.current.done++
+      setProgress(mediaProgressRef.current.done / mediaProgressRef.current.total)
+    }
+
+    const fetchAsBlob = (url) => {
+      const ctrl = new AbortController()
+      controllers.push(ctrl)
+      return fetch(url, { cache: 'force-cache', signal: ctrl.signal })
+        .then((r) => r.blob())
+        .catch(() => {})
+        .finally(bump)
+    }
+
+    const preloadImage = (url) =>
+      new Promise((resolve) => {
+        const img = new Image()
+        img.decoding = 'async'
+        const done = () => { bump(); resolve() }
+        img.onload = done
+        img.onerror = done
+        img.src = url
+      })
+
+    const tasks = [fetchAsBlob('/bg-video.mp4')]
+    CLIENTS.forEach((c) => {
+      if (c?.image) tasks.push(preloadImage(c.image))
+      if (c?.video) tasks.push(fetchAsBlob(c.video))
+    })
+
+    const timeout = new Promise((resolve) => setTimeout(resolve, 15000))
+    Promise.race([Promise.all(tasks), timeout]).then(() => {
+      if (!cancelled) setAllMediaReady(true)
+    })
+
     return () => {
-      clearTimeout(fallback)
-      v.removeEventListener('canplay', onReady)
-      v.removeEventListener('loadeddata', onReady)
-      try { v.src = '' } catch {}
+      cancelled = true
+      controllers.forEach((c) => c.abort())
     }
   }, [])
 
-  // Defer Canvas creation until the browser is idle AND the reel is ready.
-  // This way three.js + shaders don't pile work onto the main thread while
-  // the video is still being fetched.
+  // Canvas mounts only once every asset is cached — three.js setup piles
+  // onto the main thread AFTER the user sees a ready page, not during the
+  // splash. This is the user-preferred trade-off for a director review:
+  // wait longer, present a complete experience.
   const [canvasMounted, setCanvasMounted] = useState(false)
   useEffect(() => {
-    if (!reelPrefetchReady) return
-    const ric = window.requestIdleCallback || ((fn) => setTimeout(fn, 200))
-    const handle = ric(() => setCanvasMounted(true), { timeout: 400 })
+    if (!allMediaReady) return
+    const ric = window.requestIdleCallback || ((fn) => setTimeout(fn, 80))
+    const handle = ric(() => setCanvasMounted(true), { timeout: 200 })
     return () => {
       const cancel = window.cancelIdleCallback || clearTimeout
       cancel(handle)
     }
-  }, [reelPrefetchReady])
+  }, [allMediaReady])
 
   // Pill list hover → feeds ClientPreview + ClientShaderBg + CustomCursor (hoverActive only,
   // no sticky morph).
@@ -433,48 +463,14 @@ export default function AppB() {
   // Pill display order = array order in logos.js CLIENTS. DnD panel removed.
   const orderedClients = CLIENTS
 
-  // Aggressive parallel warm-up of pill hover assets. As soon as the reel
-  // is ready (not waiting on Canvas mount), we kick off a `fetch` for every
-  // client image AND video. The bytes land in the HTTP cache; when the user
-  // later hovers a pill, the <video> / <img> tag reads from cache with zero
-  // network latency.
-  //
-  // We use `fetch(..., { cache: 'force-cache' })` instead of a detached
-  // <video>.load() because browsers may only fetch metadata for video
-  // elements that are never attached to the DOM. `fetch` pulls the full
-  // bytes into the HTTP cache deterministically.
-  useEffect(() => {
-    if (!reelPrefetchReady) return
-    const controllers = []
-    CLIENTS.forEach((c) => {
-      if (c?.image) {
-        const img = new Image()
-        img.decoding = 'async'
-        img.src = c.image
-      }
-      if (c?.video) {
-        const ctrl = new AbortController()
-        controllers.push(ctrl)
-        // Low priority so the fetches don't starve the main page resources.
-        // `importance` is a Chromium hint; other browsers ignore it safely.
-        fetch(c.video, { cache: 'force-cache', signal: ctrl.signal, priority: 'low' })
-          .then((r) => r.blob())
-          .catch(() => {})
-      }
-    })
-    return () => { controllers.forEach((c) => c.abort()) }
-  }, [reelPrefetchReady])
-
-  // Leva control panels are hidden by default; press "c" to toggle them on/off.
-  // Numeric 1 / 2 / 3 switch between Version A (/), Version B (/b), Version C (/c).
-  const [levaVisible, setLevaVisible] = useState(false)
+  // Numeric 1 / 2 / 3 / 4 switch between the variants (stealth shortcut; the
+  // control panels are removed for the director review).
   const navigate = useNavigate()
   useEffect(() => {
     const onKey = (e) => {
       const tag = (e.target?.tagName || '').toLowerCase()
       if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return
-      if (e.key === 'c' || e.key === 'C') setLevaVisible((v) => !v)
-      else if (e.key === '1') navigate('/a')
+      if (e.key === '1') navigate('/a')
       else if (e.key === '2') navigate('/b')
       else if (e.key === '3') navigate('/c')
       else if (e.key === '4') navigate('/d')
@@ -715,9 +711,10 @@ export default function AppB() {
 
   return (
     <>
-      {/* Splash overlay — hides everything until the hero reel is loaded so
-          the page never flashes a partially-built state. Fades out over 500 ms
-          once reelPrefetchReady flips true. */}
+      {/* Splash overlay — stays on screen until every asset the page uses
+          (hero reel + all 14 pill images + all 14 pill videos) is fully in
+          the HTTP cache. No lazy loading anywhere: by the time this fades,
+          every hover is a cache hit. Fades out over 600 ms. */}
       <div
         aria-hidden
         style={{
@@ -725,42 +722,50 @@ export default function AppB() {
           inset: 0,
           background: '#000',
           zIndex: 99997,
-          opacity: reelPrefetchReady ? 0 : 1,
-          pointerEvents: reelPrefetchReady ? 'none' : 'auto',
-          transition: 'opacity 0.5s cubic-bezier(0.23, 1, 0.32, 1)',
+          opacity: allMediaReady ? 0 : 1,
+          pointerEvents: allMediaReady ? 'none' : 'auto',
+          transition: 'opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1)',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          gap: '20px',
         }}
       >
         <div
           style={{
-            width: 24,
-            height: 24,
-            borderRadius: '50%',
-            border: '1.5px solid rgba(255,255,255,0.2)',
-            borderTopColor: 'rgba(255,255,255,0.9)',
-            animation: 'spinLoader 0.9s linear infinite',
+            width: 180,
+            height: 1,
+            background: 'rgba(255,255,255,0.1)',
+            position: 'relative',
+            overflow: 'hidden',
           }}
-        />
-        <style>{`@keyframes spinLoader { to { transform: rotate(360deg); } }`}</style>
+        >
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(255,255,255,0.85)',
+              transformOrigin: 'left center',
+              transform: `scaleX(${Math.min(1, progress)})`,
+              transition: 'transform 0.25s cubic-bezier(0.23, 1, 0.32, 1)',
+            }}
+          />
+        </div>
+        <div
+          style={{
+            fontFamily: "'Basis Grotesque Pro', sans-serif",
+            fontSize: 11,
+            letterSpacing: '0.18em',
+            color: 'rgba(255,255,255,0.55)',
+            textTransform: 'uppercase',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {String(Math.round(Math.min(1, progress) * 100)).padStart(3, '0')}
+        </div>
       </div>
 
-      {/* Leva panels only mount after the user presses "c". Keeping them
-          unmounted avoids injecting the Leva stylesheet (which loads Google
-          Fonts Inter) and creating their DOM on initial load. */}
-      {levaVisible && (
-        <>
-          <Leva hidden={false} collapsed={false} oneLineLabels />
-          <LevaPanel
-            store={fxStore}
-            hidden={false}
-            oneLineLabels
-            collapsed={false}
-            titleBar={{ title: 'Shader FX', drag: true }}
-          />
-        </>
-      )}
       <HeroIntro
         revealed={introRevealed}
         resetting={resetting}

@@ -112,14 +112,13 @@ export default function AppD() {
   })
 
   // Leva visibility + keyboard routing (1/2/3/4 switch between versions).
-  const [levaVisible, setLevaVisible] = useState(false)
+  // levaVisible removed for director review — control panels are disabled.
   const navigate = useNavigate()
   useEffect(() => {
     const onKey = (e) => {
       const tag = (e.target?.tagName || '').toLowerCase()
       if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return
-      if (e.key === 'c' || e.key === 'C') setLevaVisible((v) => !v)
-      else if (e.key === '1') navigate('/a')
+      if (e.key === '1') navigate('/a')
       else if (e.key === '2') navigate('/b')
       else if (e.key === '3') navigate('/c')
       else if (e.key === '4') navigate('/d')
@@ -198,7 +197,7 @@ export default function AppD() {
 
   return (
     <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', background: '#000' }}>
-      {levaVisible && <Leva hidden={false} collapsed={false} oneLineLabels />}
+      {/* Leva control panel removed for director review. */}
 
       {/* Background video stack — full screen, behind everything. */}
       <ClientVideoBg

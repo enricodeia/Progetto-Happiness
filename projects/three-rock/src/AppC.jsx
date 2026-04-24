@@ -462,14 +462,13 @@ export default function AppB() {
 
   // Leva control panels are hidden by default; press "c" to toggle them on/off.
   // Numeric 1 / 2 / 3 switch between Version A (/), Version B (/b), Version C (/c).
-  const [levaVisible, setLevaVisible] = useState(false)
+  // levaVisible removed for director review — control panels are disabled.
   const navigate = useNavigate()
   useEffect(() => {
     const onKey = (e) => {
       const tag = (e.target?.tagName || '').toLowerCase()
       if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return
-      if (e.key === 'c' || e.key === 'C') setLevaVisible((v) => !v)
-      else if (e.key === '1') navigate('/a')
+      if (e.key === '1') navigate('/a')
       else if (e.key === '2') navigate('/b')
       else if (e.key === '3') navigate('/c')
       else if (e.key === '4') navigate('/d')
@@ -710,18 +709,7 @@ export default function AppB() {
 
   return (
     <>
-      {levaVisible && (
-        <>
-          <Leva hidden={false} collapsed={false} oneLineLabels />
-          <LevaPanel
-            store={fxStore}
-            hidden={false}
-            oneLineLabels
-            collapsed={false}
-            titleBar={{ title: 'Shader FX', drag: true }}
-          />
-        </>
-      )}
+      {/* Leva control panels removed for director review. */}
       <HeroIntro
         revealed={introRevealed}
         resetting={resetting}
