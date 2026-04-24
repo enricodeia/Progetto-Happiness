@@ -110,7 +110,7 @@ export default function VideoContainer({
         muted={muted}
         loop={loop}
         playsInline
-        preload="metadata"
+        preload="auto"
         style={{ ...videoBaseStyle, opacity: frontSlot === 0 ? 1 : 0, zIndex: frontSlot === 0 ? 2 : 1 }}
       />
       <video
@@ -119,7 +119,7 @@ export default function VideoContainer({
         muted={muted}
         loop={loop}
         playsInline
-        preload="metadata"
+        preload="auto"
         style={{ ...videoBaseStyle, opacity: frontSlot === 1 ? 1 : 0, zIndex: frontSlot === 1 ? 2 : 1 }}
       />
     </div>

@@ -176,8 +176,8 @@ export default function AppB() {
       bgFullOpacityHover: { value: 1, min: 0, max: 1, step: 0.01 },
       bgRevealInDuration: { value: 1.0, min: 0.05, max: 3, step: 0.05 },
       bgRevealOutDuration: { value: 1.0, min: 0.05, max: 3, step: 0.05 },
-      bgLoopStart: { value: 8, min: 0, max: 600, step: 0.1 },
-      bgLoopEnd: { value: 23, min: 0.5, max: 600, step: 0.1 },
+      bgLoopStart: { value: 0, min: 0, max: 600, step: 0.1 },
+      bgLoopEnd: { value: 15, min: 0.5, max: 600, step: 0.1 },
       bgPlaybackRate: { value: 1, min: 0.1, max: 4, step: 0.05 },
       playReelButton: { value: true },
     }, { collapsed: true }),
@@ -433,42 +433,37 @@ export default function AppB() {
   // Pill display order = array order in logos.js CLIENTS. DnD panel removed.
   const orderedClients = CLIENTS
 
-  // After the reel is ready and the Canvas has mounted, progressively warm
-  // the browser cache with each client image *and* its looping video, one per
-  // idle tick. First pill hover finds both already cached; initial paint
-  // paid nothing for media the user may never look at.
+  // Aggressive parallel warm-up of pill hover assets. As soon as the reel
+  // is ready (not waiting on Canvas mount), we kick off a `fetch` for every
+  // client image AND video. The bytes land in the HTTP cache; when the user
+  // later hovers a pill, the <video> / <img> tag reads from cache with zero
+  // network latency.
+  //
+  // We use `fetch(..., { cache: 'force-cache' })` instead of a detached
+  // <video>.load() because browsers may only fetch metadata for video
+  // elements that are never attached to the DOM. `fetch` pulls the full
+  // bytes into the HTTP cache deterministically.
   useEffect(() => {
-    if (!canvasMounted) return
-    const ric = window.requestIdleCallback || ((fn) => setTimeout(fn, 200))
-    const cancel = window.cancelIdleCallback || clearTimeout
-    let handle = 0
-    let i = 0
-    const warmedVideos = []
-    const step = () => {
-      if (i >= CLIENTS.length) return
-      const c = CLIENTS[i++]
+    if (!reelPrefetchReady) return
+    const controllers = []
+    CLIENTS.forEach((c) => {
       if (c?.image) {
         const img = new Image()
         img.decoding = 'async'
         img.src = c.image
       }
       if (c?.video) {
-        const v = document.createElement('video')
-        v.src = c.video
-        v.preload = 'auto'
-        v.muted = true
-        v.playsInline = true
-        try { v.load() } catch {}
-        warmedVideos.push(v)
+        const ctrl = new AbortController()
+        controllers.push(ctrl)
+        // Low priority so the fetches don't starve the main page resources.
+        // `importance` is a Chromium hint; other browsers ignore it safely.
+        fetch(c.video, { cache: 'force-cache', signal: ctrl.signal, priority: 'low' })
+          .then((r) => r.blob())
+          .catch(() => {})
       }
-      handle = ric(step, { timeout: 500 })
-    }
-    handle = ric(step, { timeout: 500 })
-    return () => {
-      cancel(handle)
-      warmedVideos.forEach((v) => { try { v.src = '' } catch {} })
-    }
-  }, [canvasMounted])
+    })
+    return () => { controllers.forEach((c) => c.abort()) }
+  }, [reelPrefetchReady])
 
   // Leva control panels are hidden by default; press "c" to toggle them on/off.
   // Numeric 1 / 2 / 3 switch between Version A (/), Version B (/b), Version C (/c).
