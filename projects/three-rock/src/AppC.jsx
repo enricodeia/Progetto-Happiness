@@ -120,13 +120,13 @@ const EASE_NAMES = Object.keys(EASE_FN)
 
 const PIECE_DEFAULTS = [
   { enabled: true, position: { x: 0,    y:  0,    z: 0 }, rotationZ: 0,
-    introOffset: { x: -4, y:  4, z: -6 }, introRotOffset: { x:  60, y: -40, z: -90 } },
+    introOffset: { x: -2, y:  4, z: -6 }, introRotOffset: { x:  60, y: -40, z: -90 } },
   { enabled: true, position: { x: 0,    y: -1.43, z: 0 }, rotationZ: 90,
-    introOffset: { x: -4, y: -4, z: -6 }, introRotOffset: { x: -60, y: -40, z:  90 } },
+    introOffset: { x: -2, y: -4, z: -6 }, introRotOffset: { x: -60, y: -40, z:  90 } },
   { enabled: true, position: { x: 1.44, y: -1.43, z: 0 }, rotationZ: 180,
-    introOffset: { x:  4, y: -4, z: -6 }, introRotOffset: { x: -60, y:  40, z: -90 } },
+    introOffset: { x:  2, y: -4, z: -6 }, introRotOffset: { x: -60, y:  40, z: -90 } },
   { enabled: true, position: { x: 1.44, y:  0,    z: 0 }, rotationZ: 270,
-    introOffset: { x:  4, y:  4, z: -6 }, introRotOffset: { x:  60, y:  40, z:  90 } },
+    introOffset: { x:  2, y:  4, z: -6 }, introRotOffset: { x:  60, y:  40, z:  90 } },
 ]
 
 function usePieceControls(label, defaults) {
@@ -403,9 +403,9 @@ export default function AppB() {
     }, { collapsed: true }),
     'C · Logo Intro': folder({
       logoIntroOn:        { value: true, label: 'enabled' },
-      logoIntroDurationS: { value: 1.2,  min: 0.1, max: 4, step: 0.05, label: 'duration s' },
+      logoIntroDurationS: { value: 1.7,  min: 0.1, max: 4, step: 0.05, label: 'duration s' },
       logoIntroDelayS:    { value: 0.25, min: 0, max: 3, step: 0.05, label: 'start delay s' },
-      logoIntroStaggerS:  { value: 0.08, min: 0, max: 0.6, step: 0.01, label: 'stagger per piece s' },
+      logoIntroStaggerS:  { value: 0.07, min: 0, max: 0.6, step: 0.01, label: 'stagger per piece s' },
       logoIntroEase: {
         value: 'circ.out',
         options: ['circ.out', 'expo.out', 'power4.out', 'power3.out', 'power2.out', 'back.out', 'sine.out'],

@@ -39,9 +39,12 @@ export default function HeroIntro({
   letterEntryDuration = 0.6,
   letterEntryStaggerMs = 80,
 }) {
+  // Preloader logo is LOCKED in place — no more slide-up into the nav on
+  // reveal. Only its letters disperse+fade in a stagger, and the container
+  // opacity fades to 0 once every letter has dispersed.
   const logoTransition = resetting
     ? 'none'
-    : `top ${logoDuration}s ${logoEasing}, transform ${logoDuration}s ${logoEasing}, width ${logoDuration}s ${logoEasing}`
+    : `opacity ${logoDuration}s ${logoEasing}`
   const overlayTransitionCss = resetting ? 'none' : `opacity ${overlayDuration}s ${overlayEasing}`
 
   // Letter phase machine:
@@ -129,20 +132,22 @@ export default function HeroIntro({
           transition: overlayTransitionCss,
         }}
       />
-      {/* Metalab mark — starts centered + small, travels to nav slot on reveal */}
+      {/* Metalab mark — fixed centred throughout the intro. Only the letter
+          stagger + final container fade communicate the "un-reveal". The
+          logoEndPx prop is kept for backwards-compat but no longer used. */}
       <div
         style={{
           position: 'fixed',
           left: '50%',
-          top: revealed ? '28px' : '50%',
-          transform: revealed ? 'translate(-50%, 0)' : 'translate(-50%, -50%)',
-          width: revealed ? `${logoEndPx}px` : `${logoStartVw}vw`,
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: `${logoStartVw}vw`,
           color: '#ffffff',
-          opacity: 1,
+          opacity: (revealed && dispersed) ? 0 : 1,
           zIndex: 21,
           pointerEvents: 'none',
           transition: logoTransition,
-          willChange: 'top, transform, width',
+          willChange: 'opacity',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',

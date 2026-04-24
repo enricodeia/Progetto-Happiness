@@ -164,7 +164,13 @@ export default function TopNavC({
               display: 'inline-flex',
               flexDirection: 'row-reverse',
               alignItems: 'center',
-              justifyContent: 'flex-start',
+              // Center the content inside the pill. Combined with the label's
+              // max-width clamp (0 → 200px) and the symmetric padding, this
+              // puts the envelope icon dead-center in the 32px circle at idle
+              // while still producing the "grow from right" feel at hover
+              // (the button's right edge is anchored by the fixed-position
+              // container, so width expansion pushes the left edge leftwards).
+              justifyContent: 'center',
               gap: ctaHover ? `${ctaLabelGapPx}px` : '0px',
               height: `${ctaCircleSizePx}px`,
               width: ctaHover ? 'auto' : `${ctaCircleSizePx}px`,
