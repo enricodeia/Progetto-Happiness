@@ -39,12 +39,12 @@ export default function HeroIntro({
   letterEntryDuration = 0.6,
   letterEntryStaggerMs = 80,
 }) {
-  // Preloader logo is LOCKED in place — no more slide-up into the nav on
-  // reveal. Only its letters disperse+fade in a stagger, and the container
-  // opacity fades to 0 once every letter has dispersed.
+  // Logo transitions from centered + large (preloader) to top + small (nav
+  // slot) on reveal. One instance, one continuous slide — no separate nav
+  // logo, no duplicate fade-in.
   const logoTransition = resetting
     ? 'none'
-    : `opacity ${logoDuration}s ${logoEasing}`
+    : `top ${logoDuration}s ${logoEasing}, transform ${logoDuration}s ${logoEasing}, width ${logoDuration}s ${logoEasing}`
   const overlayTransitionCss = resetting ? 'none' : `opacity ${overlayDuration}s ${overlayEasing}`
 
   // Letter phase machine:
@@ -132,64 +132,24 @@ export default function HeroIntro({
           transition: overlayTransitionCss,
         }}
       />
-      {/* Persistent nav logo — a second, smaller Metalab mark pinned to the
-          top-centre of the viewport. Fades in once the preloader has finished
-          (revealed && dispersed) and stays there for the rest of the session.
-          Size driven by logoEndPx (defaults to 88). */}
-      <div
-        aria-hidden
-        style={{
-          position: 'fixed',
-          left: '50%',
-          top: '28px',
-          transform: 'translateX(-50%)',
-          width: `${logoEndPx}px`,
-          color: '#ffffff',
-          opacity: (revealed && dispersed) ? 1 : 0,
-          zIndex: 20,
-          pointerEvents: 'none',
-          transition: resetting ? 'none' : `opacity 0.6s ${logoEasing} ${(revealed && dispersed) ? 0.2 : 0}s`,
-          willChange: 'opacity',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <svg
-          viewBox="0 0 80 18"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          style={{ width: '100%', height: 'auto', display: 'block', overflow: 'visible' }}
-        >
-          <defs>
-            <clipPath id="nav_metalab_clip">
-              <rect width="80" height="17" fill="white" transform="translate(0 0.5)" />
-            </clipPath>
-          </defs>
-          <g clipPath="url(#nav_metalab_clip)">
-            {LETTER_PATHS.map((d, i) => (
-              <path key={i} d={d} fill={fill} />
-            ))}
-          </g>
-        </svg>
-      </div>
-
-      {/* Metalab mark — fixed centred throughout the intro. Only the letter
-          stagger + final container fade communicate the "un-reveal". The
-          logoEndPx prop is kept for backwards-compat but no longer used. */}
+      {/* Metalab mark — starts centered + big during the preloader, then on
+          reveal slides up to the nav slot (top: 28px) at logoEndPx width.
+          Single instance, single slide. This is the "usual" animation from
+          before the experimental lock-in-place attempt — restores it for
+          Versions B/C/D so there's no separate nav logo fading in. */}
       <div
         style={{
           position: 'fixed',
           left: '50%',
-          top: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: `${logoStartVw}vw`,
+          top: revealed ? '28px' : '50%',
+          transform: revealed ? 'translate(-50%, 0)' : 'translate(-50%, -50%)',
+          width: revealed ? `${logoEndPx}px` : `${logoStartVw}vw`,
           color: '#ffffff',
-          opacity: (revealed && dispersed) ? 0 : 1,
+          opacity: 1,
           zIndex: 21,
           pointerEvents: 'none',
           transition: logoTransition,
-          willChange: 'opacity',
+          willChange: 'top, transform, width',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
