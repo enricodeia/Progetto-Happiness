@@ -784,20 +784,20 @@ export default function AppB() {
         </div>
       </div>
 
-      {/* Leva panels mount only when the user presses "c". Keeps the review
-          build clean while leaving a developer escape hatch. */}
-      {levaVisible && (
-        <>
-          <Leva hidden={false} collapsed={false} oneLineLabels />
-          <LevaPanel
-            store={fxStore}
-            hidden={false}
-            oneLineLabels
-            collapsed={false}
-            titleBar={{ title: 'Shader FX', drag: true }}
-          />
-        </>
-      )}
+      {/* Leva auto-mounts a root panel in document.body as soon as any
+          useControls() is called. We have to render <Leva /> ourselves so we
+          own that mount point and can keep it hidden; otherwise Leva injects
+          its own unhidden panel and the "c" toggle becomes a no-op.
+          hidden={!levaVisible} applies display:none until the user presses
+          "c", so the review experience is clean by default. */}
+      <Leva hidden={!levaVisible} collapsed={false} oneLineLabels />
+      <LevaPanel
+        store={fxStore}
+        hidden={!levaVisible}
+        oneLineLabels
+        collapsed={false}
+        titleBar={{ title: 'Shader FX', drag: true }}
+      />
       <HeroIntro
         revealed={introRevealed}
         resetting={resetting}

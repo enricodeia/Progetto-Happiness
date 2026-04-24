@@ -710,18 +710,14 @@ export default function AppB() {
 
   return (
     <>
-      {levaVisible && (
-        <>
-          <Leva hidden={false} collapsed={false} oneLineLabels />
-          <LevaPanel
-            store={fxStore}
-            hidden={false}
-            oneLineLabels
-            collapsed={false}
-            titleBar={{ title: 'Shader FX', drag: true }}
-          />
-        </>
-      )}
+      <Leva hidden={!levaVisible} collapsed={false} oneLineLabels />
+      <LevaPanel
+        store={fxStore}
+        hidden={!levaVisible}
+        oneLineLabels
+        collapsed={false}
+        titleBar={{ title: 'Shader FX', drag: true }}
+      />
       <HeroIntro
         revealed={introRevealed}
         resetting={resetting}
