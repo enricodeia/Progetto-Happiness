@@ -181,14 +181,25 @@ function buildArmGeometry({ depth, bevelSize, bevelThickness, bevelSegments, tar
 }
 
 function Piece({ geometry, material, config, onTrail, onHoverChange, onPieceClick }) {
-  const baseRot = useMemo(
-    () => [
-      THREE.MathUtils.degToRad(config.rotation.x),
-      THREE.MathUtils.degToRad(config.rotation.y),
-      THREE.MathUtils.degToRad(config.rotation.z),
-    ],
-    [config.rotation.x, config.rotation.y, config.rotation.z],
-  )
+  // Intro tween: `introProgress` goes 0 → 1. At 0 the piece sits at
+  // (default + introOffset / + introRotOffset); at 1 it's at the default
+  // position + rotation. Missing fields default to identity so callers that
+  // don't wire intros (Version A, etc.) behave as before.
+  const progress = typeof config.introProgress === 'number' ? config.introProgress : 1
+  const k = 1 - progress
+  const off    = config.introOffset    || { x: 0, y: 0, z: 0 }
+  const rotOff = config.introRotOffset || { x: 0, y: 0, z: 0 }
+
+  const animatedPos = [
+    config.position.x + off.x * k,
+    config.position.y + off.y * k,
+    config.position.z + off.z * k,
+  ]
+  const baseRot = [
+    THREE.MathUtils.degToRad(config.rotation.x + rotOff.x * k),
+    THREE.MathUtils.degToRad(config.rotation.y + rotOff.y * k),
+    THREE.MathUtils.degToRad(config.rotation.z + rotOff.z * k),
+  ]
 
   if (!config.enabled) return null
 
@@ -196,7 +207,7 @@ function Piece({ geometry, material, config, onTrail, onHoverChange, onPieceClic
     <mesh
       geometry={geometry}
       material={material}
-      position={[config.position.x, config.position.y, config.position.z]}
+      position={animatedPos}
       rotation={baseRot}
       scale={config.scale}
       castShadow

@@ -48,10 +48,14 @@ const EASE_FN = {
 const EASE_NAMES = Object.keys(EASE_FN)
 
 const PIECE_DEFAULTS = [
-  { enabled: true, position: { x: 0,    y:  0,    z: 0 }, rotationZ: 0   },
-  { enabled: true, position: { x: 0,    y: -1.43, z: 0 }, rotationZ: 90  },
-  { enabled: true, position: { x: 1.44, y: -1.43, z: 0 }, rotationZ: 180 },
-  { enabled: true, position: { x: 1.44, y:  0,    z: 0 }, rotationZ: 270 },
+  { enabled: true, position: { x: 0,    y:  0,    z: 0 }, rotationZ: 0,
+    introOffset: { x: -4, y:  4, z: -6 }, introRotOffset: { x:  60, y: -40, z: -90 } },
+  { enabled: true, position: { x: 0,    y: -1.43, z: 0 }, rotationZ: 90,
+    introOffset: { x: -4, y: -4, z: -6 }, introRotOffset: { x: -60, y: -40, z:  90 } },
+  { enabled: true, position: { x: 1.44, y: -1.43, z: 0 }, rotationZ: 180,
+    introOffset: { x:  4, y: -4, z: -6 }, introRotOffset: { x: -60, y:  40, z: -90 } },
+  { enabled: true, position: { x: 1.44, y:  0,    z: 0 }, rotationZ: 270,
+    introOffset: { x:  4, y:  4, z: -6 }, introRotOffset: { x:  60, y:  40, z:  90 } },
 ]
 
 function usePieceControls(label, defaults) {
@@ -60,6 +64,11 @@ function usePieceControls(label, defaults) {
     position: { value: defaults.position, step: 0.01 },
     rotation: { value: { x: 0, y: 0, z: defaults.rotationZ }, step: 1, label: 'rotation °' },
     scale: { value: 1, min: 0.1, max: 3, step: 0.01 },
+    // Intro: where the piece flies IN from. `introOffset` is the xyz delta
+    // added to the default position at t=0, `introRotOffset` is the rotation
+    // delta in degrees at t=0. Both are lerped to 0 over the intro tween.
+    introOffset:    { value: defaults.introOffset    || { x: 0, y: 0, z: 0 }, step: 0.05, label: 'intro Δ xyz' },
+    introRotOffset: { value: defaults.introRotOffset || { x: 0, y: 0, z: 0 }, step: 5,    label: 'intro Δ rot°' },
   }, { collapsed: true })
 }
 
@@ -336,6 +345,17 @@ export default function AppB() {
       // Hover easing + duration (shared by both pills)
       navHoverDurationS:    { value: 0.45, min: 0.05, max: 2, step: 0.01, label: 'hover duration s' },
     }, { collapsed: true }),
+    'B · Logo Intro': folder({
+      logoIntroOn:        { value: true, label: 'enabled' },
+      logoIntroDurationS: { value: 1.2,  min: 0.1, max: 4, step: 0.05, label: 'duration s' },
+      logoIntroDelayS:    { value: 0.25, min: 0, max: 3, step: 0.05, label: 'start delay s' },
+      logoIntroStaggerS:  { value: 0.08, min: 0, max: 0.6, step: 0.01, label: 'stagger per piece s' },
+      logoIntroEase: {
+        value: 'circ.out',
+        options: ['circ.out', 'expo.out', 'power4.out', 'power3.out', 'power2.out', 'back.out', 'sine.out'],
+        label: 'ease',
+      },
+    }, { collapsed: false }),
     'B · Bottom Gradient': folder({
       gradOn:        { value: true, label: 'enabled' },
       gradColor:     { value: '#000000', label: 'color' },
@@ -377,7 +397,12 @@ export default function AppB() {
   const p2 = usePieceControls('Piece 2', PIECE_DEFAULTS[1])
   const p3 = usePieceControls('Piece 3', PIECE_DEFAULTS[2])
   const p4 = usePieceControls('Piece 4', PIECE_DEFAULTS[3])
-  const pieces = [p1, p2, p3, p4]
+  const rawPieces = [p1, p2, p3, p4]
+  // Per-piece intro progress (0 = at offset origin, 1 = at default). Driven
+  // by the RAF tween effect further below; starts at 1 so pieces render at
+  // default until the intro tween kicks in.
+  const [pieceIntroProgress, setPieceIntroProgress] = useState([1, 1, 1, 1])
+  const pieces = rawPieces.map((p, i) => ({ ...p, introProgress: pieceIntroProgress[i] ?? 1 }))
 
   const logoCentroid = useMemo(() => {
     const enabled = pieces.filter((p) => p.enabled)
@@ -630,6 +655,45 @@ export default function AppB() {
     const timeout = window.setTimeout(run, preloader.bevelDelay * 1000)
     return () => { window.clearTimeout(timeout); cancelAnimationFrame(raf) }
   }, [introRevealed, preloader.bevelDelay, preloader.bevelDuration, preloader.bevelEase])
+
+  // Per-piece intro progress (0 = flown-in-offset, 1 = at default). One RAF
+  // loop stamps all four progress values; each piece has its own staggered
+  // start time. Uses EASE_FN (same lookup used for bevel/logo3d animations)
+  // so the ease dropdown in Leva picks whichever curve the designer wants.
+  useEffect(() => {
+    if (!introRevealed) {
+      // Pre-intro: snap pieces to their offset origin so they're in the
+      // "flown-in" position, not popping from default.
+      setPieceIntroProgress([0, 0, 0, 0])
+      return
+    }
+    if (!versionB.logoIntroOn) {
+      setPieceIntroProgress([1, 1, 1, 1])
+      return
+    }
+    let raf = 0
+    const durationMs = versionB.logoIntroDurationS * 1000
+    const staggerMs  = versionB.logoIntroStaggerS  * 1000
+    const baseDelayMs = versionB.logoIntroDelayS  * 1000
+    const easeFn = EASE_FN[versionB.logoIntroEase] || EASE_FN['circ.out']
+    const startMs = performance.now()
+    const tick = () => {
+      const now = performance.now() - startMs
+      const next = [0, 0, 0, 0]
+      let stillRunning = false
+      for (let i = 0; i < 4; i++) {
+        const pieceStart = baseDelayMs + i * staggerMs
+        const local = now - pieceStart
+        if (local <= 0) { next[i] = 0; stillRunning = true }
+        else if (local >= durationMs) { next[i] = 1 }
+        else { next[i] = easeFn(local / durationMs); stillRunning = true }
+      }
+      setPieceIntroProgress(next)
+      if (stillRunning) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [introRevealed, versionB.logoIntroOn, versionB.logoIntroDurationS, versionB.logoIntroDelayS, versionB.logoIntroStaggerS, versionB.logoIntroEase])
 
   const scene = useControls({
     Lighting: folder({
