@@ -1,18 +1,5 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls, Environment, Sparkles } from '@react-three/drei'
-import {
-  EffectComposer, Bloom, Vignette, ToneMapping,
-  ChromaticAberration, Noise, DepthOfField,
-  BrightnessContrast, HueSaturation, Scanline, Pixelation,
-  DotScreen, ColorAverage, Sepia,
-} from '@react-three/postprocessing'
-import { BlendFunction } from 'postprocessing'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useControls, folder, Leva, LevaPanel, useCreateStore, button } from 'leva'
-import * as THREE from 'three'
-import Rock from './Rock.jsx'
-import MaskedVideo from './MaskedVideo.jsx'
-import PlayReel from './PlayReel.jsx'
 import HeroIntro from './HeroIntro.jsx'
 import SideMarquees from './SideMarquees.jsx'
 import ClientPillList from './ClientPillList.jsx'
@@ -20,73 +7,15 @@ import ClientPreview from './ClientPreview.jsx'
 import CustomCursor from './CustomCursor.jsx'
 import AnimatedLines from './AnimatedLines.jsx'
 import ClientImageBg from './ClientImageBg.jsx'
-import ClientShaderBg from './ClientShaderBg.jsx'
-import ClientShaderBgFX from './ClientShaderBgFX.jsx'
 import VideoContainer from './VideoContainer.jsx'
 import TopNav from './TopNav.jsx'
 import { useNavigate } from 'react-router-dom'
 import { CLIENTS } from './logos.js'
 
-function ParallaxGroup({ enabled, strength, damping, cursorRef, children }) {
-  const groupRef = useRef()
-  const lerpedRef = useRef({ x: 0, y: 0 })
-  useFrame(() => {
-    if (!groupRef.current) return
-    const tx = enabled ? cursorRef.current.x : 0
-    const ty = enabled ? cursorRef.current.y : 0
-    lerpedRef.current.x += (tx - lerpedRef.current.x) * damping
-    lerpedRef.current.y += (ty - lerpedRef.current.y) * damping
-    groupRef.current.rotation.y = lerpedRef.current.x * strength * 0.18
-    groupRef.current.rotation.x = -lerpedRef.current.y * strength * 0.18
-    groupRef.current.position.x = lerpedRef.current.x * strength * 0.12
-    groupRef.current.position.y = lerpedRef.current.y * strength * 0.12
-  })
-  return <group ref={groupRef}>{children}</group>
-}
-
-function CameraRig({ target, azimuth, polar, distance, fov, autoRotate, autoRotateSpeed, stateRef }) {
-  const { camera } = useThree()
-  const controlsRef = useRef()
-  useEffect(() => {
-    if (!controlsRef.current) return
-    const sph = new THREE.Spherical(
-      distance,
-      THREE.MathUtils.degToRad(polar),
-      THREE.MathUtils.degToRad(azimuth),
-    )
-    const offset = new THREE.Vector3().setFromSpherical(sph)
-    camera.position.set(target.x + offset.x, target.y + offset.y, target.z + offset.z)
-    camera.fov = fov
-    camera.updateProjectionMatrix()
-    controlsRef.current.target.set(target.x, target.y, target.z)
-    controlsRef.current.update()
-  }, [camera, target.x, target.y, target.z, azimuth, polar, distance, fov])
-  useEffect(() => {
-    stateRef.current.getState = () => {
-      const t = controlsRef.current?.target || new THREE.Vector3()
-      const offset = new THREE.Vector3().subVectors(camera.position, t)
-      const sph = new THREE.Spherical().setFromVector3(offset)
-      return {
-        azimuth: THREE.MathUtils.radToDeg(sph.theta),
-        polar: THREE.MathUtils.radToDeg(sph.phi),
-        distance: sph.radius,
-        target: { x: t.x, y: t.y, z: t.z },
-        fov: camera.fov,
-      }
-    }
-  }, [camera, stateRef])
-  return (
-    <OrbitControls
-      ref={controlsRef}
-      enablePan={false}
-      enableRotate={false}
-      enableZoom={false}
-      enableDamping={false}
-      autoRotate={autoRotate}
-      autoRotateSpeed={autoRotateSpeed}
-    />
-  )
-}
+// Three.js + R3F + post-processing all live inside AppBCanvas, which is lazy-
+// imported below. That keeps the ~1 MB of 3D code out of the initial bundle so
+// the first paint / LCP only pays for DOM + typography + pill list.
+const AppBCanvas = lazy(() => import('./AppBCanvas.jsx'))
 
 const ENV_PRESETS = [
   'sunset', 'dawn', 'night', 'warehouse', 'forest',
@@ -472,6 +401,30 @@ export default function AppB() {
 
   // Pill display order = array order in logos.js CLIENTS. DnD panel removed.
   const orderedClients = CLIENTS
+
+  // After the Canvas has mounted, progressively warm the browser image cache
+  // by requesting each client image during idle frames (one per idle tick).
+  // This means the first pill hover no longer has to wait on a network fetch,
+  // while initial paint pays nothing for images the user may never see.
+  useEffect(() => {
+    if (!canvasMounted) return
+    const ric = window.requestIdleCallback || ((fn) => setTimeout(fn, 200))
+    const cancel = window.cancelIdleCallback || clearTimeout
+    let handle = 0
+    let i = 0
+    const step = () => {
+      if (i >= CLIENTS.length) return
+      const c = CLIENTS[i++]
+      if (c?.image) {
+        const img = new Image()
+        img.decoding = 'async'
+        img.src = c.image
+      }
+      handle = ric(step, { timeout: 500 })
+    }
+    handle = ric(step, { timeout: 500 })
+    return () => cancel(handle)
+  }, [canvasMounted])
 
   // Leva control panels are hidden by default; press "c" to toggle them on/off.
   // Numeric 1 / 2 / 3 switch between Version A (/), Version B (/b), Version C (/c).
@@ -971,159 +924,18 @@ export default function AppB() {
       )}
 
       {canvasMounted && (
-      <Canvas
-        shadows
-        dpr={[1, 1.75]}
-        camera={{ position: [0, 0.4, 4.3], fov: 35 }}
-        style={{ position: 'fixed', inset: 0, zIndex: 5 }}
-        gl={{
-          antialias: true,
-          alpha: true,
-          powerPreference: 'high-performance',
-          toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: cam.exposure,
-          outputColorSpace: THREE.SRGBColorSpace,
-        }}
-      >
-        <ambientLight intensity={scene.ambientIntensity} />
-        <directionalLight
-          position={[scene.keyPosition.x, scene.keyPosition.y, scene.keyPosition.z]}
-          intensity={scene.keyIntensity}
-          color={scene.keyColor}
-          castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-        />
-        <directionalLight
-          position={[scene.rimPosition.x, scene.rimPosition.y, scene.rimPosition.z]}
-          intensity={scene.rimIntensity}
-          color={scene.rimColor}
-        />
-        <directionalLight
-          position={[scene.fillPosition.x, scene.fillPosition.y, scene.fillPosition.z]}
-          intensity={scene.fillIntensity}
-          color={scene.fillColor}
-        />
         <Suspense fallback={null}>
-          <ParallaxGroup
-            enabled={shape.parallaxOn}
-            strength={shape.parallaxStrength}
-            damping={shape.parallaxDamping}
-            cursorRef={cursorRef}
-          >
-            <MaskedVideo
-              src={shape.bgSrc}
-              enabled={shape.bgOn}
-              pieces={pieces}
-              centroid={logoCentroid}
-              autoCenter={shape.autoCenter}
-              logoOffset={{ x: shape.logoOffsetX, y: shape.logoOffsetY, z: shape.logoOffsetZ }}
-              targetSize={shape.targetSize}
-              videoWidth={shape.bgWidth}
-              videoHeight={shape.bgHeight}
-              videoZ={shape.bgPosZ}
-              fullZ={shape.bgFullZ}
-              maskOpacity={shape.bgMaskOpacity}
-              fullOpacityIdle={shape.bgFullOpacityIdle}
-              fullOpacityHover={shape.bgFullOpacityHover}
-              fullRevealInDuration={shape.bgRevealInDuration}
-              fullRevealOutDuration={shape.bgRevealOutDuration}
-              loopStart={shape.bgLoopStart}
-              loopEnd={shape.bgLoopEnd}
-              playbackRate={shape.bgPlaybackRate}
-              buttonHovered={buttonHovered}
-              maskHidden={!!hoveredClientId}
-              maskHideDuration={0.3}
-              onReady={() => setVideoReady(true)}
-            />
-            {/* Shader cross-fade background — lives inside the scene so the rock glass
-                transmission refracts it. Two modes: 'simple' (radial circle reveal) and
-                'fx' (bent-wave sweep + brightness strip + depth-cross flow). */}
-            {versionB.shaderOn && versionB.shaderMode === 'simple' && (
-              <ClientShaderBg
-                items={orderedClients}
-                hoveredId={hoveredClientId}
-                enabled={versionB.shaderOn}
-                planeZ={versionB.shaderPlaneZ}
-                planeWidth={versionB.shaderPlaneW}
-                planeHeight={versionB.shaderPlaneH}
-                durationS={versionB.shaderDurS}
-                easing={versionB.shaderEase}
-                softness={versionB.shaderSoftness}
-                oldScale={versionB.shaderOutScale}
-                direction={versionB.shaderDirection}
-              />
-            )}
-            {versionB.shaderOn && versionB.shaderMode === 'fx' && (
-              <ClientShaderBgFX
-                items={orderedClients}
-                hoveredId={hoveredClientId}
-                enabled={versionB.shaderOn}
-                planeZ={versionB.shaderPlaneZ}
-                planeWidth={versionB.shaderPlaneW}
-                planeHeight={versionB.shaderPlaneH}
-                durationS={versionB.shaderDurS}
-                easing={versionB.shaderEase}
-                direction={versionB.shaderDirection}
-                shape={shaderFX.shape}
-                edgeWidth={shaderFX.edgeWidth}
-                brightnessWidth={shaderFX.brightnessWidth}
-                brightnessIntensity={shaderFX.brightnessIntensity}
-                translateOffsetMultiplier={shaderFX.translateOffsetMultiplier}
-                bulgeDepthStrength={shaderFX.bulgeDepthStrength}
-                waveWidth={shaderFX.waveWidth}
-                wavePower={shaderFX.wavePower}
-                curvature={shaderFX.curvature}
-                brightnessTint={shaderFX.brightnessTint}
-                backdropDarkness={shaderFX.backdropDarkness}
-              />
-            )}
-            <Rock
-              {...shape}
-              bevelThickness={preloader.bevelStart + (shape.bevelThickness - preloader.bevelStart) * bevelLoadProgress}
-              revealOpacity={logo3dRevealProgress}
-              pieces={pieces}
-              logoOffset={{ x: shape.logoOffsetX, y: shape.logoOffsetY, z: shape.logoOffsetZ }}
-              autoCenter={shape.autoCenter}
-              onHoverChange={setLogoHovered}
-            />
-            {shape.playReelButton && (
-              <PlayReel
-                position={[
-                  shape.autoCenter ? shape.logoOffsetX : (logoCentroid.x + shape.logoOffsetX),
-                  shape.autoCenter ? shape.logoOffsetY : (logoCentroid.y + shape.logoOffsetY),
-                  0.25,
-                ]}
-                expanded={false}
-                onHoverChange={setButtonHovered}
-                buttonRef={playReelBtnRef}
-                revealed={introRevealed}
-                resetting={resetting}
-                revealDelay={preloader.playReelDelay}
-                revealDuration={preloader.playReelDuration}
-                revealEasing={EASE_CSS[preloader.playReelEase] || EASE_CSS['circ.out']}
-              />
-            )}
-          </ParallaxGroup>
-          <Environment preset={scene.envPreset} background={false} environmentIntensity={scene.envBgIntensity} />
+          <AppBCanvas
+            config={{
+              scene, cam, shape, fx, versionB, shaderFX, preloader,
+              orderedClients, pieces, logoCentroid,
+              cursorRef, cameraStateRef, playReelBtnRef,
+              hoveredClientId, buttonHovered, introRevealed, resetting,
+              logo3dRevealProgress, bevelLoadProgress,
+              setVideoReady, setLogoHovered, setButtonHovered,
+            }}
+          />
         </Suspense>
-        {scene.sparklesOn && <Sparkles count={scene.sparklesCount} size={1.4} scale={[8, 6, 8]} speed={0.18} opacity={0.4} color="#d6c8b3" />}
-        <CameraRig
-          target={{ x: cam.targetX, y: cam.targetY, z: cam.targetZ }}
-          azimuth={cam.azimuth}
-          polar={cam.polar}
-          distance={cam.distance}
-          fov={cam.fov}
-          autoRotate={shape.autoRotate}
-          autoRotateSpeed={shape.autoRotateSpeed}
-          stateRef={cameraStateRef}
-        />
-        <EffectComposer multisampling={0}>
-          {fx.caOn && <ChromaticAberration offset={[fx.caOffsetX, fx.caOffsetY]} />}
-          {fx.vignOn && <Vignette offset={fx.vignOffset} darkness={fx.vignDark} eskil={false} />}
-          <ToneMapping blendFunction={BlendFunction.NORMAL} />
-        </EffectComposer>
-      </Canvas>
       )}
 
       {/* Pill list — compact, wrapped in 2 rows, centered at bottom */}
