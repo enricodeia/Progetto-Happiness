@@ -132,6 +132,48 @@ export default function HeroIntro({
           transition: overlayTransitionCss,
         }}
       />
+      {/* Persistent nav logo — a second, smaller Metalab mark pinned to the
+          top-centre of the viewport. Fades in once the preloader has finished
+          (revealed && dispersed) and stays there for the rest of the session.
+          Size driven by logoEndPx (defaults to 88). */}
+      <div
+        aria-hidden
+        style={{
+          position: 'fixed',
+          left: '50%',
+          top: '28px',
+          transform: 'translateX(-50%)',
+          width: `${logoEndPx}px`,
+          color: '#ffffff',
+          opacity: (revealed && dispersed) ? 1 : 0,
+          zIndex: 20,
+          pointerEvents: 'none',
+          transition: resetting ? 'none' : `opacity 0.6s ${logoEasing} ${(revealed && dispersed) ? 0.2 : 0}s`,
+          willChange: 'opacity',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <svg
+          viewBox="0 0 80 18"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ width: '100%', height: 'auto', display: 'block', overflow: 'visible' }}
+        >
+          <defs>
+            <clipPath id="nav_metalab_clip">
+              <rect width="80" height="17" fill="white" transform="translate(0 0.5)" />
+            </clipPath>
+          </defs>
+          <g clipPath="url(#nav_metalab_clip)">
+            {LETTER_PATHS.map((d, i) => (
+              <path key={i} d={d} fill={fill} />
+            ))}
+          </g>
+        </svg>
+      </div>
+
       {/* Metalab mark — fixed centred throughout the intro. Only the letter
           stagger + final container fade communicate the "un-reveal". The
           logoEndPx prop is kept for backwards-compat but no longer used. */}

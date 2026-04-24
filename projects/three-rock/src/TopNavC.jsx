@@ -164,21 +164,21 @@ export default function TopNavC({
               display: 'inline-flex',
               flexDirection: 'row-reverse',
               alignItems: 'center',
-              // Center the content inside the pill. Combined with the label's
-              // max-width clamp (0 → 200px) and the symmetric padding, this
-              // puts the envelope icon dead-center in the 32px circle at idle
-              // while still producing the "grow from right" feel at hover
-              // (the button's right edge is anchored by the fixed-position
-              // container, so width expansion pushes the left edge leftwards).
-              justifyContent: 'center',
+              // Right-anchor the icon inside the pill. padding-right is a
+              // constant equal to (circle - icon) / 2 so the envelope is
+              // visually centred inside the circle at idle AND stays at
+              // exactly the same distance from the right edge when the pill
+              // expands to auto-width on hover — so it doesn't move. Only
+              // the LEFT edge of the button grows to accommodate the label.
+              justifyContent: 'flex-start',
               gap: ctaHover ? `${ctaLabelGapPx}px` : '0px',
               height: `${ctaCircleSizePx}px`,
               width: ctaHover ? 'auto' : `${ctaCircleSizePx}px`,
               minWidth: `${ctaCircleSizePx}px`,
               paddingTop: 0,
               paddingBottom: 0,
-              paddingLeft: ctaHover ? `${ctaPadXVw}vw` : '0',
-              paddingRight: ctaHover ? `${ctaPadXVw}vw` : '0',
+              paddingLeft: ctaHover ? `${ctaPadXVw}vw` : `${(ctaCircleSizePx - ctaIconSize) / 2}px`,
+              paddingRight: `${(ctaCircleSizePx - ctaIconSize) / 2}px`,
               borderRadius: 999,
               background: ctaHover ? ctaHoverBg : ctaIdleBg,
               border: `1px solid ${ctaHover ? ctaHoverBorder : ctaIdleBorder}`,
@@ -190,15 +190,19 @@ export default function TopNavC({
               letterSpacing: '-0.005em',
               whiteSpace: 'nowrap',
               cursor: 'pointer',
-              transition: [
-                `background ${hoverDurationS}s ${hoverEasing}`,
-                `border-color ${hoverDurationS}s ${hoverEasing}`,
-                `padding-left ${hoverDurationS}s ${hoverEasing}`,
-                `padding-right ${hoverDurationS}s ${hoverEasing}`,
-                `gap ${hoverDurationS}s ${hoverEasing}`,
-                `width ${hoverDurationS}s ${hoverEasing}`,
-              ].join(', '),
-              willChange: 'width, padding, background, border-color',
+              // Use hoverEasing (power4-style) going INTO hover and circ.out
+              // on the way back — a gentler settle when the pill shrinks.
+              transition: (() => {
+                const ease = ctaHover ? hoverEasing : 'cubic-bezier(0, 0.55, 0.45, 1)'
+                return [
+                  `background ${hoverDurationS}s ${ease}`,
+                  `border-color ${hoverDurationS}s ${ease}`,
+                  `padding-left ${hoverDurationS}s ${ease}`,
+                  `gap ${hoverDurationS}s ${ease}`,
+                  `width ${hoverDurationS}s ${ease}`,
+                ].join(', ')
+              })(),
+              willChange: 'width, padding-left, background, border-color',
               overflow: 'hidden',
             }}
           >
