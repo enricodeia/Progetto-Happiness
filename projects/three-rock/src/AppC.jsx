@@ -674,23 +674,29 @@ export default function AppB() {
     return () => { window.clearTimeout(timeout); cancelAnimationFrame(raf) }
   }, [introRevealed, preloader.bevelDelay, preloader.bevelDuration, preloader.bevelEase])
 
-  // Per-piece logo intro tween. One RAF loop stamps four progress values with
-  // independent staggered starts; each progress interpolates the piece from
-  // its introOffset / introRotOffset to its default pose.
+  // Leva intro config kept in a ref so tuning sliders doesn't re-fire the
+  // fly-in on every slider tick. New values take effect at the next reveal
+  // or when the Replay button is pressed.
+  const introCfgRef = useRef({})
+  introCfgRef.current = {
+    on:       versionB.logoIntroOn,
+    duration: versionB.logoIntroDurationS,
+    delay:    versionB.logoIntroDelayS,
+    stagger:  versionB.logoIntroStaggerS,
+    ease:     versionB.logoIntroEase,
+  }
+
+  // Per-piece logo intro tween — re-runs only on introRevealed flip or on
+  // introReplayTick bump (the Replay button).
   useEffect(() => {
-    if (!introRevealed) {
-      setPieceIntroProgress([0, 0, 0, 0])  // flown-in starting pose
-      return
-    }
-    if (!versionB.logoIntroOn) {
-      setPieceIntroProgress([1, 1, 1, 1])  // snap to default
-      return
-    }
+    if (!introRevealed) { setPieceIntroProgress([0, 0, 0, 0]); return }
+    const cfg = introCfgRef.current
+    if (!cfg.on) { setPieceIntroProgress([1, 1, 1, 1]); return }
     let raf = 0
-    const durationMs = versionB.logoIntroDurationS * 1000
-    const staggerMs  = versionB.logoIntroStaggerS  * 1000
-    const baseDelayMs = versionB.logoIntroDelayS  * 1000
-    const easeFn = EASE_FN[versionB.logoIntroEase] || EASE_FN['circ.out']
+    const durationMs  = cfg.duration * 1000
+    const staggerMs   = cfg.stagger  * 1000
+    const baseDelayMs = cfg.delay    * 1000
+    const easeFn = EASE_FN[cfg.ease] || EASE_FN['circ.out']
     const startMs = performance.now()
     const tick = () => {
       const now = performance.now() - startMs
@@ -708,7 +714,7 @@ export default function AppB() {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [introRevealed, introReplayTick, versionB.logoIntroOn, versionB.logoIntroDurationS, versionB.logoIntroDelayS, versionB.logoIntroStaggerS, versionB.logoIntroEase])
+  }, [introRevealed, introReplayTick])
 
   const scene = useControls({
     Lighting: folder({

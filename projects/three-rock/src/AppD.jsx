@@ -681,15 +681,32 @@ export default function AppD() {
     return () => { window.clearTimeout(timeout); cancelAnimationFrame(raf) }
   }, [introRevealed, preloader.bevelDelay, preloader.bevelDuration, preloader.bevelEase])
 
-  // Per-piece logo intro tween — same machinery as Version C.
+  // Keep the Leva intro values in a ref so we can read them during the
+  // tween without making them useEffect dependencies. This is what stops
+  // the animation from re-firing every time the user drags a slider.
+  const introCfgRef = useRef({})
+  introCfgRef.current = {
+    on:       versionB.logoIntroOn,
+    duration: versionB.logoIntroDurationS,
+    delay:    versionB.logoIntroDelayS,
+    stagger:  versionB.logoIntroStaggerS,
+    ease:     versionB.logoIntroEase,
+  }
+
+  // Per-piece logo intro tween — fires ONLY when the preloader completes
+  // (introRevealed → true) or when the user clicks the Replay button
+  // (introReplayTick bumps). Leva knob changes are applied on the next
+  // natural re-run (subsequent reveal or replay) instead of immediately
+  // restarting the fly-in.
   useEffect(() => {
     if (!introRevealed) { setPieceIntroProgress([0, 0, 0, 0]); return }
-    if (!versionB.logoIntroOn) { setPieceIntroProgress([1, 1, 1, 1]); return }
+    const cfg = introCfgRef.current
+    if (!cfg.on) { setPieceIntroProgress([1, 1, 1, 1]); return }
     let raf = 0
-    const durationMs  = versionB.logoIntroDurationS * 1000
-    const staggerMs   = versionB.logoIntroStaggerS  * 1000
-    const baseDelayMs = versionB.logoIntroDelayS   * 1000
-    const easeFn = EASE_FN[versionB.logoIntroEase] || EASE_FN['circ.out']
+    const durationMs  = cfg.duration * 1000
+    const staggerMs   = cfg.stagger  * 1000
+    const baseDelayMs = cfg.delay    * 1000
+    const easeFn = EASE_FN[cfg.ease] || EASE_FN['circ.out']
     const startMs = performance.now()
     const tick = () => {
       const now = performance.now() - startMs
@@ -707,7 +724,7 @@ export default function AppD() {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [introRevealed, introReplayTick, versionB.logoIntroOn, versionB.logoIntroDurationS, versionB.logoIntroDelayS, versionB.logoIntroStaggerS, versionB.logoIntroEase])
+  }, [introRevealed, introReplayTick])
 
   const scene = useControls({
     Lighting: folder({
