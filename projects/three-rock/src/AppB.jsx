@@ -381,18 +381,49 @@ export default function AppB() {
   const [introRevealed, setIntroRevealed] = useState(false)
   const [resetting, setResetting] = useState(false)
 
-  // Defer Canvas creation to an idle frame so initial TBT/LCP aren't blocked
-  // by three.js setup, shader compilation, and HDR parsing. The DOM background
-  // renders immediately; the Canvas layer fades in ~300 ms later.
+  // --- Reel prefetch -------------------------------------------------------
+  // Start downloading the hero reel video immediately, outside the Canvas,
+  // so it arrives in the browser cache before MaskedVideo tries to play it.
+  // When the prefetch's canplay fires we flip reelPrefetchReady to true, which
+  // gates both the Canvas mount (below) and the splash overlay (further down).
+  const [reelPrefetchReady, setReelPrefetchReady] = useState(false)
+  const prefetchVideoRef = useRef(null)
+  useEffect(() => {
+    const v = document.createElement('video')
+    v.src = '/bg-video.mp4'
+    v.preload = 'auto'
+    v.muted = true
+    v.playsInline = true
+    v.crossOrigin = 'anonymous'
+    const onReady = () => setReelPrefetchReady(true)
+    v.addEventListener('canplay', onReady, { once: true })
+    v.addEventListener('loadeddata', onReady, { once: true })
+    // Fallback: even if canplay never fires (rare), unblock after 4s so the
+    // user never sees a stuck splash.
+    const fallback = setTimeout(() => setReelPrefetchReady(true), 4000)
+    prefetchVideoRef.current = v
+    try { v.load() } catch {}
+    return () => {
+      clearTimeout(fallback)
+      v.removeEventListener('canplay', onReady)
+      v.removeEventListener('loadeddata', onReady)
+      try { v.src = '' } catch {}
+    }
+  }, [])
+
+  // Defer Canvas creation until the browser is idle AND the reel is ready.
+  // This way three.js + shaders don't pile work onto the main thread while
+  // the video is still being fetched.
   const [canvasMounted, setCanvasMounted] = useState(false)
   useEffect(() => {
-    const ric = window.requestIdleCallback || ((fn) => setTimeout(fn, 300))
-    const handle = ric(() => setCanvasMounted(true), { timeout: 600 })
+    if (!reelPrefetchReady) return
+    const ric = window.requestIdleCallback || ((fn) => setTimeout(fn, 200))
+    const handle = ric(() => setCanvasMounted(true), { timeout: 400 })
     return () => {
       const cancel = window.cancelIdleCallback || clearTimeout
       cancel(handle)
     }
-  }, [])
+  }, [reelPrefetchReady])
 
   // Pill list hover → feeds ClientPreview + ClientShaderBg + CustomCursor (hoverActive only,
   // no sticky morph).
@@ -402,16 +433,17 @@ export default function AppB() {
   // Pill display order = array order in logos.js CLIENTS. DnD panel removed.
   const orderedClients = CLIENTS
 
-  // After the Canvas has mounted, progressively warm the browser image cache
-  // by requesting each client image during idle frames (one per idle tick).
-  // This means the first pill hover no longer has to wait on a network fetch,
-  // while initial paint pays nothing for images the user may never see.
+  // After the reel is ready and the Canvas has mounted, progressively warm
+  // the browser cache with each client image *and* its looping video, one per
+  // idle tick. First pill hover finds both already cached; initial paint
+  // paid nothing for media the user may never look at.
   useEffect(() => {
     if (!canvasMounted) return
     const ric = window.requestIdleCallback || ((fn) => setTimeout(fn, 200))
     const cancel = window.cancelIdleCallback || clearTimeout
     let handle = 0
     let i = 0
+    const warmedVideos = []
     const step = () => {
       if (i >= CLIENTS.length) return
       const c = CLIENTS[i++]
@@ -420,10 +452,22 @@ export default function AppB() {
         img.decoding = 'async'
         img.src = c.image
       }
+      if (c?.video) {
+        const v = document.createElement('video')
+        v.src = c.video
+        v.preload = 'auto'
+        v.muted = true
+        v.playsInline = true
+        try { v.load() } catch {}
+        warmedVideos.push(v)
+      }
       handle = ric(step, { timeout: 500 })
     }
     handle = ric(step, { timeout: 500 })
-    return () => cancel(handle)
+    return () => {
+      cancel(handle)
+      warmedVideos.forEach((v) => { try { v.src = '' } catch {} })
+    }
   }, [canvasMounted])
 
   // Leva control panels are hidden by default; press "c" to toggle them on/off.
@@ -676,6 +720,37 @@ export default function AppB() {
 
   return (
     <>
+      {/* Splash overlay — hides everything until the hero reel is loaded so
+          the page never flashes a partially-built state. Fades out over 500 ms
+          once reelPrefetchReady flips true. */}
+      <div
+        aria-hidden
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: '#000',
+          zIndex: 99997,
+          opacity: reelPrefetchReady ? 0 : 1,
+          pointerEvents: reelPrefetchReady ? 'none' : 'auto',
+          transition: 'opacity 0.5s cubic-bezier(0.23, 1, 0.32, 1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: '50%',
+            border: '1.5px solid rgba(255,255,255,0.2)',
+            borderTopColor: 'rgba(255,255,255,0.9)',
+            animation: 'spinLoader 0.9s linear infinite',
+          }}
+        />
+        <style>{`@keyframes spinLoader { to { transform: rotate(360deg); } }`}</style>
+      </div>
+
       {/* Leva panels only mount after the user presses "c". Keeping them
           unmounted avoids injecting the Leva stylesheet (which loads Google
           Fonts Inter) and creating their DOM on initial load. */}
