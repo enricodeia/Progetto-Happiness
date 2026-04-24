@@ -89,11 +89,11 @@ export default function AppD() {
 
   const shape = useControls({
     Shape: folder({
-      depth: { value: 61, min: 10, max: 250, step: 1 },
-      bevelSize: { value: 3.0, min: 0, max: 60, step: 0.5 },
-      bevelThickness: { value: 1.5, min: 0, max: 80, step: 0.5 },
+      depth: { value: 49, min: 10, max: 250, step: 1 },
+      bevelSize: { value: 4.0, min: 0, max: 60, step: 0.5 },
+      bevelThickness: { value: 12.5, min: 0, max: 80, step: 0.5 },
       bevelSegments: { value: 1, min: 1, max: 14, step: 1 },
-      targetSize: { value: 1.45, min: 0.5, max: 4, step: 0.05 },
+      targetSize: { value: 1.40, min: 0.5, max: 4, step: 0.05 },
     }, { collapsed: true }),
     Material: folder({
       colorShadow: { value: '#e2d7ce', label: 'shadow' },
@@ -190,27 +190,27 @@ export default function AppD() {
   })
 
   const versionB = useControls({
-    'B · Side Marquees': folder({
+    'D · Side Marquees': folder({
       sideOn:            { value: true, label: 'enabled' },
-      sideWidthVw:       { value: 34,   min: 10, max: 50, step: 0.5, label: 'rail width vw' },
-      sideGapVw:         { value: 0,    min: 0,  max: 20, step: 0.1, label: 'edge inset vw' },
-      sideCenterYVh:     { value: 50,   min: 0, max: 100, step: 0.5, label: 'center y vh' },
-      sideHeightVw:      { value: 4.5,  min: 1,  max: 12, step: 0.1, label: 'rail height vw' },
+      sideWidthVw:       { value: 43.0, min: 10, max: 50, step: 0.5, label: 'rail width vw' },
+      sideGapVw:         { value: 0.5,  min: 0,  max: 20, step: 0.1, label: 'edge inset vw' },
+      sideCenterYVh:     { value: 49.0, min: 0, max: 100, step: 0.5, label: 'center y vh' },
+      sideHeightVw:      { value: 7.7,  min: 1,  max: 12, step: 0.1, label: 'rail height vw' },
       sideDurationS:     { value: 55,   min: 10, max: 180, step: 1, label: 'loop s' },
-      sideLogoGapVw:     { value: 3,    min: 0.5, max: 12, step: 0.1, label: 'logo gap vw' },
+      sideLogoGapVw:     { value: 6.3,  min: 0.5, max: 12, step: 0.1, label: 'logo gap vw' },
       sideLogoHeightVw:  { value: 0.85, min: 0.4, max: 4, step: 0.05, label: 'logo height vw' },
       sideInvert:        { value: true, label: 'invert logos' },
       sideOppositeDir:   { value: true, label: 'opposite directions' },
-      sideLogoBrightness:{ value: 4.00, min: 0, max: 8, step: 0.05, label: 'logo brightness' },
-      sideLogoGlowPx:    { value: 0.5,  min: 0, max: 30, step: 0.1, label: 'logo glow px' },
+      sideLogoBrightness:{ value: 8.00, min: 0, max: 8, step: 0.05, label: 'logo brightness' },
+      sideLogoGlowPx:    { value: 10.9, min: 0, max: 30, step: 0.1, label: 'logo glow px' },
       sideLogoGlowColor: { value: '#ffffff', label: 'logo glow color' },
-      // Inner (center-facing) glow — A-style
-      sideInnerFadeVw:   { value: 9.3,  min: 0, max: 30, step: 0.1, label: 'inner fade vw' },
-      sideInnerBlurI:    { value: 1.4,  min: 0, max: 4,  step: 0.05, label: 'inner blur' },
-      sideInnerEdgeVw:   { value: 2.8,  min: 0, max: 20, step: 0.1, label: 'inner edge vw' },
-      // Outer (viewport-edge) fade — lighter
-      sideOuterFadeVw:   { value: 4,    min: 0, max: 30, step: 0.1, label: 'outer fade vw' },
-      sideOuterBlurI:    { value: 0.6,  min: 0, max: 4,  step: 0.05, label: 'outer blur' },
+      // Inner (center-facing) glow
+      sideInnerFadeVw:   { value: 12.4, min: 0, max: 30, step: 0.1, label: 'inner fade vw' },
+      sideInnerBlurI:    { value: 0.70, min: 0, max: 4,  step: 0.05, label: 'inner blur' },
+      sideInnerEdgeVw:   { value: 9.7,  min: 0, max: 20, step: 0.1, label: 'inner edge vw' },
+      // Outer (viewport-edge) fade
+      sideOuterFadeVw:   { value: 4.0,  min: 0, max: 30, step: 0.1, label: 'outer fade vw' },
+      sideOuterBlurI:    { value: 0.60, min: 0, max: 4,  step: 0.05, label: 'outer blur' },
       sideOuterEdgeVw:   { value: 1.5,  min: 0, max: 20, step: 0.1, label: 'outer edge vw' },
       sideEdgeColor:     { value: '#090b0d', label: 'edge mask color' },
     }, { collapsed: false }),
@@ -655,13 +655,13 @@ export default function AppD() {
   const [cam, setCam] = useControls(() => ({
     'Camera': folder({
       azimuth:   { value: 0,    min: -180, max: 180, step: 0.5 },
-      polar:     { value: 90.5, min: 1,    max: 179, step: 0.5 },
-      distance:  { value: 9.45, min: 0.5,  max: 200, step: 0.05 },
+      polar:     { value: 90.0, min: 1,    max: 179, step: 0.5 },
+      distance:  { value: 7.81, min: 0.5,  max: 200, step: 0.05 },
       targetX:   { value: 0,    min: -5,   max: 5,   step: 0.01 },
       targetY:   { value: 0,    min: -5,   max: 5,   step: 0.01 },
-      targetZ:   { value: -0.6, min: -5,   max: 5,   step: 0.01 },
-      fov:       { value: 5.0,  min: 1,    max: 120, step: 0.1 },
-      exposure:  { value: 1.05, min: 0.1,  max: 3,   step: 0.05 },
+      targetZ:   { value: 0.04, min: -5,   max: 5,   step: 0.01 },
+      fov:       { value: 10.9, min: 1,    max: 120, step: 0.1 },
+      exposure:  { value: 0.85, min: 0.1,  max: 3,   step: 0.05 },
       'copy current view 📋': button(() => {
         const s = cameraStateRef.current.getState?.()
         if (!s) return
@@ -676,7 +676,7 @@ export default function AppD() {
         })
       }),
       'reset view ↺': button(() => {
-        setCam({ azimuth: 0, polar: 90.5, distance: 9.45, targetX: 0, targetY: 0, targetZ: -0.6, fov: 5.0 })
+        setCam({ azimuth: 0, polar: 90.0, distance: 7.81, targetX: 0, targetY: 0, targetZ: 0.04, fov: 10.9 })
       }),
     }, { collapsed: true }),
   }))
@@ -692,10 +692,10 @@ export default function AppD() {
   // A `logoFillVw` knob lets the designer overshoot/undershoot the full
   // viewport width (e.g. 90% of width for breathing room).
   const responsive = useControls('D · Responsive Camera', {
-    responsiveOn:   { value: true, label: 'auto fit to viewport' },
+    responsiveOn:   { value: false, label: 'auto fit to viewport' },
     logoWorldWidth: { value: 2.88, min: 0.5, max: 10, step: 0.01, label: 'logo world width' },
     logoFillVw:     { value: 1.0,  min: 0.2, max: 2,  step: 0.01, label: 'logo / viewport' },
-  }, { collapsed: false })
+  }, { collapsed: true })
 
   useEffect(() => {
     if (!responsive.responsiveOn) return
