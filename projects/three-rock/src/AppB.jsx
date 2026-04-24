@@ -48,14 +48,10 @@ const EASE_FN = {
 const EASE_NAMES = Object.keys(EASE_FN)
 
 const PIECE_DEFAULTS = [
-  { enabled: true, position: { x: 0,    y:  0,    z: 0 }, rotationZ: 0,
-    introOffset: { x: -2, y:  4, z: -6 }, introRotOffset: { x:  60, y: -40, z: -90 } },
-  { enabled: true, position: { x: 0,    y: -1.43, z: 0 }, rotationZ: 90,
-    introOffset: { x: -2, y: -4, z: -6 }, introRotOffset: { x: -60, y: -40, z:  90 } },
-  { enabled: true, position: { x: 1.44, y: -1.43, z: 0 }, rotationZ: 180,
-    introOffset: { x:  2, y: -4, z: -6 }, introRotOffset: { x: -60, y:  40, z: -90 } },
-  { enabled: true, position: { x: 1.44, y:  0,    z: 0 }, rotationZ: 270,
-    introOffset: { x:  2, y:  4, z: -6 }, introRotOffset: { x:  60, y:  40, z:  90 } },
+  { enabled: true, position: { x: 0,    y:  0,    z: 0 }, rotationZ: 0   },
+  { enabled: true, position: { x: 0,    y: -1.43, z: 0 }, rotationZ: 90  },
+  { enabled: true, position: { x: 1.44, y: -1.43, z: 0 }, rotationZ: 180 },
+  { enabled: true, position: { x: 1.44, y:  0,    z: 0 }, rotationZ: 270 },
 ]
 
 function usePieceControls(label, defaults) {
@@ -64,10 +60,6 @@ function usePieceControls(label, defaults) {
     position: { value: defaults.position, step: 0.01 },
     rotation: { value: { x: 0, y: 0, z: defaults.rotationZ }, step: 1, label: 'rotation °' },
     scale: { value: 1, min: 0.1, max: 3, step: 0.01 },
-    // Per-piece intro: freely set the start pose (position + rotation) each
-    // piece flies in from. Lerped to 0 over the logo intro tween.
-    introOffset:    { value: defaults.introOffset    || { x: 0, y: 0, z: 0 }, step: 0.05, label: 'intro Δ xyz' },
-    introRotOffset: { value: defaults.introRotOffset || { x: 0, y: 0, z: 0 }, step: 5,    label: 'intro Δ rot°' },
   }, { collapsed: true })
 }
 
@@ -306,17 +298,6 @@ export default function AppB() {
       videoZIndex:       { value: 10, min: 1, max: 50, step: 1, label: 'z-index' },
       videoCrossfadeS:   { value: 1.0, min: 0.05, max: 3, step: 0.05, label: 'video crossfade s' },
     }, { collapsed: false }),
-    'B · Logo Intro': folder({
-      logoIntroOn:        { value: true, label: 'enabled' },
-      logoIntroDurationS: { value: 1.7,  min: 0.1, max: 4, step: 0.05, label: 'duration s' },
-      logoIntroDelayS:    { value: 0.25, min: 0, max: 3, step: 0.05, label: 'start delay s' },
-      logoIntroStaggerS:  { value: 0.07, min: 0, max: 0.6, step: 0.01, label: 'stagger per piece s' },
-      logoIntroEase: {
-        value: 'circ.out',
-        options: ['circ.out', 'expo.out', 'power4.out', 'power3.out', 'power2.out', 'back.out', 'sine.out'],
-        label: 'ease',
-      },
-    }, { collapsed: false }),
     'B · Top Nav': folder({
       // Matches Version C exactly — same TopNavC component (right→left CTA).
       navTopVh:         { value: 1.2, min: 0, max: 10, step: 0.05, label: 'top vh' },
@@ -396,33 +377,7 @@ export default function AppB() {
   const p2 = usePieceControls('Piece 2', PIECE_DEFAULTS[1])
   const p3 = usePieceControls('Piece 3', PIECE_DEFAULTS[2])
   const p4 = usePieceControls('Piece 4', PIECE_DEFAULTS[3])
-  const rawPieces = [p1, p2, p3, p4]
-  // Per-piece intro progress (0 = at offset origin, 1 = at default).
-  const [pieceIntroProgress, setPieceIntroProgress] = useState([1, 1, 1, 1])
-  // Bake intro offset into each piece BEFORE passing to Rock + MaskedVideo so
-  // both see the same animated transform. Without this the 3D pieces animate
-  // but the video cutout stays on the default footprint and the video leaks
-  // through where the piece hasn't arrived yet.
-  const pieces = rawPieces.map((p, i) => {
-    const prog = pieceIntroProgress[i] ?? 1
-    const k = 1 - prog
-    const off    = p.introOffset    || { x: 0, y: 0, z: 0 }
-    const rotOff = p.introRotOffset || { x: 0, y: 0, z: 0 }
-    return {
-      ...p,
-      position: {
-        x: p.position.x + off.x * k,
-        y: p.position.y + off.y * k,
-        z: p.position.z + off.z * k,
-      },
-      rotation: {
-        x: p.rotation.x + rotOff.x * k,
-        y: p.rotation.y + rotOff.y * k,
-        z: p.rotation.z + rotOff.z * k,
-      },
-      introProgress: 1,  // already baked, tell Piece to render as-is
-    }
-  })
+  const pieces = [p1, p2, p3, p4]
 
   const logoCentroid = useMemo(() => {
     const enabled = pieces.filter((p) => p.enabled)
@@ -524,15 +479,14 @@ export default function AppB() {
 
   // Numeric 1 / 2 / 3 / 4 switch between the variants (stealth shortcut; the
   // control panels are removed for the director review).
-  // Leva hidden by default; "c" toggles it. Numeric 1/2/3/4 = variant nav.
-  const [levaVisible, setLevaVisible] = useState(false)
+  // Version B is the clean review build — no control panels. Only numeric
+  // 1 / 2 / 3 / 4 remain as hidden variant-nav shortcuts.
   const navigate = useNavigate()
   useEffect(() => {
     const onKey = (e) => {
       const tag = (e.target?.tagName || '').toLowerCase()
       if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return
-      if (e.key === 'c' || e.key === 'C') setLevaVisible((v) => !v)
-      else if (e.key === '1') navigate('/a')
+      if (e.key === '1') navigate('/a')
       else if (e.key === '2') navigate('/b')
       else if (e.key === '3') navigate('/c')
       else if (e.key === '4') navigate('/d')
@@ -578,12 +532,6 @@ export default function AppB() {
       })
     })
   }, [])
-
-  // Replay button lives in its own tiny folder — defined AFTER replayIntro
-  // so the closure captures the right reference.
-  useControls('B · Intro · Replay', {
-    replayLogoIntro: button(() => replayIntro()),
-  }, { collapsed: false })
 
   const preloader = useControls('✦ Preloader', {
     Overlay: folder({
@@ -680,42 +628,6 @@ export default function AppB() {
     const timeout = window.setTimeout(run, preloader.bevelDelay * 1000)
     return () => { window.clearTimeout(timeout); cancelAnimationFrame(raf) }
   }, [introRevealed, preloader.bevelDelay, preloader.bevelDuration, preloader.bevelEase])
-
-  // Per-piece logo intro tween — one RAF loop stamps four progresses with
-  // independent staggered start times; each progress drives the fly-in of
-  // one piece from its introOffset / introRotOffset to its default pose.
-  useEffect(() => {
-    if (!introRevealed) {
-      setPieceIntroProgress([0, 0, 0, 0])
-      return
-    }
-    if (!versionB.logoIntroOn) {
-      setPieceIntroProgress([1, 1, 1, 1])
-      return
-    }
-    let raf = 0
-    const durationMs = versionB.logoIntroDurationS * 1000
-    const staggerMs  = versionB.logoIntroStaggerS  * 1000
-    const baseDelayMs = versionB.logoIntroDelayS  * 1000
-    const easeFn = EASE_FN[versionB.logoIntroEase] || EASE_FN['circ.out']
-    const startMs = performance.now()
-    const tick = () => {
-      const now = performance.now() - startMs
-      const next = [0, 0, 0, 0]
-      let stillRunning = false
-      for (let i = 0; i < 4; i++) {
-        const pieceStart = baseDelayMs + i * staggerMs
-        const local = now - pieceStart
-        if (local <= 0) { next[i] = 0; stillRunning = true }
-        else if (local >= durationMs) { next[i] = 1 }
-        else { next[i] = easeFn(local / durationMs); stillRunning = true }
-      }
-      setPieceIntroProgress(next)
-      if (stillRunning) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [introRevealed, versionB.logoIntroOn, versionB.logoIntroDurationS, versionB.logoIntroDelayS, versionB.logoIntroStaggerS, versionB.logoIntroEase])
 
   const scene = useControls({
     Lighting: folder({
@@ -870,16 +782,10 @@ export default function AppB() {
         </div>
       </div>
 
-      {/* Leva auto-injects a root panel once any useControls() runs, so we
-          own the mount here and flip `hidden` on the "c" key toggle. */}
-      <Leva hidden={!levaVisible} collapsed={false} oneLineLabels />
-      <LevaPanel
-        store={fxStore}
-        hidden={!levaVisible}
-        oneLineLabels
-        collapsed={false}
-        titleBar={{ title: 'Shader FX', drag: true }}
-      />
+      {/* Version B is the clean review build — Leva force-hidden. All
+          tuning lives on /c. */}
+      <Leva hidden collapsed oneLineLabels />
+      <LevaPanel store={fxStore} hidden oneLineLabels collapsed />
       <HeroIntro
         revealed={introRevealed}
         resetting={resetting}
