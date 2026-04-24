@@ -568,10 +568,14 @@ export default function AppB() {
     })
   }, [])
 
-  // Dedicated "replay intro" button in its own tiny Leva folder — must be
-  // declared AFTER replayIntro so the closure sees the correct reference.
+  // Re-fire ONLY the piece fly-in tween, NOT the preloader letter dispersal.
+  // Flips an independent tick state that the intro RAF useEffect lists in
+  // its dependencies.
+  const [introReplayTick, setIntroReplayTick] = useState(0)
+  const replayPieceIntro = useCallback(() => setIntroReplayTick((n) => n + 1), [])
+
   useControls('C · Intro · Replay', {
-    replayLogoIntro: button(() => replayIntro()),
+    replayLogoIntro: button(() => replayPieceIntro()),
   }, { collapsed: false })
 
   const preloader = useControls('✦ Preloader', {
@@ -704,7 +708,7 @@ export default function AppB() {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [introRevealed, versionB.logoIntroOn, versionB.logoIntroDurationS, versionB.logoIntroDelayS, versionB.logoIntroStaggerS, versionB.logoIntroEase])
+  }, [introRevealed, introReplayTick, versionB.logoIntroOn, versionB.logoIntroDurationS, versionB.logoIntroDelayS, versionB.logoIntroStaggerS, versionB.logoIntroEase])
 
   const scene = useControls({
     Lighting: folder({

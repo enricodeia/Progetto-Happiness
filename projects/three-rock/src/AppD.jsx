@@ -573,9 +573,16 @@ export default function AppD() {
     })
   }, [])
 
-  // Replay button — declared AFTER replayIntro so the closure captures it.
+  // Dedicated tick for re-running ONLY the piece fly-in tween, without
+  // touching introRevealed / resetting — so HeroIntro's preloader letter
+  // dispersal doesn't replay alongside it. The RAF useEffect below lists
+  // this tick in its deps.
+  const [introReplayTick, setIntroReplayTick] = useState(0)
+  const replayPieceIntro = useCallback(() => setIntroReplayTick((n) => n + 1), [])
+
+  // Replay button — declared AFTER the callbacks so closures capture them.
   useControls('D · Intro · Replay', {
-    replayLogoIntro: button(() => replayIntro()),
+    replayLogoIntro: button(() => replayPieceIntro()),
   }, { collapsed: false })
 
   const preloader = useControls('✦ Preloader', {
@@ -700,7 +707,7 @@ export default function AppD() {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [introRevealed, versionB.logoIntroOn, versionB.logoIntroDurationS, versionB.logoIntroDelayS, versionB.logoIntroStaggerS, versionB.logoIntroEase])
+  }, [introRevealed, introReplayTick, versionB.logoIntroOn, versionB.logoIntroDurationS, versionB.logoIntroDelayS, versionB.logoIntroStaggerS, versionB.logoIntroEase])
 
   const scene = useControls({
     Lighting: folder({
