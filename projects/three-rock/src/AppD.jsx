@@ -183,8 +183,11 @@ export default function AppD() {
       bgSrc: { value: '/bg-video.mp4' },
       bgPosZ: { value: -0.1, min: -20, max: 5, step: 0.01 },
       bgFullZ: { value: -0.5, min: -20, max: 5, step: 0.01 },
-      bgWidth: { value: 10, min: 0.5, max: 30, step: 0.1 },
-      bgHeight: { value: 5.625, min: 0.5, max: 30, step: 0.1 },
+      // Sized for D's near-orthographic camera (FOV 5° + responsive distance):
+      // 3.0 × 1.7 fits the viewport width comfortably with a small letterbox.
+      // Was 10 / 5.625 which read as ~3× the viewport on a 16:9 screen.
+      bgWidth: { value: 3.0, min: 0.5, max: 30, step: 0.1 },
+      bgHeight: { value: 1.7, min: 0.5, max: 30, step: 0.1 },
       bgMaskOpacity: { value: 1, min: 0, max: 1, step: 0.01 },
       bgFullOpacityIdle: { value: 0, min: 0, max: 1, step: 0.01 },
       bgFullOpacityHover: { value: 1, min: 0, max: 1, step: 0.01 },
