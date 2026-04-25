@@ -954,18 +954,19 @@ export default function AppD() {
         letterEntryStaggerMs={preloader.letterEntryStaggerMs}
       />
 
-      {/* Version switcher — tiny nav pills that jump between the 4 variants.
-          Gated on introRevealed so they fade in after the preloader. "v.3" is
-          flagged as the best so the reviewer can compare quickly. */}
+      {/* Version switcher — pill row sitting right next to the Menu button
+          in the top-left cluster. Same vertical baseline, tight gap so the
+          group reads as one nav unit. */}
       <div
         aria-label="version switcher"
         style={{
           position: 'fixed',
-          top: '54px',
-          left: '50%',
-          transform: 'translateX(-50%)',
+          top: `${versionB.navTopVh}vh`,
+          left: `calc(${versionB.navSidePadVw}vw + 5.3vw)`,
           display: 'flex',
+          alignItems: 'center',
           gap: '6px',
+          height: `calc(${versionB.navMenuFontVw}vw + ${versionB.navMenuPadYVw * 2}vw + 2px)`,
           zIndex: 22,
           opacity: introRevealed ? 1 : 0,
           transition: resetting ? 'none' : 'opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1) 0.4s',

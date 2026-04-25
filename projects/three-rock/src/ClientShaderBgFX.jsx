@@ -195,57 +195,46 @@ export default function ClientShaderBgFX({
   const [anyLoaded, setAnyLoaded] = useState(false)
   const { gl } = useThree()
 
-  // Load textures lazily: only when a pill is hovered do we fetch its image
-  // (plus its immediate neighbours, as a small look-ahead). This avoids
-  // uploading 15 textures to the GPU on mount, which was one of the biggest
-  // TBT contributors on initial load.
-  const loaderRef = useRef(null)
-  const ensureTexture = (client) => {
-    if (!client?.image || texCache.current.has(client.id)) return
-    if (!loaderRef.current) {
-      loaderRef.current = new THREE.TextureLoader()
-      loaderRef.current.crossOrigin = 'anonymous'
-    }
-    // Mark "pending" so we don't kick off duplicate requests.
-    texCache.current.set(client.id, null)
-    loaderRef.current.load(client.image, (tex) => {
-      tex.colorSpace = THREE.SRGBColorSpace
-      tex.minFilter = THREE.LinearMipmapLinearFilter
-      tex.magFilter = THREE.LinearFilter
-      tex.anisotropy = gl.capabilities.getMaxAnisotropy()
-      tex.generateMipmaps = true
-      const img = tex.image
-      const size = img && img.width && img.height
-        ? new THREE.Vector2(img.width, img.height)
-        : new THREE.Vector2(2500, 1500)
-      texCache.current.set(client.id, { tex, size })
-      setAnyLoaded(true)
-      if (matRef.current && hoveredId === client.id) {
-        matRef.current.uniforms.uTexture2.value     = tex
-        matRef.current.uniforms.uTexture2Size.value = size
-        matRef.current.uniforms.uHasB.value         = 1
-      }
+  // Eagerly preload every client image to a THREE.Texture on mount. The
+  // previous lazy-on-hover approach meant the first hover kicked off a
+  // fetch + decode + GPU upload — the transition started with uHasB=0, the
+  // texture arrived mid-animation and the image flashed in only AFTER the
+  // user had already let go of the pill. By preloading here, all 15
+  // textures are live in GPU memory by the time the user touches anything.
+  // Initial cost is amortised behind the splash-overlay preload gate, so
+  // from a user-facing latency standpoint it's free.
+  useEffect(() => {
+    if (!enabled) return
+    const loader = new THREE.TextureLoader()
+    loader.crossOrigin = 'anonymous'
+    items.forEach((c) => {
+      if (!c?.image || texCache.current.has(c.id)) return
+      loader.load(c.image, (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace
+        tex.minFilter = THREE.LinearMipmapLinearFilter
+        tex.magFilter = THREE.LinearFilter
+        tex.anisotropy = gl.capabilities.getMaxAnisotropy()
+        tex.generateMipmaps = true
+        const img = tex.image
+        const size = img && img.width && img.height
+          ? new THREE.Vector2(img.width, img.height)
+          : new THREE.Vector2(2500, 1500)
+        texCache.current.set(c.id, { tex, size })
+        setAnyLoaded(true)
+        // If the user is already hovering this pill, patch the incoming
+        // uniforms live so the current transition isn't stuck on null.
+        if (matRef.current && hoveredId === c.id) {
+          matRef.current.uniforms.uTexture2.value     = tex
+          matRef.current.uniforms.uTexture2Size.value = size
+          matRef.current.uniforms.uHasB.value         = 1
+        }
+      })
     })
-  }
-
-  // When hoveredId changes, fetch that client's image plus its two
-  // neighbours so the next hover transition starts instantly.
-  useEffect(() => {
-    if (!enabled || !hoveredId) return
-    const idx = items.findIndex((c) => c.id === hoveredId)
-    if (idx < 0) return
-    const win = [idx - 1, idx, idx + 1]
-      .map((i) => (i + items.length) % items.length)
-    win.forEach((i) => ensureTexture(items[i]))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, hoveredId, items])
-
-  useEffect(() => {
     return () => {
       texCache.current.forEach((entry) => { try { entry?.tex?.dispose() } catch {} })
       texCache.current.clear()
     }
-  }, [])
+  }, [enabled, items, gl])
 
   const uniforms = useMemo(() => ({
     uProgress:                  { value: 0 },
