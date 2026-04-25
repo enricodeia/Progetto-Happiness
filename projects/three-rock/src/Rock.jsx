@@ -262,6 +262,11 @@ function installTriplanarShader(material, trailTexture) {
     uTrailActivation: { value: 0 },
     uTrailCenter:     { value: new THREE.Vector2(0, 0) },
     uTrailExtent:     { value: 3.5 },
+    // Vertex-space displacement: the trail texture is sampled in the vertex
+    // shader and pushed along the surface normal, physically deforming the
+    // glass where the cursor has passed. 0 = flat, higher = more bulge.
+    uTrailDisplace:   { value: 0.18 },
+    uTrailDisplaceSharp: { value: 1.4 },
     uTime:            { value: 0 },
   }
 
@@ -273,7 +278,29 @@ function installTriplanarShader(material, trailTexture) {
         '#include <common>',
         `#include <common>
         varying vec3 vWorldPos;
-        varying vec3 vWorldNrm;`,
+        varying vec3 vWorldNrm;
+        uniform sampler2D uTrailMap;
+        uniform float uTrailOn;
+        uniform vec2  uTrailCenter;
+        uniform float uTrailExtent;
+        uniform float uTrailDisplace;
+        uniform float uTrailDisplaceSharp;`,
+      )
+      // Vertex-space displacement — sample trail in world XY, push along
+      // normal. Applied BEFORE <worldpos_vertex> so worldPosition picks up
+      // the bulge. Sharpening (uTrailDisplaceSharp ≥ 1) makes the bulge
+      // follow the active cursor area closely instead of a soft halo.
+      .replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+        {
+          vec4 _trailWp = modelMatrix * vec4(position, 1.0);
+          vec2 _trailUv = (_trailWp.xy - uTrailCenter) / max(uTrailExtent, 0.001) * 0.5 + 0.5;
+          _trailUv = clamp(_trailUv, 0.0, 1.0);
+          float _trailVal = texture2D(uTrailMap, _trailUv).r * uTrailOn;
+          _trailVal = pow(_trailVal, uTrailDisplaceSharp);
+          transformed += normal * _trailVal * uTrailDisplace;
+        }`,
       )
       .replace(
         '#include <worldpos_vertex>',
@@ -490,6 +517,7 @@ export default function Rock({
   trailPattern, trailEdge, trailShimmer, trailCellScale,
   trailWarp, trailWarpScale, trailSoftness, trailBrushSoft,
   trailRevealDuration,
+  trailDisplace, trailDisplaceSharp,
   pieces,
   logoOffset, autoCenter,
   onHoverChange: onHoverChangeProp,
@@ -645,11 +673,13 @@ export default function Rock({
     u.uTrailWarp.value = trailWarp
     u.uTrailWarpScale.value = trailWarpScale
     u.uTrailSoftness.value = trailSoftness
+    if (u.uTrailDisplace)      u.uTrailDisplace.value = trailDisplace ?? 0
+    if (u.uTrailDisplaceSharp) u.uTrailDisplaceSharp.value = trailDisplaceSharp ?? 1
     decayRef.current = trailDecay
   }, [material, triplanarOn, triplanarScale,
       trailOn, trailIntensity, trailColor, trailFresnel, trailDecay,
       trailPattern, trailEdge, trailShimmer, trailCellScale,
-      trailWarp, trailWarpScale, trailSoftness])
+      trailWarp, trailWarpScale, trailSoftness, trailDisplace, trailDisplaceSharp])
 
   const centroid = useMemo(() => {
     const enabled = pieces.filter((p) => p.enabled)

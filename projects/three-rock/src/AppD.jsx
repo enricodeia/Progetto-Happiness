@@ -98,7 +98,8 @@ export default function AppD() {
       depth: { value: 49, min: 10, max: 250, step: 1 },
       bevelSize: { value: 4.0, min: 0, max: 60, step: 0.5 },
       bevelThickness: { value: 12.5, min: 0, max: 80, step: 0.5 },
-      bevelSegments: { value: 1, min: 1, max: 14, step: 1 },
+      // Higher bevel segments = smoother rounded edges (was 1).
+      bevelSegments: { value: 4, min: 1, max: 14, step: 1 },
       targetSize: { value: 1.40, min: 0.5, max: 4, step: 0.05 },
     }, { collapsed: true }),
     Material: folder({
@@ -160,6 +161,10 @@ export default function AppD() {
       trailSoftness: { value: 2.35, min: 0.3, max: 4, step: 0.05 },
       trailBrushSoft: { value: 1.85, min: 0.3, max: 4, step: 0.05 },
       trailRevealDuration: { value: 0.5, min: 0.05, max: 2, step: 0.05 },
+      // Vertex-space displacement — physically bulges the glass where the
+      // cursor has painted. 0 = off, 0.3–0.5 is a strong ripple.
+      trailDisplace:      { value: 0.22, min: 0, max: 1.5, step: 0.01, label: 'displace strength' },
+      trailDisplaceSharp: { value: 1.6,  min: 0.2, max: 4, step: 0.05, label: 'displace sharpness' },
     }, { collapsed: true }),
     Orbit: folder({
       autoRotate: false,
@@ -380,7 +385,7 @@ export default function AppD() {
       titlesOn:          { value: true, label: 'enabled' },
       leftTitle:         { value: 'We make', label: 'left text' },
       rightTitle:        { value: 'interfaces', label: 'right text' },
-      titleSizeVw:       { value: 6.4, min: 1.5, max: 16, step: 0.1, label: 'size vw' },
+      titleSizeVw:       { value: 6.1, min: 1.5, max: 16, step: 0.1, label: 'size vw' },
       titleBottomVw:     { value: 1.1, min: 0, max: 15, step: 0.1, label: 'bottom vw' },
       titlePadVw:        { value: 1.1, min: 0, max: 15, step: 0.1, label: 'side pad vw' },
       titleItalic:       { value: false, label: 'right italic' },
