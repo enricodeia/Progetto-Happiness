@@ -823,6 +823,7 @@ export default function AppB() {
         titleBar={{ title: 'Shader FX', drag: true }}
       />
       <HeroIntro
+        logoBehavior="lockCenter"
         revealed={introRevealed}
         resetting={resetting}
         logoStartVw={preloader.logoStartVw}

@@ -38,13 +38,20 @@ export default function HeroIntro({
   letterEntryOn = true,
   letterEntryDuration = 0.6,
   letterEntryStaggerMs = 80,
+  // 'slide'      — original: logo slides from centre+large (preloader) to
+  //                top-nav+small on reveal. Used by Version A.
+  // 'lockCenter' — logo stays pinned at centre, then fades out after letter
+  //                dispersal. Used by Versions B, C and D.
+  logoBehavior = 'slide',
 }) {
-  // Logo transitions from centered + large (preloader) to top + small (nav
-  // slot) on reveal. One instance, one continuous slide — no separate nav
-  // logo, no duplicate fade-in.
+  const lockCenter = logoBehavior === 'lockCenter'
+  // Logo transition depends on behavior: slide animates top+transform+width,
+  // lockCenter just fades opacity once dispersal completes.
   const logoTransition = resetting
     ? 'none'
-    : `top ${logoDuration}s ${logoEasing}, transform ${logoDuration}s ${logoEasing}, width ${logoDuration}s ${logoEasing}`
+    : lockCenter
+      ? `opacity ${logoDuration}s ${logoEasing}`
+      : `top ${logoDuration}s ${logoEasing}, transform ${logoDuration}s ${logoEasing}, width ${logoDuration}s ${logoEasing}`
   const overlayTransitionCss = resetting ? 'none' : `opacity ${overlayDuration}s ${overlayEasing}`
 
   // Letter phase machine:
@@ -132,24 +139,27 @@ export default function HeroIntro({
           transition: overlayTransitionCss,
         }}
       />
-      {/* Metalab mark — starts centered + big during the preloader, then on
-          reveal slides up to the nav slot (top: 28px) at logoEndPx width.
-          Single instance, single slide. This is the "usual" animation from
-          before the experimental lock-in-place attempt — restores it for
-          Versions B/C/D so there's no separate nav logo fading in. */}
+      {/* Metalab mark. Two possible behaviors:
+           - slide (A): centered+large during preloader, slides to top+small on reveal.
+           - lockCenter (B/C/D): pinned at centre, fades out after letter dispersal.
+          Only one DOM instance in both cases — no duplicate nav logo. */}
       <div
         style={{
           position: 'fixed',
           left: '50%',
-          top: revealed ? '28px' : '50%',
-          transform: revealed ? 'translate(-50%, 0)' : 'translate(-50%, -50%)',
-          width: revealed ? `${logoEndPx}px` : `${logoStartVw}vw`,
+          top: lockCenter ? '50%' : (revealed ? '28px' : '50%'),
+          transform: lockCenter
+            ? 'translate(-50%, -50%)'
+            : (revealed ? 'translate(-50%, 0)' : 'translate(-50%, -50%)'),
+          width: lockCenter
+            ? `${logoStartVw}vw`
+            : (revealed ? `${logoEndPx}px` : `${logoStartVw}vw`),
           color: '#ffffff',
-          opacity: 1,
+          opacity: lockCenter ? ((revealed && dispersed) ? 0 : 1) : 1,
           zIndex: 21,
           pointerEvents: 'none',
           transition: logoTransition,
-          willChange: 'top, transform, width',
+          willChange: lockCenter ? 'opacity' : 'top, transform, width',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',

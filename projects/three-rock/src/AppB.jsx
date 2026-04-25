@@ -787,6 +787,7 @@ export default function AppB() {
       <Leva hidden collapsed oneLineLabels />
       <LevaPanel store={fxStore} hidden oneLineLabels collapsed />
       <HeroIntro
+        logoBehavior="lockCenter"
         revealed={introRevealed}
         resetting={resetting}
         logoStartVw={preloader.logoStartVw}
