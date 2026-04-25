@@ -58,7 +58,7 @@ const PIECE_DEFAULTS = [
     introOffset: { x:  2, y:  4, z: -7.40 }, introRotOffset: { x:  60, y: -40, z: -90 } },
 ]
 
-function usePieceControls(label, defaults) {
+function usePieceControls(label, defaults, store) {
   return useControls(label, {
     enabled: defaults.enabled,
     position: { value: defaults.position, step: 0.01 },
@@ -66,12 +66,15 @@ function usePieceControls(label, defaults) {
     scale: { value: 1, min: 0.1, max: 3, step: 0.01 },
     introOffset:    { value: defaults.introOffset    || { x: 0, y: 0, z: 0 }, step: 0.05, label: 'intro Δ xyz' },
     introRotOffset: { value: defaults.introRotOffset || { x: 0, y: 0, z: 0 }, step: 5,    label: 'intro Δ rot°' },
-  }, { collapsed: true })
+  }, { collapsed: true, store })
 }
 
 export default function AppD() {
-  // Dedicated Leva store for the advanced shader FX — shown as its own detachable panel
-  // so the user can tune the effect without scrolling through the massive main panel.
+  // Two dedicated Leva stores for Version D. `mainStore` isolates every main
+  // useControls() call from the other variants' stores — previously Leva's
+  // singleton root store caused values tuned on /d to bleed into /b and /c
+  // the next time they mounted. `fxStore` is the detachable shader FX panel.
+  const mainStore = useCreateStore()
   const fxStore = useCreateStore()
   const shaderFX = useControls({
     'Effect': folder({
@@ -198,7 +201,7 @@ export default function AppD() {
       logoOffsetY: { value: 0, min: -3, max: 3, step: 0.01 },
       logoOffsetZ: { value: 0, min: -3, max: 3, step: 0.01 },
     }, { collapsed: true }),
-  })
+  }, { store: mainStore })
 
   const versionB = useControls({
     'D · Logo Intro': folder({
@@ -393,12 +396,12 @@ export default function AppD() {
       titleHoverOpacity: { value: 0.25, min: 0, max: 1, step: 0.01, label: 'hover opacity' },
       titleHoverDurS:    { value: 1.0, min: 0.1, max: 3, step: 0.05, label: 'hover fade s' },
     }, { collapsed: true }),
-  }, { collapsed: false })
+  }, { collapsed: false, store: mainStore })
 
-  const p1 = usePieceControls('Piece 1', PIECE_DEFAULTS[0])
-  const p2 = usePieceControls('Piece 2', PIECE_DEFAULTS[1])
-  const p3 = usePieceControls('Piece 3', PIECE_DEFAULTS[2])
-  const p4 = usePieceControls('Piece 4', PIECE_DEFAULTS[3])
+  const p1 = usePieceControls('Piece 1', PIECE_DEFAULTS[0], mainStore)
+  const p2 = usePieceControls('Piece 2', PIECE_DEFAULTS[1], mainStore)
+  const p3 = usePieceControls('Piece 3', PIECE_DEFAULTS[2], mainStore)
+  const p4 = usePieceControls('Piece 4', PIECE_DEFAULTS[3], mainStore)
   const rawPieces = [p1, p2, p3, p4]
   // Per-piece intro progress (0 = offset origin, 1 = default). Baked into
   // pieces below so Rock + MaskedVideo see the same animated transform.
@@ -588,7 +591,7 @@ export default function AppD() {
   // Replay button — declared AFTER the callbacks so closures capture them.
   useControls('D · Intro · Replay', {
     replayLogoIntro: button(() => replayPieceIntro()),
-  }, { collapsed: false })
+  }, { collapsed: false, store: mainStore })
 
   const preloader = useControls('✦ Preloader', {
     Overlay: folder({
@@ -646,7 +649,7 @@ export default function AppD() {
       titleEase:      { value: 'circ.out', options: EASE_NAMES },
       titleStaggerMs: { value: 350, min: 0, max: 1200, step: 10 },
     }, { collapsed: true }),
-  }, { collapsed: true })
+  }, { collapsed: true, store: mainStore })
 
   const [logo3dRevealProgress, setLogo3dRevealProgress] = useState(0)
   useEffect(() => {
@@ -751,19 +754,19 @@ export default function AppD() {
       sparklesOn: { value: false },
       sparklesCount: { value: 0, min: 0, max: 300, step: 1 },
     }, { collapsed: true }),
-  })
+  }, { store: mainStore })
 
   const cameraStateRef = useRef({ getState: () => null })
   const [cam, setCam] = useControls(() => ({
     'Camera': folder({
       azimuth:   { value: 0,    min: -180, max: 180, step: 0.5 },
-      polar:     { value: 90.0, min: 1,    max: 179, step: 0.5 },
-      distance:  { value: 7.81, min: 0.5,  max: 200, step: 0.05 },
+      polar:     { value: 90.5, min: 1,    max: 179, step: 0.5 },
+      distance:  { value: 9.45, min: 0.5,  max: 200, step: 0.05 },
       targetX:   { value: 0,    min: -5,   max: 5,   step: 0.01 },
       targetY:   { value: 0,    min: -5,   max: 5,   step: 0.01 },
-      targetZ:   { value: 0.04, min: -5,   max: 5,   step: 0.01 },
-      fov:       { value: 10.9, min: 1,    max: 120, step: 0.1 },
-      exposure:  { value: 0.85, min: 0.1,  max: 3,   step: 0.05 },
+      targetZ:   { value: -0.6, min: -5,   max: 5,   step: 0.01 },
+      fov:       { value: 5.0,  min: 1,    max: 120, step: 0.1 },
+      exposure:  { value: 1.05, min: 0.1,  max: 3,   step: 0.05 },
       'copy current view 📋': button(() => {
         const s = cameraStateRef.current.getState?.()
         if (!s) return
@@ -778,10 +781,10 @@ export default function AppD() {
         })
       }),
       'reset view ↺': button(() => {
-        setCam({ azimuth: 0, polar: 90.0, distance: 7.81, targetX: 0, targetY: 0, targetZ: 0.04, fov: 10.9 })
+        setCam({ azimuth: 0, polar: 90.5, distance: 9.45, targetX: 0, targetY: 0, targetZ: -0.6, fov: 5.0 })
       }),
     }, { collapsed: true }),
-  }))
+  }), { store: mainStore })
 
   // --- Responsive camera distance (Version D) ----------------------------
   // The 3D logo should always "kiss" the left + right edges of the viewport,
@@ -794,10 +797,10 @@ export default function AppD() {
   // A `logoFillVw` knob lets the designer overshoot/undershoot the full
   // viewport width (e.g. 90% of width for breathing room).
   const responsive = useControls('D · Responsive Camera', {
-    responsiveOn:   { value: false, label: 'auto fit to viewport' },
+    responsiveOn:   { value: true,  label: 'auto fit to viewport' },
     logoWorldWidth: { value: 2.88, min: 0.5, max: 10, step: 0.01, label: 'logo world width' },
     logoFillVw:     { value: 1.0,  min: 0.2, max: 2,  step: 0.01, label: 'logo / viewport' },
-  }, { collapsed: true })
+  }, { collapsed: true, store: mainStore })
 
   useEffect(() => {
     if (!responsive.responsiveOn) return
@@ -824,7 +827,7 @@ export default function AppD() {
         caOffsetY: { value: 0.00, min: -0.02, max: 0.02, step: 0.0001 },
       }, { collapsed: true }),
     }, { collapsed: true }),
-  })
+  }, { store: mainStore })
 
   // --- side titles (bottom "We make / interfaces") ---
   const sideTitlesVisible = versionB.titlesOn && introRevealed
@@ -914,9 +917,14 @@ export default function AppD() {
         </div>
       </div>
 
-      {/* Version D — Leva gated on "c" press so we can tune the responsive
-          camera + all the B knobs that came over with the copy. */}
-      <Leva hidden={!levaVisible} collapsed={false} oneLineLabels />
+      {/* Version D — main panel reads from mainStore (isolated to /d), and
+          the FX panel reads from fxStore. Both gated on "c". */}
+      <LevaPanel
+        store={mainStore}
+        hidden={!levaVisible}
+        oneLineLabels
+        collapsed={false}
+      />
       <LevaPanel
         store={fxStore}
         hidden={!levaVisible}
@@ -954,19 +962,18 @@ export default function AppD() {
         letterEntryStaggerMs={preloader.letterEntryStaggerMs}
       />
 
-      {/* Version switcher — pill row sitting right next to the Menu button
-          in the top-left cluster. Same vertical baseline, tight gap so the
-          group reads as one nav unit. */}
+      {/* Version switcher — tiny nav pills that jump between the 4 variants.
+          Gated on introRevealed so they fade in after the preloader. "v.3" is
+          flagged as the best so the reviewer can compare quickly. */}
       <div
         aria-label="version switcher"
         style={{
           position: 'fixed',
-          top: `${versionB.navTopVh}vh`,
-          left: `calc(${versionB.navSidePadVw}vw + 5.3vw)`,
+          top: '54px',
+          left: '50%',
+          transform: 'translateX(-50%)',
           display: 'flex',
-          alignItems: 'center',
           gap: '6px',
-          height: `calc(${versionB.navMenuFontVw}vw + ${versionB.navMenuPadYVw * 2}vw + 2px)`,
           zIndex: 22,
           opacity: introRevealed ? 1 : 0,
           transition: resetting ? 'none' : 'opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1) 0.4s',

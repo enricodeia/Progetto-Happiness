@@ -8,7 +8,7 @@ import {
   DotScreen, ColorAverage, Sepia,
 } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
-import { useControls, folder, Leva, button } from 'leva'
+import { useControls, folder, LevaPanel, useCreateStore, button } from 'leva'
 import * as THREE from 'three'
 import Rock from './Rock.jsx'
 import MaskedVideo from './MaskedVideo.jsx'
@@ -121,7 +121,7 @@ const PIECE_DEFAULTS = [
   { enabled: true, position: { x: 1.44, y:  0,    z: 0 }, rotationZ: 270 },
 ]
 
-function usePieceControls(label, defaults) {
+function usePieceControls(label, defaults, store) {
   return useControls(label, {
     enabled: defaults.enabled,
     position: { value: defaults.position, step: 0.01 },
@@ -131,10 +131,13 @@ function usePieceControls(label, defaults) {
       label: 'rotation °',
     },
     scale: { value: 1, min: 0.1, max: 3, step: 0.01 },
-  }, { collapsed: true })
+  }, { collapsed: true, store })
 }
 
 export default function App() {
+  // Dedicated Leva store isolates Version A from /b /c /d so the global
+  // singleton store can't carry tuned values across routes.
+  const mainStore = useCreateStore()
   const shape = useControls({
     Shape: folder({
       depth: { value: 61, min: 10, max: 250, step: 1 },
@@ -266,12 +269,12 @@ export default function App() {
       logoOffsetY: { value: 0, min: -3, max: 3, step: 0.01, label: 'offset.y (fine tune)' },
       logoOffsetZ: { value: 0, min: -3, max: 3, step: 0.01, label: 'offset.z (fine tune)' },
     }, { collapsed: false }),
-  })
+  }, { store: mainStore })
 
-  const p1 = usePieceControls('Piece 1', PIECE_DEFAULTS[0])
-  const p2 = usePieceControls('Piece 2', PIECE_DEFAULTS[1])
-  const p3 = usePieceControls('Piece 3', PIECE_DEFAULTS[2])
-  const p4 = usePieceControls('Piece 4', PIECE_DEFAULTS[3])
+  const p1 = usePieceControls('Piece 1', PIECE_DEFAULTS[0], mainStore)
+  const p2 = usePieceControls('Piece 2', PIECE_DEFAULTS[1], mainStore)
+  const p3 = usePieceControls('Piece 3', PIECE_DEFAULTS[2], mainStore)
+  const p4 = usePieceControls('Piece 4', PIECE_DEFAULTS[3], mainStore)
   const pieces = [p1, p2, p3, p4]
 
   const logoCentroid = useMemo(() => {
@@ -392,7 +395,7 @@ export default function App() {
       playReelDuration: { value: 1.0, min: 0.1, max: 3, step: 0.05, label: 'duration s' },
       playReelEase:     { value: 'circ.out', options: EASE_NAMES, label: 'easing' },
     }, { collapsed: false }),
-  }, { collapsed: false })
+  }, { collapsed: false, store: mainStore })
 
   // 3D opacity reveal: 0 → 1 when intro reveals (after logo3dDelay, over logo3dDuration).
   const [logo3dRevealProgress, setLogo3dRevealProgress] = useState(0)
@@ -485,7 +488,7 @@ export default function App() {
       sparklesOn: { value: false, label: 'sparkles' },
       sparklesCount: { value: 0, min: 0, max: 300, step: 1 },
     }, { collapsed: true }),
-  })
+  }, { store: mainStore })
 
   const cameraStateRef = useRef({ getState: () => null })
   const [cam, setCam] = useControls(() => ({
@@ -518,7 +521,7 @@ export default function App() {
         })
       }),
     }, { collapsed: false }),
-  }))
+  }), { store: mainStore })
 
   const fx = useControls({
     'Post FX': folder({
@@ -578,11 +581,11 @@ export default function App() {
         sepiaIntensity: { value: 0.7, min: 0, max: 1, step: 0.01, label: 'sepia amount' },
       }, { collapsed: true }),
     }, { collapsed: true }),
-  })
+  }, { store: mainStore })
 
   return (
     <>
-      <Leva hidden={!levaVisible} collapsed={false} oneLineLabels />
+      <LevaPanel store={mainStore} hidden={!levaVisible} collapsed={false} oneLineLabels />
       <HeroIntro
         revealed={introRevealed}
         resetting={resetting}

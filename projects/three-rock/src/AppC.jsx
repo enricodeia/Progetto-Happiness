@@ -129,7 +129,7 @@ const PIECE_DEFAULTS = [
     introOffset: { x:  2, y:  4, z: -7.40 }, introRotOffset: { x:  60, y: -40, z: -90 } },
 ]
 
-function usePieceControls(label, defaults) {
+function usePieceControls(label, defaults, store) {
   return useControls(label, {
     enabled: defaults.enabled,
     position: { value: defaults.position, step: 0.01 },
@@ -138,12 +138,14 @@ function usePieceControls(label, defaults) {
     // Per-piece intro: offset xyz + rotation delta ° at t=0, lerped to 0.
     introOffset:    { value: defaults.introOffset    || { x: 0, y: 0, z: 0 }, step: 0.05, label: 'intro Δ xyz' },
     introRotOffset: { value: defaults.introRotOffset || { x: 0, y: 0, z: 0 }, step: 5,    label: 'intro Δ rot°' },
-  }, { collapsed: true })
+  }, { collapsed: true, store })
 }
 
 export default function AppB() {
-  // Dedicated Leva store for the advanced shader FX — shown as its own detachable panel
-  // so the user can tune the effect without scrolling through the massive main panel.
+  // Two dedicated Leva stores. mainStore isolates Version C's main controls
+  // from /b and /d so values can't bleed across routes via Leva's singleton.
+  // fxStore is the detachable shader FX panel.
+  const mainStore = useCreateStore()
   const fxStore = useCreateStore()
   const shaderFX = useControls({
     'Effect': folder({
@@ -265,7 +267,7 @@ export default function AppB() {
       logoOffsetY: { value: 0, min: -3, max: 3, step: 0.01 },
       logoOffsetZ: { value: 0, min: -3, max: 3, step: 0.01 },
     }, { collapsed: true }),
-  })
+  }, { store: mainStore })
 
   const versionB = useControls({
     'B · Side Marquees': folder({
@@ -447,12 +449,12 @@ export default function AppB() {
       titleHoverOpacity: { value: 0.25, min: 0, max: 1, step: 0.01, label: 'hover opacity' },
       titleHoverDurS:    { value: 1.0, min: 0.1, max: 3, step: 0.05, label: 'hover fade s' },
     }, { collapsed: true }),
-  }, { collapsed: false })
+  }, { collapsed: false, store: mainStore })
 
-  const p1 = usePieceControls('Piece 1', PIECE_DEFAULTS[0])
-  const p2 = usePieceControls('Piece 2', PIECE_DEFAULTS[1])
-  const p3 = usePieceControls('Piece 3', PIECE_DEFAULTS[2])
-  const p4 = usePieceControls('Piece 4', PIECE_DEFAULTS[3])
+  const p1 = usePieceControls('Piece 1', PIECE_DEFAULTS[0], mainStore)
+  const p2 = usePieceControls('Piece 2', PIECE_DEFAULTS[1], mainStore)
+  const p3 = usePieceControls('Piece 3', PIECE_DEFAULTS[2], mainStore)
+  const p4 = usePieceControls('Piece 4', PIECE_DEFAULTS[3], mainStore)
   const rawPieces = [p1, p2, p3, p4]
   // Per-piece intro progress (0 = at offset origin, 1 = at default). Driven
   // by the RAF tween further below.
@@ -576,7 +578,7 @@ export default function AppB() {
 
   useControls('C · Intro · Replay', {
     replayLogoIntro: button(() => replayPieceIntro()),
-  }, { collapsed: false })
+  }, { collapsed: false, store: mainStore })
 
   const preloader = useControls('✦ Preloader', {
     Overlay: folder({
@@ -634,7 +636,7 @@ export default function AppB() {
       titleEase:      { value: 'circ.out', options: EASE_NAMES },
       titleStaggerMs: { value: 350, min: 0, max: 1200, step: 10 },
     }, { collapsed: true }),
-  }, { collapsed: true })
+  }, { collapsed: true, store: mainStore })
 
   const [logo3dRevealProgress, setLogo3dRevealProgress] = useState(0)
   useEffect(() => {
@@ -736,7 +738,7 @@ export default function AppB() {
       sparklesOn: { value: false },
       sparklesCount: { value: 0, min: 0, max: 300, step: 1 },
     }, { collapsed: true }),
-  })
+  }, { store: mainStore })
 
   const cameraStateRef = useRef({ getState: () => null })
   const [cam, setCam] = useControls(() => ({
@@ -766,7 +768,7 @@ export default function AppB() {
         setCam({ azimuth: 0, polar: 90.5, distance: 9.45, targetX: 0, targetY: 0, targetZ: 0, fov: 29 })
       }),
     }, { collapsed: true }),
-  }))
+  }), { store: mainStore })
 
   const fx = useControls({
     'Post FX': folder({
@@ -779,7 +781,7 @@ export default function AppB() {
         caOffsetY: { value: 0.00, min: -0.02, max: 0.02, step: 0.0001 },
       }, { collapsed: true }),
     }, { collapsed: true }),
-  })
+  }, { store: mainStore })
 
   // --- side titles (bottom "We make / interfaces") ---
   const sideTitlesVisible = versionB.titlesOn && introRevealed
@@ -814,7 +816,7 @@ export default function AppB() {
 
   return (
     <>
-      <Leva hidden={!levaVisible} collapsed={false} oneLineLabels />
+      <LevaPanel store={mainStore} hidden={!levaVisible} collapsed={false} oneLineLabels />
       <LevaPanel
         store={fxStore}
         hidden={!levaVisible}
@@ -851,6 +853,70 @@ export default function AppB() {
         letterEntryDuration={preloader.letterEntryDuration}
         letterEntryStaggerMs={preloader.letterEntryStaggerMs}
       />
+
+      {/* Version switcher — pills next to the Menu button for fast test
+          navigation. */}
+      <div
+        aria-label="version switcher"
+        style={{
+          position: 'fixed',
+          top: `${versionB.navTopVh}vh`,
+          left: `calc(${versionB.navSidePadVw}vw + 5.3vw)`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          height: `calc(${versionB.navMenuFontVw}vw + ${versionB.navMenuPadYVw * 2}vw + 2px)`,
+          zIndex: 22,
+          opacity: introRevealed ? 1 : 0,
+          transition: resetting ? 'none' : 'opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1) 0.4s',
+          fontFamily: "'Basis Grotesque Pro', sans-serif",
+        }}
+      >
+        {[
+          { label: 'v.1',        path: '/a' },
+          { label: 'v.2',        path: '/b' },
+          { label: 'v.3 (Best)', path: '/c' },
+          { label: 'v.4',        path: '/d' },
+        ].map(({ label, path }) => {
+          const isCurrent = path === '/c'
+          return (
+            <button
+              key={path}
+              type="button"
+              onClick={() => navigate(path)}
+              style={{
+                all: 'unset',
+                padding: '4px 10px',
+                borderRadius: 999,
+                fontSize: '11px',
+                letterSpacing: '0.02em',
+                background: isCurrent ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.06)',
+                border: `1px solid ${isCurrent ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.10)'}`,
+                color: 'rgba(245,246,248,0.92)',
+                cursor: 'pointer',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
+                transition: 'background 0.25s ease, border-color 0.25s ease',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => {
+                if (!isCurrent) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.12)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isCurrent) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)'
+                }
+              }}
+            >
+              {label}
+            </button>
+          )
+        })}
+      </div>
 
       {/* Version C top nav — smaller pills; CTA grows horizontally from right → left
           on hover (height is pinned; no vertical morph). */}
