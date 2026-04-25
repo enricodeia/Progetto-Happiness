@@ -88,10 +88,23 @@ export default function HeroIntro({
 
   // Per-letter visual state.
   const inDisperse = lettersAnim && entered && revealed && !dispersed
-  const letterTransform = (i) =>
-    inDisperse ? `translateY(${i % 2 === 0 ? -lettersDisperseY : lettersDisperseY}px)` : 'translateY(0)'
+  const letterTransform = (i) => {
+    // During dispersal AND after it finishes, hold the dispersed pose.
+    // Previously, once `dispersed` flipped true, letters snapped back to
+    // translateY(0) — which combined with a slow container fade made the
+    // logo visibly "reappear" for a moment before disappearing again.
+    if (lettersAnim && entered && revealed) {
+      return `translateY(${i % 2 === 0 ? -lettersDisperseY : lettersDisperseY}px)`
+    }
+    return 'translateY(0)'
+  }
   const letterOpacity = (i) => {
     if (!entered) return 0
+    // Keep letters invisible the entire time `revealed` is true when the
+    // dispersal animation is on. Covers both the in-flight disperse phase
+    // and the post-disperse state, so they never flash back to opacity 1
+    // while the container is still fading out.
+    if (lettersAnim && revealed) return 0
     if (inDisperse) return 0
     return 1
   }
@@ -139,6 +152,53 @@ export default function HeroIntro({
           transition: overlayTransitionCss,
         }}
       />
+      {/* Persistent nav-top logo for lockCenter mode (B/C/D). Fades in
+          AFTER the preloader container has fully faded out. With the letter
+          opacity fixed to stay 0 post-dispersal, there is no visible
+          "reappear then vanish" at the centre anymore — this top logo is
+          the only thing that shows up after the loader. */}
+      {lockCenter && (
+        <div
+          aria-hidden
+          style={{
+            position: 'fixed',
+            left: '50%',
+            top: '28px',
+            transform: 'translateX(-50%)',
+            width: `${logoEndPx}px`,
+            color: '#ffffff',
+            opacity: (revealed && dispersed) ? 1 : 0,
+            zIndex: 20,
+            pointerEvents: 'none',
+            transition: resetting
+              ? 'none'
+              : `opacity 0.5s ${logoEasing} ${(revealed && dispersed) ? logoDuration : 0}s`,
+            willChange: 'opacity',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <svg
+            viewBox="0 0 80 18"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{ width: '100%', height: 'auto', display: 'block', overflow: 'visible' }}
+          >
+            <defs>
+              <clipPath id="nav_metalab_clip">
+                <rect width="80" height="17" fill="white" transform="translate(0 0.5)" />
+              </clipPath>
+            </defs>
+            <g clipPath="url(#nav_metalab_clip)">
+              {LETTER_PATHS.map((d, i) => (
+                <path key={i} d={d} fill={fill} />
+              ))}
+            </g>
+          </svg>
+        </div>
+      )}
+
       {/* Metalab mark. Two possible behaviors:
            - slide (A): centered+large during preloader, slides to top+small on reveal.
            - lockCenter (B/C/D): pinned at centre, fades out after letter dispersal.
