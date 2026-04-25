@@ -591,7 +591,7 @@ export default function AppB() {
       loaderBarOn:      { value: true },
       loaderBarWidthPx: { value: 120, min: 40, max: 400, step: 2 },
       loaderBarGapPx:   { value: 18,  min: 0,  max: 80,  step: 1 },
-      letterEntryOn:        { value: true },
+      letterEntryOn:        { value: false },
       letterEntryDuration:  { value: 0.6, min: 0.1, max: 2, step: 0.05 },
       letterEntryStaggerMs: { value: 80, min: 0, max: 300, step: 5 },
     }, { collapsed: true }),
