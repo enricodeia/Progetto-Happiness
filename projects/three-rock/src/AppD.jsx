@@ -163,8 +163,8 @@ export default function AppD() {
       trailRevealDuration: { value: 0.5, min: 0.05, max: 2, step: 0.05 },
       // Vertex-space displacement — physically bulges the glass where the
       // cursor has painted. 0 = off, 0.3–0.5 is a strong ripple.
-      trailDisplace:      { value: 0.22, min: 0, max: 1.5, step: 0.01, label: 'displace strength' },
-      trailDisplaceSharp: { value: 1.6,  min: 0.2, max: 4, step: 0.05, label: 'displace sharpness' },
+      trailDisplace:      { value: 0.45, min: 0, max: 3, step: 0.01, label: 'displace strength' },
+      trailDisplaceSharp: { value: 1.2,  min: 0.2, max: 4, step: 0.05, label: 'displace sharpness' },
     }, { collapsed: true }),
     Orbit: folder({
       autoRotate: false,
@@ -185,8 +185,8 @@ export default function AppD() {
       bgMaskOpacity: { value: 1, min: 0, max: 1, step: 0.01 },
       bgFullOpacityIdle: { value: 0, min: 0, max: 1, step: 0.01 },
       bgFullOpacityHover: { value: 1, min: 0, max: 1, step: 0.01 },
-      bgRevealInDuration: { value: 1.0, min: 0.05, max: 3, step: 0.05 },
-      bgRevealOutDuration: { value: 1.0, min: 0.05, max: 3, step: 0.05 },
+      bgRevealInDuration: { value: 0.40, min: 0.05, max: 3, step: 0.05 },
+      bgRevealOutDuration: { value: 0.60, min: 0.05, max: 3, step: 0.05 },
       bgLoopStart: { value: 0, min: 0, max: 600, step: 0.1 },
       bgLoopEnd: { value: 15, min: 0.5, max: 600, step: 0.1 },
       bgPlaybackRate: { value: 1, min: 0.1, max: 4, step: 0.05 },
@@ -953,6 +953,70 @@ export default function AppD() {
         letterEntryDuration={preloader.letterEntryDuration}
         letterEntryStaggerMs={preloader.letterEntryStaggerMs}
       />
+
+      {/* Version switcher — tiny nav pills that jump between the 4 variants.
+          Gated on introRevealed so they fade in after the preloader. "v.3" is
+          flagged as the best so the reviewer can compare quickly. */}
+      <div
+        aria-label="version switcher"
+        style={{
+          position: 'fixed',
+          top: '54px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '6px',
+          zIndex: 22,
+          opacity: introRevealed ? 1 : 0,
+          transition: resetting ? 'none' : 'opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1) 0.4s',
+          fontFamily: "'Basis Grotesque Pro', sans-serif",
+        }}
+      >
+        {[
+          { label: 'v.1',        path: '/a' },
+          { label: 'v.2',        path: '/b' },
+          { label: 'v.3 (Best)', path: '/c' },
+          { label: 'v.4',        path: '/d' },
+        ].map(({ label, path }) => {
+          const isCurrent = path === '/d'
+          return (
+            <button
+              key={path}
+              type="button"
+              onClick={() => navigate(path)}
+              style={{
+                all: 'unset',
+                padding: '4px 10px',
+                borderRadius: 999,
+                fontSize: '11px',
+                letterSpacing: '0.02em',
+                background: isCurrent ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.06)',
+                border: `1px solid ${isCurrent ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.10)'}`,
+                color: 'rgba(245,246,248,0.92)',
+                cursor: 'pointer',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
+                transition: 'background 0.25s ease, border-color 0.25s ease',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => {
+                if (!isCurrent) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.12)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isCurrent) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)'
+                }
+              }}
+            >
+              {label}
+            </button>
+          )
+        })}
+      </div>
 
       {/* Version C nav reused — smaller pills, CTA expands horizontally
           right → left on hover (no vertical morph). */}
