@@ -523,6 +523,11 @@ export default function Rock({
   onHoverChange: onHoverChangeProp,
   onLogoClick,
   revealOpacity = 1,
+  // Optional override — when provided, this material is used for every piece
+  // INSTEAD of the internally-built procedural one. Used by Version D for the
+  // Smoky Ocean texture preset. The trail/triplanar pipeline is skipped in
+  // this mode (the override material is rendered as-is).
+  customMaterial = null,
 }) {
   const geometry = useMemo(
     () => buildArmGeometry({ depth, bevelSize, bevelThickness, bevelSegments, targetSize }),
@@ -783,7 +788,7 @@ export default function Rock({
         <Piece
           key={i}
           geometry={geometry}
-          material={material}
+          material={customMaterial || material}
           config={cfg}
           onTrail={trailHandler}
           onHoverChange={handleHoverChange}

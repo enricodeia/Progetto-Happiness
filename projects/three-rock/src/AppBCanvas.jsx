@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef } from 'react'
+import { Suspense, useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, Environment, Sparkles } from '@react-three/drei'
 import {
@@ -87,6 +87,76 @@ function CameraRig({ target, azimuth, polar, distance, fov, autoRotate, autoRota
   )
 }
 
+// Loads the 5 Smoky Ocean .webp maps + builds a MeshPhysicalMaterial
+// with the user's exact texture-tool params. Returns null when disabled
+// or when the smokyOcean config object is missing. Old material is
+// disposed when the toggle flips back off.
+function useSmokyOceanMaterial(smokyOcean) {
+  return useMemo(() => {
+    if (!smokyOcean || !smokyOcean.on) return null
+    const loader = new THREE.TextureLoader()
+    const base = '/textures/smoky-ocean/'
+    const maps = {
+      map:             loader.load(base + 'texture_diffuse.webp'),
+      roughnessMap:    loader.load(base + 'texture_roughness.webp'),
+      bumpMap:         loader.load(base + 'texture_height.webp'),
+      aoMap:           loader.load(base + 'texture_ao.webp'),
+      displacementMap: loader.load(base + 'texture_displacement.webp'),
+    }
+    Object.values(maps).forEach((t) => {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping
+      t.anisotropy = 8
+      t.repeat.set(smokyOcean.repeat, smokyOcean.repeat)
+    })
+    maps.map.colorSpace = THREE.SRGBColorSpace
+
+    const mat = new THREE.MeshPhysicalMaterial({
+      ...maps,
+      displacementScale: smokyOcean.displacementScale,
+      displacementBias:  smokyOcean.displacementBias,
+      normalScale: new THREE.Vector2(smokyOcean.normalScale, smokyOcean.normalScale),
+      roughness:   smokyOcean.roughness,
+      metalness:   smokyOcean.metalness,
+      bumpScale:   smokyOcean.bumpScale,
+      transmission: smokyOcean.transmission,
+      thickness:    smokyOcean.thickness,
+      ior:          smokyOcean.ior,
+      clearcoat:           smokyOcean.clearcoat,
+      clearcoatRoughness:  smokyOcean.clearcoatRoughness,
+      sheen:         smokyOcean.sheen,
+      sheenRoughness:smokyOcean.sheenRoughness,
+      sheenColor:   new THREE.Color(smokyOcean.sheenColor),
+      anisotropy:   smokyOcean.anisotropy,
+      iridescence:  smokyOcean.iridescence,
+      iridescenceIOR: smokyOcean.iridescenceIOR,
+      attenuationDistance: smokyOcean.attenuationDistance,
+      attenuationColor:    new THREE.Color(smokyOcean.attenuationColor),
+      specularIntensity: smokyOcean.specularIntensity,
+      specularColor:     new THREE.Color(smokyOcean.specularColor),
+      emissive:          new THREE.Color(smokyOcean.emissive),
+      emissiveIntensity: smokyOcean.emissiveIntensity,
+      anisotropyRotation: smokyOcean.anisotropyRotation,
+      iridescenceThicknessRange: [smokyOcean.iridescenceMin, smokyOcean.iridescenceMax],
+    })
+    return mat
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    smokyOcean?.on,
+    smokyOcean?.repeat,
+    smokyOcean?.displacementScale, smokyOcean?.displacementBias,
+    smokyOcean?.normalScale, smokyOcean?.roughness, smokyOcean?.metalness, smokyOcean?.bumpScale,
+    smokyOcean?.transmission, smokyOcean?.thickness, smokyOcean?.ior,
+    smokyOcean?.clearcoat, smokyOcean?.clearcoatRoughness,
+    smokyOcean?.sheen, smokyOcean?.sheenRoughness, smokyOcean?.sheenColor,
+    smokyOcean?.anisotropy, smokyOcean?.iridescence, smokyOcean?.iridescenceIOR,
+    smokyOcean?.attenuationDistance, smokyOcean?.attenuationColor,
+    smokyOcean?.specularIntensity, smokyOcean?.specularColor,
+    smokyOcean?.emissive, smokyOcean?.emissiveIntensity,
+    smokyOcean?.anisotropyRotation,
+    smokyOcean?.iridescenceMin, smokyOcean?.iridescenceMax,
+  ])
+}
+
 export default function AppBCanvas({ config }) {
   const {
     scene, cam, shape, fx, versionB, shaderFX, preloader,
@@ -95,7 +165,13 @@ export default function AppBCanvas({ config }) {
     hoveredClientId, buttonHovered, introRevealed, resetting,
     logo3dRevealProgress, bevelLoadProgress,
     setVideoReady, setLogoHovered, setButtonHovered,
+    smokyOcean,
   } = config
+
+  // Build the Smoky Ocean PBR material (only when enabled). Loads the 5
+  // .webp maps from /textures/smoky-ocean and applies the user's exact
+  // params from their custom texture tool. Disposed on toggle-off.
+  const customMaterial = useSmokyOceanMaterial(smokyOcean)
 
   return (
     <Canvas
@@ -207,6 +283,7 @@ export default function AppBCanvas({ config }) {
             bevelThickness={preloader.bevelStart + (shape.bevelThickness - preloader.bevelStart) * bevelLoadProgress}
             revealOpacity={logo3dRevealProgress}
             pieces={pieces}
+            customMaterial={customMaterial}
             logoOffset={{ x: shape.logoOffsetX, y: shape.logoOffsetY, z: shape.logoOffsetZ }}
             autoCenter={shape.autoCenter}
             onHoverChange={setLogoHovered}
