@@ -219,7 +219,7 @@ export default function AppD() {
       },
     }, { collapsed: false }),
     'D · Smoky Ocean Material': folder({
-      smokyOn:                   { value: true,  label: 'enabled' },
+      smokyOn:                   { value: false, label: 'enabled' },
       smokyRepeat:               { value: 1.0,   min: 0.1, max: 8, step: 0.1, label: 'tiling' },
       smokyDisplacementScale:    { value: 0.485, min: 0, max: 2, step: 0.005, label: 'displacement scale' },
       smokyDisplacementBias:     { value: -0.242,min: -1, max: 1, step: 0.005, label: 'displacement bias' },
