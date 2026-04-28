@@ -7,6 +7,7 @@ import {
 import { BlendFunction } from 'postprocessing'
 import * as THREE from 'three'
 import Rock from './Rock.jsx'
+import Rock3D from './Rock3D.jsx'
 import MaskedVideo from './MaskedVideo.jsx'
 import PlayReel from './PlayReel.jsx'
 import ClientShaderBg from './ClientShaderBg.jsx'
@@ -278,6 +279,20 @@ export default function AppBCanvas({ config }) {
               backdropDarkness={shaderFX.backdropDarkness}
             />
           )}
+          {customMaterial ? (
+            // High-poly baked GLB pipeline — when the Smoky Ocean material
+            // is on we swap the runtime ExtrudeGeometry-per-piece Rock for
+            // the single welded ~21k vert mesh. Displacement, normal and
+            // sheen all read correctly because the mesh is dense + has
+            // proper UVs.
+            <Rock3D
+              material={customMaterial}
+              position={[0, 0, 0]}
+              scale={1}
+              onPointerOver={() => setLogoHovered(+1)}
+              onPointerOut={() => setLogoHovered(-1)}
+            />
+          ) : (
           <Rock
             {...shape}
             bevelThickness={preloader.bevelStart + (shape.bevelThickness - preloader.bevelStart) * bevelLoadProgress}
@@ -288,6 +303,7 @@ export default function AppBCanvas({ config }) {
             autoCenter={shape.autoCenter}
             onHoverChange={setLogoHovered}
           />
+          )}
           {shape.playReelButton && (
             <PlayReel
               position={[
