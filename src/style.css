@@ -940,7 +940,11 @@ html, body, #root {
 }
 
 .top-controls {
+<<<<<<< Updated upstream
   position: fixed; top: 24px; right: 24px; z-index: 500;
+=======
+  position: fixed; top: 24px; right: 24px; z-index: 200;
+>>>>>>> Stashed changes
   display: flex; align-items: center; gap: 8px;
 }
 .audio-control {

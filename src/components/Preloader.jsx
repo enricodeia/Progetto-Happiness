@@ -10,6 +10,12 @@ export const isAudioEnabled = () => audioEnabled;
 export const getBgMusic = () => bgMusic;
 
 
+let audioEnabled = false;
+let bgMusic = null;
+export const isAudioEnabled = () => audioEnabled;
+export const getBgMusic = () => bgMusic;
+
+
 const Preloader = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
   const [peelPct, setPeelPct] = useState(90);
@@ -35,6 +41,7 @@ const Preloader = ({ onComplete }) => {
   const set = (k, v) => setCfg((p) => ({ ...p, [k]: v }));
 
   useEffect(() => {
+<<<<<<< Updated upstream
     // Wait for globe-scene to finish loading all critical assets (earth, specular, clouds, countries)
     let realProgress = 0, displayProgress = 0, animFrame = null;
 
@@ -51,6 +58,30 @@ const Preloader = ({ onComplete }) => {
     globeReady.then(() => { globeDone = true; realProgress = 100; });
     if (document.fonts?.ready) document.fonts.ready.then(() => {});
     // Safety: if globe takes too long, force 100% after 12s
+=======
+    // Images: preload as Image objects so browser decodes them
+    const images = ['/earth-8k.webp', '/clouds.webp', '/logo.webp', '/specular.webp'];
+    // JSON data: fetch only
+    const jsons = [
+      'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json',
+      'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json',
+    ];
+    const total = images.length + jsons.length;
+    let loaded = 0, realProgress = 0, displayProgress = 0, animFrame = null;
+
+    // Preload images via Image() — forces decode
+    images.forEach((url) => {
+      const img = new Image();
+      img.onload = img.onerror = () => { loaded++; realProgress = Math.round((loaded / total) * 100); };
+      img.src = url;
+    });
+    // Fetch JSON
+    jsons.forEach((url) =>
+      fetch(url).then(() => { loaded++; realProgress = Math.round((loaded / total) * 100); })
+        .catch(() => { loaded++; realProgress = Math.round((loaded / total) * 100); })
+    );
+    if (document.fonts?.ready) document.fonts.ready.then(() => {});
+>>>>>>> Stashed changes
 
     function tick() {
       realProgress = Math.max(realProgress, Math.round(fakeProgress()));
@@ -73,7 +104,11 @@ const Preloader = ({ onComplete }) => {
       }
     }
     animFrame = requestAnimationFrame(tick);
+<<<<<<< Updated upstream
     const fallback = setTimeout(() => { realProgress = 100; }, 12000);
+=======
+    const fallback = setTimeout(() => { realProgress = 100; }, 8000);
+>>>>>>> Stashed changes
     return () => { cancelAnimationFrame(animFrame); clearTimeout(fallback); };
   }, []);
 

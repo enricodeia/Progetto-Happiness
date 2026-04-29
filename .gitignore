@@ -3,3 +3,8 @@ node_modules/
 dist/
 .DS_Store
 .env
+<<<<<<< Updated upstream
+=======
+.env.*
+.gitnexus
+>>>>>>> Stashed changes

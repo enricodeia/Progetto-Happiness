@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pairo - User Flow & Features</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0a0a; color: #e8e8e8; font-family: 'Space Grotesk', system-ui, sans-serif; padding: 40px 24px; }
+    h1 { font-size: 28px; font-weight: 700; color: #fafafa; margin-bottom: 8px; text-align: center; }
+    h2 { font-size: 20px; font-weight: 600; color: #fafafa; margin: 48px 0 16px; text-align: center; }
+    .subtitle { font-size: 14px; color: rgba(255,255,255,0.4); text-align: center; margin-bottom: 40px; }
+    .mermaid { display: flex; justify-content: center; margin: 24px auto; max-width: 100%; overflow-x: auto; }
+    .features { max-width: 800px; margin: 0 auto; }
+    .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 24px 0; }
+    .feature { padding: 16px; border-radius: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); }
+    .feature .label { font-size: 13px; font-weight: 600; color: #fafafa; margin-bottom: 4px; }
+    .feature .desc { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.5; }
+    .status { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-left: 6px; }
+    .done { background: rgba(52,211,153,0.15); color: #34D399; }
+    .partial { background: rgba(255,107,53,0.15); color: #FF6B35; }
+    .planned { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); }
+    @media (max-width: 600px) { .feature-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <h1>pa<span style="color:#FF6B35">i</span>ro</h1>
+  <p class="subtitle">User Flow & Feature Map</p>
+
+  <h2>User Flow</h2>
+  <div class="mermaid">
+flowchart TD
+    A[App Launch] --> B[Splash Screen]
+    B --> C{Session exists?}
+    C -->|Yes, onboarding done| D[Main App]
+    C -->|Yes, onboarding pending| E[Profile Setup]
+    C -->|No| F[Auth Screen]
+
+    F --> F1[Email + Password]
+    F --> F2[Google OAuth]
+    F --> F3[LinkedIn OAuth]
+    F1 -->|Sign Up| G[Onboarding Slides x3]
+    F1 -->|Sign In| C
+    F2 --> C
+    F3 --> C
+    G --> E
+
+    E --> E1[Name]
+    E1 --> E2[Date of Birth]
+    E2 --> E3[Role]
+    E3 --> E4[Company]
+    E4 --> E5[Location]
+    E5 --> E6[Skills]
+    E6 --> E7[Looking For]
+    E7 --> E8[Availability]
+    E8 --> E9[Profile Photo]
+    E9 --> E10[Project Photos]
+    E10 --> E11[Prompts x3]
+    E11 --> E12[Bio]
+    E12 --> D
+
+    D --> T1[Discover Tab]
+    D --> T2[Chat Tab]
+    D --> T3[Profile Tab]
+
+    T1 --> D1[Swipe Cards]
+    T1 --> D2[3D Globe Mode]
+    D1 -->|Swipe Right| S1{Match?}
+    D1 -->|Swipe Left| D1
+    D1 -->|Bookmark| BK[Save Profile]
+    S1 -->|Yes| M[Match Overlay]
+    S1 -->|No| D1
+    M -->|Send Message| T2
+    M -->|Keep Swiping| D1
+    D1 -->|Limit Reached| PW[Pro Paywall]
+
+    T2 --> CH1[Conversation List]
+    CH1 --> CH2[Chat Detail]
+    CH2 --> CH3[Send Message]
+    CH3 -->|Realtime| CH2
+
+    T3 --> P1[My Profile]
+    T3 --> P2[Preferences]
+    T3 --> P3[Looking For]
+    T3 --> P4[Settings]
+    T3 --> PW
+
+    P1 --> P1a[Edit Name/Role/Company]
+    P1 --> P1b[Upload Photos]
+    P1 --> P1c[Edit Skills]
+    P1 --> P1d[Edit Bio]
+
+    P4 --> P4a[Email]
+    P4 --> P4b[Notifications]
+    P4 --> P4c[Privacy]
+    P4 --> P4d[Logout]
+
+    PW --> ST[Stripe Checkout]
+    ST -->|Success| PRO[Pro Activated]
+    ST -->|Cancel| D
+
+    style A fill:#1a1a1a,stroke:#FF6B35,color:#fff
+    style D fill:#1a1a1a,stroke:#FF6B35,color:#fff
+    style M fill:#FF6B35,stroke:#FF6B35,color:#fff
+    style PW fill:#1a1a1a,stroke:#FF6B35,color:#FF6B35
+    style PRO fill:#34D399,stroke:#34D399,color:#000
+  </div>
+
+  <h2>Features</h2>
+  <div class="features">
+
+    <h3 style="font-size:14px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.1em; margin:32px 0 12px;">Authentication</h3>
+    <div class="feature-grid">
+      <div class="feature"><div class="label">Email + Password <span class="status done">Done</span></div><div class="desc">Sign up, sign in, password reset via Supabase Auth</div></div>
+      <div class="feature"><div class="label">Google OAuth <span class="status done">Done</span></div><div class="desc">One-tap Google sign-in with redirect handling</div></div>
+      <div class="feature"><div class="label">LinkedIn OAuth <span class="status done">Done</span></div><div class="desc">Professional sign-in via LinkedIn OIDC</div></div>
+      <div class="feature"><div class="label">Session Persistence <span class="status done">Done</span></div><div class="desc">Auto-login on return, skip splash for returning users</div></div>
+    </div>
+
+    <h3 style="font-size:14px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.1em; margin:32px 0 12px;">Onboarding</h3>
+    <div class="feature-grid">
+      <div class="feature"><div class="label">12-Step Profile Setup <span class="status done">Done</span></div><div class="desc">Name, DOB, role, company, location, skills, looking for, availability, photo, showcase, prompts, bio</div></div>
+      <div class="feature"><div class="label">Form Validation <span class="status done">Done</span></div><div class="desc">Required field checks with specific error messages per step</div></div>
+      <div class="feature"><div class="label">Photo Upload <span class="status done">Done</span></div><div class="desc">Profile picture + up to 6 project photos via Supabase Storage</div></div>
+      <div class="feature"><div class="label">Onboarding Slides <span class="status done">Done</span></div><div class="desc">3 intro slides with animated mockups for new users</div></div>
+    </div>
+
+    <h3 style="font-size:14px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.1em; margin:32px 0 12px;">Discover</h3>
+    <div class="feature-grid">
+      <div class="feature"><div class="label">Swipe Cards <span class="status done">Done</span></div><div class="desc">Drag-to-swipe with LIKE/NOPE indicators, photo navigation, scrollable profile content</div></div>
+      <div class="feature"><div class="label">3D Globe Mode <span class="status done">Done</span></div><div class="desc">WebGL rotating carousel of profiles via ogl</div></div>
+      <div class="feature"><div class="label">Match Detection <span class="status done">Done</span></div><div class="desc">Mutual like triggers match overlay with message CTA</div></div>
+      <div class="feature"><div class="label">Smart Matching <span class="status done">Done</span></div><div class="desc">Profiles scored by role, industry, location, completeness. Sorted by compatibility.</div></div>
+      <div class="feature"><div class="label">Pagination <span class="status done">Done</span></div><div class="desc">20 profiles per page, auto-prefetch when 3 cards from end</div></div>
+      <div class="feature"><div class="label">Bookmark/Save <span class="status done">Done</span></div><div class="desc">Save profiles for later. Toggle on/off from card footer.</div></div>
+      <div class="feature"><div class="label">Daily Swipe Limit <span class="status done">Done</span></div><div class="desc">25/day for free users, unlimited for Pro. Counter in header.</div></div>
+    </div>
+
+    <h3 style="font-size:14px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.1em; margin:32px 0 12px;">Chat</h3>
+    <div class="feature-grid">
+      <div class="feature"><div class="label">Realtime Messaging <span class="status done">Done</span></div><div class="desc">Supabase realtime subscription for instant message delivery</div></div>
+      <div class="feature"><div class="label">Conversation List <span class="status done">Done</span></div><div class="desc">Shows all matches with latest message preview, unread badges</div></div>
+      <div class="feature"><div class="label">Read Receipts <span class="status done">Done</span></div><div class="desc">Messages marked as read when conversation is opened</div></div>
+      <div class="feature"><div class="label">Optimistic Send <span class="status done">Done</span></div><div class="desc">Messages appear instantly before server confirmation</div></div>
+    </div>
+
+    <h3 style="font-size:14px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.1em; margin:32px 0 12px;">Profile</h3>
+    <div class="feature-grid">
+      <div class="feature"><div class="label">Edit Profile <span class="status done">Done</span></div><div class="desc">Inline editing for name, role, company, location, bio, skills, photos</div></div>
+      <div class="feature"><div class="label">Preferences <span class="status done">Done</span></div><div class="desc">Distance slider, remote toggle, role type filters, industry filters</div></div>
+      <div class="feature"><div class="label">Looking For <span class="status done">Done</span></div><div class="desc">Multi-select: collaborator, hire, mentor, co-founder, freelance, agency</div></div>
+      <div class="feature"><div class="label">Settings <span class="status done">Done</span></div><div class="desc">Email, password, push/email toggles, profile visibility, logout</div></div>
+      <div class="feature"><div class="label">Completion Ring <span class="status done">Done</span></div><div class="desc">SVG ring showing profile completion percentage</div></div>
+    </div>
+
+    <h3 style="font-size:14px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.1em; margin:32px 0 12px;">Monetization</h3>
+    <div class="feature-grid">
+      <div class="feature"><div class="label">Pro Paywall <span class="status done">Done</span></div><div class="desc">Feature list, pricing, animated checkout loading state</div></div>
+      <div class="feature"><div class="label">Stripe Checkout <span class="status done">Done</span></div><div class="desc">Edge function creates Stripe session, redirects to checkout</div></div>
+      <div class="feature"><div class="label">Webhook Handler <span class="status done">Done</span></div><div class="desc">Handles subscription events, updates is_pro flag</div></div>
+      <div class="feature"><div class="label">Checkout Return <span class="status done">Done</span></div><div class="desc">Success toast + Pro activation on return from Stripe</div></div>
+    </div>
+
+    <h3 style="font-size:14px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.1em; margin:32px 0 12px;">Security</h3>
+    <div class="feature-grid">
+      <div class="feature"><div class="label">Row Level Security <span class="status done">Done</span></div><div class="desc">All tables (profiles, swipes, messages, saves) have RLS policies</div></div>
+      <div class="feature"><div class="label">Secure Views <span class="status done">Done</span></div><div class="desc">public_profiles hides Stripe data. get_my_matches() scoped to caller.</div></div>
+      <div class="feature"><div class="label">Scoped Storage <span class="status done">Done</span></div><div class="desc">Avatar uploads restricted to user's own folder</div></div>
+    </div>
+
+    <h3 style="font-size:14px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.1em; margin:32px 0 12px;">Infrastructure</h3>
+    <div class="feature-grid">
+      <div class="feature"><div class="label">Vercel Deploy <span class="status done">Done</span></div><div class="desc">pairo.vercel.app, auto-deploy from CLI</div></div>
+      <div class="feature"><div class="label">Vitest Suite <span class="status done">Done</span></div><div class="desc">11 tests covering constants and profile normalization</div></div>
+      <div class="feature"><div class="label">Terms & Privacy <span class="status done">Done</span></div><div class="desc">Static pages linked from signup form</div></div>
+    </div>
+
+    <h3 style="font-size:14px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.1em; margin:32px 0 12px;">Not Yet Built</h3>
+    <div class="feature-grid">
+      <div class="feature"><div class="label">Profile Stats <span class="status planned">Planned</span></div><div class="desc">Saves, Connections, Views counters (currently hardcoded to 0)</div></div>
+      <div class="feature"><div class="label">Block Users <span class="status planned">Planned</span></div><div class="desc">UI exists in settings but not connected</div></div>
+      <div class="feature"><div class="label">Push Notifications <span class="status planned">Planned</span></div><div class="desc">Toggle exists but no FCM/APNs integration</div></div>
+      <div class="feature"><div class="label">Email Verification <span class="status planned">Planned</span></div><div class="desc">No confirmation flow UI</div></div>
+      <div class="feature"><div class="label">Saved Profiles View <span class="status planned">Planned</span></div><div class="desc">Can bookmark but no page to browse saved profiles</div></div>
+      <div class="feature"><div class="label">Distance Calculation <span class="status planned">Planned</span></div><div class="desc">Location stored but no geo distance computed</div></div>
+    </div>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      theme: 'dark',
+      themeVariables: {
+        primaryColor: '#FF6B35',
+        primaryTextColor: '#fafafa',
+        primaryBorderColor: '#FF6B35',
+        lineColor: 'rgba(255,107,53,0.4)',
+        secondaryColor: '#1a1a1a',
+        tertiaryColor: '#131313',
+        fontSize: '13px',
+      }
+    })
+  </script>
+</body>
+</html>

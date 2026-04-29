@@ -1,0 +1,161 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  background: #0a0a0b;
+  color: #fff;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui,
+    sans-serif;
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Scrollbar styling for panels */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* --- Slider BEM (shared) ------------------------------------------------- */
+.slider {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slider__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.slider__label {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.72);
+  letter-spacing: -0.005em;
+}
+
+.slider__value {
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 1px 7px;
+  font-family: inherit;
+  cursor: text;
+  letter-spacing: -0.01em;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.slider__value:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+/* Highlights values that have been pushed past the soft slider range */
+.slider__value--beyond {
+  color: #ffd658;
+  background: rgba(255, 214, 88, 0.1);
+  border-color: rgba(255, 214, 88, 0.35);
+}
+
+.slider__value-input {
+  width: 88px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: #fff;
+  background: rgba(140, 180, 255, 0.12);
+  border: 1px solid rgba(140, 180, 255, 0.6);
+  border-radius: 4px;
+  outline: none;
+  letter-spacing: -0.01em;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.slider__value-input::-webkit-outer-spin-button,
+.slider__value-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.slider__input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  outline: none;
+}
+
+.slider__input::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+.slider__input::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.slider__input::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+::selection {
+  background: rgba(140, 180, 255, 0.4);
+}

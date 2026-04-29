@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Metalab Pitch — Gobo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0c0f;
+    --ink:#ecedf0;
+    --ink-dim:rgba(236,237,240,.55);
+    --ink-dimmer:rgba(236,237,240,.28);
+    --accent:#96b0ff;
+    --accent-2:#ffd1a8;
+    --bubble:rgba(255,255,255,.06);
+    --bubble-br:rgba(255,255,255,.14);
+    --rail:rgba(255,255,255,.12);
+    --node:#ecedf0;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',-apple-system,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{line-height:1.45}
+  ::selection{background:var(--accent);color:#000}
+
+  /* progress rail (fixed, left) */
+  .rail-wrap{position:fixed;top:0;left:32px;width:2px;height:100vh;pointer-events:none;z-index:50}
+  .rail-bg{position:absolute;top:0;left:0;width:100%;height:100%;background:var(--rail)}
+  .rail-fg{position:absolute;top:0;left:0;width:100%;height:0%;background:var(--accent);transition:height .1s linear}
+
+  /* top bar — sticky, minimal */
+  .topbar{
+    position:fixed;top:0;left:0;right:0;z-index:60;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:18px 40px;
+    background:linear-gradient(to bottom, rgba(11,12,15,.95), rgba(11,12,15,0));
+    pointer-events:none;
+  }
+  .topbar .brand{font-size:14px;font-weight:500;letter-spacing:.02em;color:var(--ink-dim)}
+  .topbar .counter{font-size:13px;color:var(--ink-dim);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+
+  /* hero / intro */
+  .hero{
+    min-height:100vh;padding:12vh 8vw 0;display:flex;flex-direction:column;justify-content:center;
+  }
+  .kicker{
+    text-transform:uppercase;letter-spacing:.2em;font-size:12px;font-weight:500;color:var(--accent);margin-bottom:24px;
+  }
+  .hero h1{
+    font-weight:600;letter-spacing:-0.03em;line-height:1;
+    font-size:clamp(44px, 6.5vw, 88px);margin:0 0 20px;
+  }
+  .hero h1 em{font-style:normal;color:var(--ink-dim);font-weight:400}
+  .hero p{font-size:clamp(16px, 1.15vw, 19px);max-width:60ch;color:var(--ink-dim);margin:0 0 32px;line-height:1.5}
+  .hero .tip{
+    display:inline-flex;align-items:center;gap:10px;padding:11px 18px;
+    border:1px solid var(--bubble-br);border-radius:999px;background:var(--bubble);
+    font-size:13px;color:var(--ink);
+  }
+  .hero .tip kbd{
+    font-family:inherit;background:rgba(255,255,255,.1);padding:3px 8px;border-radius:6px;font-size:12px;
+  }
+
+  /* steps container */
+  .timeline{padding:12vh 8vw 30vh;max-width:1400px;margin:0 auto;}
+
+  .step{
+    position:relative;
+    padding:14vh 0 14vh 120px;
+    min-height:80vh;
+    display:flex;flex-direction:column;justify-content:center;
+    border-left:0;
+  }
+  /* connecting line + node per step */
+  .step::before{
+    content:"";position:absolute;left:40px;top:0;bottom:0;width:1px;background:var(--rail);
+  }
+  .step::after{
+    content:"";position:absolute;left:32px;top:14vh;width:17px;height:17px;border-radius:50%;
+    background:var(--bg);border:2px solid var(--ink-dim);
+    transition:background .3s, border-color .3s, transform .3s;
+  }
+  .step.active::after{background:var(--accent);border-color:var(--accent);transform:scale(1.15)}
+
+  .step .num{
+    font-weight:500;color:var(--ink-dimmer);
+    font-size:13px;letter-spacing:.02em;margin-bottom:16px;font-variant-numeric:tabular-nums;
+  }
+  .step .phase{
+    text-transform:uppercase;letter-spacing:.22em;font-size:11px;font-weight:600;color:var(--accent);margin-bottom:14px;
+  }
+  .step .phase.alt{color:var(--accent-2)}
+
+  .step h2{
+    font-weight:600;letter-spacing:-0.03em;line-height:1.05;
+    font-size:clamp(34px, 4.4vw, 60px);margin:0 0 28px;
+  }
+  .step h2 em{font-style:normal;color:var(--ink-dim);font-weight:400}
+
+  .say{
+    font-size:clamp(15px, 1.1vw, 18px);line-height:1.55;
+    max-width:58ch;color:var(--ink);margin:0 0 24px;font-weight:400;
+  }
+  .say strong{font-weight:600;color:var(--accent)}
+  .say em{font-style:normal;color:var(--ink-dim)}
+
+  .bubbles{display:flex;flex-wrap:wrap;gap:8px;max-width:900px;margin-top:4px}
+  .b{
+    padding:8px 14px;border-radius:999px;background:var(--bubble);border:1px solid var(--bubble-br);
+    font-size:12px;font-weight:500;color:var(--ink);white-space:nowrap;
+  }
+  .b.hot{background:rgba(150,176,255,.14);border-color:rgba(150,176,255,.35);color:#cfd9ff}
+  .b.warn{background:rgba(255,209,168,.12);border-color:rgba(255,209,168,.35);color:#ffe4c7}
+  .b.num{font-size:12px;font-weight:600}
+
+  .kv{display:grid;grid-template-columns:minmax(130px,auto) 1fr;gap:12px 28px;max-width:820px;margin-top:6px}
+  .kv dt{color:var(--ink-dim);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding-top:3px}
+  .kv dd{margin:0;font-size:clamp(14px,1vw,16px);line-height:1.5}
+
+  .note{
+    margin-top:22px;padding:14px 18px;border-left:2px solid var(--accent);background:rgba(150,176,255,.06);
+    font-size:13px;color:var(--ink-dim);max-width:62ch;border-radius:4px;line-height:1.5;
+  }
+  .note b{color:var(--ink);font-weight:600}
+
+  /* bullet lists inside steps */
+  .step ul{list-style:none;padding:0;margin:0 0 22px;max-width:70ch}
+  .step ul li{
+    position:relative;padding:6px 0 6px 22px;font-size:clamp(14px,1vw,16px);
+    line-height:1.55;color:var(--ink);
+  }
+  .step ul li::before{
+    content:"";position:absolute;left:4px;top:14px;width:6px;height:6px;border-radius:50%;
+    background:var(--ink-dim);
+  }
+  .step ul li strong{color:var(--accent);font-weight:600}
+  .step ul li em{font-style:normal;color:var(--ink-dim)}
+  .step .sub{
+    font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink-dim);margin:18px 0 8px;
+  }
+  .step .sub.hot{color:var(--accent)}
+  .step .sub.warn{color:var(--accent-2)}
+
+  /* pillar card — inspired by Enrico's moodboard layout */
+  .pillar{
+    margin:28px 0 0;padding:24px 26px 22px;
+    border:1px solid var(--bubble-br);border-radius:14px;background:rgba(255,255,255,.03);
+    max-width:900px;
+  }
+  .pillar-head{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;margin-bottom:14px}
+  .pillar-name{
+    font-weight:600;letter-spacing:-0.02em;font-size:clamp(28px,2.6vw,38px);
+    color:var(--ink);line-height:1;
+  }
+  .pillar-idx{
+    font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-dimmer);
+  }
+  .pillar-say{
+    font-size:clamp(15px,1.05vw,17px);color:var(--ink);line-height:1.5;max-width:60ch;margin:4px 0 14px;
+  }
+  .pillar-say strong{color:var(--accent);font-weight:600}
+  .pillar-keys{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .pillar-keys .k{
+    font-size:11px;font-weight:500;letter-spacing:.02em;color:var(--ink-dim);
+    padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid var(--bubble-br);
+  }
+  .pillar-shown{
+    font-size:13px;color:var(--ink-dim);line-height:1.55;margin:0;max-width:62ch;
+    padding-top:12px;border-top:1px solid rgba(255,255,255,.06);
+  }
+  .pillar-shown b{color:var(--ink);font-weight:600}
+  .pillar-shown .arrow{color:var(--accent);font-weight:600;margin-right:6px}
+
+  /* closing */
+  .close{min-height:80vh;padding:14vh 8vw 22vh;display:flex;flex-direction:column;justify-content:center}
+  .close h2{font-weight:600;font-size:clamp(34px,5vw,64px);margin:0 0 24px;line-height:1.05;letter-spacing:-.03em}
+  .close h2 em{font-style:normal;color:var(--ink-dim);font-weight:400}
+  .close .end{color:var(--ink-dim);font-size:15px;max-width:60ch;line-height:1.55}
+
+  /* print */
+  @media print{
+    .topbar,.rail-wrap{display:none}
+    body{background:#fff;color:#000}
+    .step,.hero,.close{page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+
+<div class="rail-wrap"><div class="rail-bg"></div><div class="rail-fg" id="rail"></div></div>
+
+<div class="topbar">
+  <div class="brand">Pitch · Gobo</div>
+  <div class="counter"><span id="counter">00 / 21</span></div>
+</div>
+
+<!-- HERO -->
+<section class="hero" data-step="0">
+  <div class="kicker">For Metalab — Senior Brand Designer</div>
+  <h1>Enrico Deiana<br><em>— pitch script.</em></h1>
+  <p>Scroll-along. Big type, short triggers, keyword bubbles if the word escapes me. Brackets [like this] are placeholders I can swap live. Breathe, land each beat, move on.</p>
+  <div class="tip">Press <kbd>J</kbd> / <kbd>K</kbd> to jump steps · <kbd>Space</kbd> scrolls · <kbd>P</kbd> to print as PDF</div>
+</section>
+
+<div class="timeline">
+
+  <!-- 1. WHO I AM -->
+  <section class="step" data-step="1">
+    <div class="num">01 — who I am</div>
+    <div class="phase">Intro</div>
+    <h2>Quick intro.</h2>
+    <ul>
+      <li>I am <strong>Enrico Deiana</strong>, from <em>Sardinia, Italy</em>.</li>
+      <li>I'm a digital product designer — but I think of myself as a <strong>multidisciplinary designer</strong>.</li>
+      <li>I lead <strong>creative direction, design, and code</strong>.</li>
+      <li>I sit at the intersection of those three. When I design a case study or a landing page, I'm thinking about <em>motion, interaction, and implementation from the start</em>.</li>
+    </ul>
+
+    <div class="sub">Where I've been working</div>
+    <ul>
+      <li>Lately, on the <strong>QClay design team</strong> — a distributed remote agency with small teams around the world.</li>
+      <li>At <strong>Microsoft</strong>, in the Bing and Copilot monetization team, responsible for ads.</li>
+      <li>Independently with international brands through <strong>Toptal</strong>.</li>
+      <li>Part of the <strong>Awwwards jury</strong> for design and dev.</li>
+    </ul>
+
+    <div class="sub hot">What's shifted for me lately</div>
+    <ul>
+      <li><strong>AI</strong>. I can prototype and deploy MVPs at a speed that would've been impossible a couple of years ago.</li>
+      <li>Anyway — <em>here is my latest project.</em></li>
+    </ul>
+
+    <div class="bubbles">
+      <span class="b">Sardinia · Italy</span>
+      <span class="b hot">design + code + creative direction</span>
+      <span class="b">QClay</span>
+      <span class="b">Microsoft · Bing / Copilot ads</span>
+      <span class="b">Toptal</span>
+      <span class="b">Awwwards jury</span>
+    </div>
+  </section>
+
+  <!-- 2. IYO INTRO -->
+  <section class="step" data-step="2">
+    <div class="num">02 — flagship</div>
+    <div class="phase">iyO · What it is</div>
+    <h2>This is iyO.</h2>
+    <ul>
+      <li>The <strong>very first AI earbuds computer</strong> that turns humans into <em>real super-humans</em>.</li>
+      <li>Born as a <strong>Google X product</strong>, codenamed <em>Wolverine</em>, in early 2018.</li>
+      <li>Its lead — <strong>Jason Rugolo</strong> (our client) — spun the project out of Alphabet and founded the <strong>iyO</strong> startup.</li>
+      <li>Raised <strong>$21M</strong> in funding.</li>
+    </ul>
+    <div class="bubbles">
+      <span class="b hot">AI earbuds computer</span>
+      <span class="b">Google X · Wolverine · 2018</span>
+      <span class="b">Jason Rugolo — founder</span>
+      <span class="b num">$21M raised</span>
+    </div>
+  </section>
+
+  <!-- 3. CLIENT BRIEF -->
+  <section class="step" data-step="3">
+    <div class="num">03 — the ask</div>
+    <div class="phase">iyO · Client brief</div>
+    <h2>The challenge.</h2>
+    <ul>
+      <li>The client came to us because he had a <strong>static and not converting ecommerce website</strong>.</li>
+      <li>The product was ready. The site was flat.</li>
+      <li>He needed something that <strong>matched the ambition of the product</strong>.</li>
+      <li>Ask: <em>premium consumer hardware brand</em>, not another tech gadget.</li>
+      <li>Deliverable: full <strong>website + ecommerce</strong>.</li>
+    </ul>
+  </section>
+
+  <!-- 4. BUSINESS NEED -->
+  <section class="step" data-step="4">
+    <div class="num">04 — why now</div>
+    <div class="phase">iyO · Business need</div>
+    <h2>Why it mattered.</h2>
+    <ul>
+      <li>Pre-orders had to open <strong>before the holiday window</strong>.</li>
+      <li>The site needed to <strong>convert intent into sales</strong> from day one.</li>
+      <li>Category-defining launch — first time the market sees the product.</li>
+    </ul>
+    <div class="bubbles">
+      <span class="b">pre-order conversion</span>
+      <span class="b">holiday window</span>
+      <span class="b">category-defining launch</span>
+    </div>
+  </section>
+
+  <!-- 5. TIMELINE -->
+  <section class="step" data-step="5">
+    <div class="num">05 — constraint</div>
+    <div class="phase">iyO · Timeline</div>
+    <h2>One month.</h2>
+    <ul>
+      <li><strong>30 days</strong> from zero to live.</li>
+      <li>Brand, site, shop, 3D, motion — <em>all running in parallel</em>.</li>
+      <li>Hard deadline, no cushion.</li>
+    </ul>
+    <div class="bubbles">
+      <span class="b num">30 days</span>
+      <span class="b warn">hard deadline</span>
+      <span class="b">parallel tracks</span>
+    </div>
+  </section>
+
+  <!-- 6. CHALLENGE -->
+  <section class="step" data-step="6">
+    <div class="num">06 — twist</div>
+    <div class="phase alt">iyO · The twist</div>
+    <h2>Then Altman and Ive showed up.</h2>
+    <ul>
+      <li>Mid-project, iyO <strong>sues "io"</strong> — the new AI hardware startup by Sam Altman and Jony Ive.</li>
+      <li>Name collision goes global. <em>Press everywhere</em>.</li>
+      <li>Traffic spikes on a site we're still building.</li>
+      <li>Suddenly, our site is <strong>the front page of the story</strong>.</li>
+      <li>Same deadline — but now the stakes are 10× higher.</li>
+    </ul>
+    <div class="bubbles">
+      <span class="b warn">iyo vs. io lawsuit</span>
+      <span class="b">OpenAI / LoveFrom</span>
+      <span class="b hot">global press spike</span>
+    </div>
+  </section>
+
+  <!-- 7. UX PILLARS -->
+  <section class="step" data-step="7">
+    <div class="num">07 — process</div>
+    <div class="phase">iyO · UX Pillars &amp; Art Direction</div>
+    <h2>Five pillars to lock the brand.</h2>
+    <ul>
+      <li>Before touching a pixel, we defined <strong>five words</strong> that had to hold the brand together.</li>
+      <li>Each pillar had its own <em>keywords</em> and its own <em>visual translation</em> — so designers, devs, and the client were reading the same map.</li>
+      <li>Every decision — typography, motion, imagery, UI — was tested against them.</li>
+    </ul>
+
+    <article class="pillar">
+      <div class="pillar-head">
+        <div class="pillar-idx">Pillar 01</div>
+        <div class="pillar-name">Clarity</div>
+      </div>
+      <p class="pillar-say">Make the product feel <strong>personal, bold, and new</strong> — without losing its professional, premium poise.</p>
+      <div class="pillar-keys">
+        <span class="k">Personal</span><span class="k">Bold</span><span class="k">Exciting</span><span class="k">Novel</span><span class="k">Curiosity</span>
+      </div>
+      <p class="pillar-shown"><span class="arrow">→</span> Clear <b>glass UI</b>, glass-morphism, transparent typography, <b>human-centered product photography</b>, minimal hamburger menu.</p>
+    </article>
+
+    <article class="pillar">
+      <div class="pillar-head">
+        <div class="pillar-idx">Pillar 02</div>
+        <div class="pillar-name">Presence</div>
+      </div>
+      <p class="pillar-say">The product is <strong>invisible while you wear it</strong>. The site had to feel the same — calm, focused, with a rhythm you can breathe to.</p>
+      <div class="pillar-keys">
+        <span class="k">Breathable</span><span class="k">Ambient</span><span class="k">Focused</span><span class="k">Rhythm</span><span class="k">Calm attention</span>
+      </div>
+      <p class="pillar-shown"><span class="arrow">→</span> <b>Breathing motion</b> in typography, <b>WebGL audio visualizers</b>, zen and nature imagery, neomorphic breathable elements.</p>
+    </article>
+
+    <article class="pillar">
+      <div class="pillar-head">
+        <div class="pillar-idx">Pillar 03</div>
+        <div class="pillar-name">Emotion</div>
+      </div>
+      <p class="pillar-say">The product is a <strong>voice in your ear</strong>. Everything on screen had to feel like that voice — <em>intimate, trusted, human</em>.</p>
+      <div class="pillar-keys">
+        <span class="k">Conversation</span><span class="k">Human interface</span><span class="k">Language, tone, mood</span><span class="k">Trusting voice</span><span class="k">Intimate</span>
+      </div>
+      <p class="pillar-shown"><span class="arrow">→</span> <b>Voice-based WebGL interactions</b>, <b>soft gradient cursor</b> on mouse move, generative gradient animations, audio-centric branding.</p>
+    </article>
+
+    <article class="pillar">
+      <div class="pillar-head">
+        <div class="pillar-idx">Pillar 04</div>
+        <div class="pillar-name">Intuition</div>
+      </div>
+      <p class="pillar-say">You shouldn't have to <strong>think about the interface</strong>. It should feel natural, alive, <em>one step ahead of you</em>.</p>
+      <div class="pillar-keys">
+        <span class="k">Feeling interactions</span><span class="k">Natural and alive</span><span class="k">Conversation</span><span class="k">Effortless navigation</span>
+      </div>
+      <p class="pillar-shown"><span class="arrow">→</span> <b>Circular shapes and typography</b>, sound-reactive kinetic typefaces, transparent UI over natural-world photography, <b>focus-from-opacity</b> hierarchy.</p>
+    </article>
+
+    <article class="pillar">
+      <div class="pillar-head">
+        <div class="pillar-idx">Pillar 05</div>
+        <div class="pillar-name">Spaciality</div>
+      </div>
+      <p class="pillar-say">It's <strong>spatial audio</strong>. The interface had to feel <em>dimensional</em> — sound shaping space, space shaping the layout.</p>
+      <div class="pillar-keys">
+        <span class="k">Sound and space</span><span class="k">Soundwaves</span><span class="k">Dimensional layering</span><span class="k">Immersive motion</span><span class="k">Spatial storytelling</span>
+      </div>
+      <p class="pillar-shown"><span class="arrow">→</span> <b>Interactive soundwaves</b>, circular generative patterns, <b>3D letters zooming through space</b>, immersive exploded-model views, spatial-audio visuals.</p>
+    </article>
+
+    <div class="note" style="margin-top:32px"><b>How to land it:</b> read <em>Clarity · Presence · Emotion · Intuition · Spaciality</em> out loud as a rhythm. Then say "each pillar drove its own art direction" — and only dive deep on one (Presence or Emotion are the easiest to demo live).</div>
+  </section>
+
+  <!-- 8. MOODBOARD -->
+  <section class="step" data-step="8">
+    <div class="num">08 — visual DNA</div>
+    <div class="phase">iyO · Visual moodboard</div>
+    <h2>Visual DNA.</h2>
+    <ul>
+      <li><strong>Editorial hardware</strong> references — think Leica, Teenage Engineering.</li>
+      <li>Sculptural, still-life product photography.</li>
+      <li><strong>Monochrome with one surgical color accent</strong>.</li>
+      <li>Precision typography — <em>technical detail as a design language</em>.</li>
+    </ul>
+    <div class="bubbles">
+      <span class="b">editorial hardware</span>
+      <span class="b">sculptural still-life</span>
+      <span class="b">monochrome + accent</span>
+    </div>
+  </section>
+
+  <!-- 9. FIRST MVP -->
+  <section class="step" data-step="9">
+    <div class="num">09 — first cut</div>
+    <div class="phase">iyO · First MVP</div>
+    <h2>Ship small, ship now.</h2>
+    <ul>
+      <li>Round one went live <strong>without 3D</strong>.</li>
+      <li>Stripped-down product page — essentials only.</li>
+      <li>Stack: <strong>Webflow for the front-end</strong>, <strong>Shopify for checkout and inventory</strong>.</li>
+      <li>Philosophy: <em>turn the checkout on first, layer the craft later</em>.</li>
+    </ul>
+    <div class="bubbles">
+      <span class="b">Webflow × Shopify</span>
+      <span class="b">no 3D yet</span>
+      <span class="b warn">ship, then polish</span>
+    </div>
+  </section>
+
+  <!-- 10. IDEATIONS -->
+  <section class="step" data-step="10">
+    <div class="num">10 — explore</div>
+    <div class="phase">iyO · Ideations</div>
+    <h2>Exploration rounds.</h2>
+    <ul>
+      <li>Multiple creative directions in parallel.</li>
+      <li>Each direction <strong>tested against the five pillars</strong>.</li>
+      <li>Killed anything that "felt like gadget marketing".</li>
+      <li>Kept the <strong>editorial hardware</strong> direction — closer to Leica than to Apple.</li>
+    </ul>
+    <div class="bubbles">
+      <span class="b">directions A / B / C</span>
+      <span class="b">pillar-test each</span>
+      <span class="b">killed: "gadget voice"</span>
+    </div>
+  </section>
+
+  <!-- 11. FINAL -->
+  <section class="step" data-step="11">
+    <div class="num">11 — ship</div>
+    <div class="phase">iyO · Final project</div>
+    <h2>What shipped.</h2>
+    <ul>
+      <li>Hero with <strong>interactive 3D</strong> of the microphone system.</li>
+      <li>Product color variants driven by <strong>Shopify</strong> — changing both the image set and the 3D shader.</li>
+      <li>Motion accents <em>timed to audio cues</em>.</li>
+      <li>Editorial product page — long narrative, not a spec sheet.</li>
+    </ul>
+    <div class="bubbles">
+      <span class="b hot">interactive 3D hero</span>
+      <span class="b">color swap via Shopify</span>
+      <span class="b">audio-timed motion</span>
+    </div>
+  </section>
+
+  <!-- 12. TECH PROBLEMS -->
+  <section class="step" data-step="12">
+    <div class="num">12 — the hard part</div>
+    <div class="phase alt">iyO · Problems we solved</div>
+    <h2>Three things that broke.</h2>
+    <ul>
+      <li>The <strong>craft layer</strong> — where brand design and engineering had to agree.</li>
+    </ul>
+
+    <div class="sub warn">Problem 1 · 3D mesh too heavy</div>
+    <ul>
+      <li>The mic-grid as real geometry was <strong>too much for the GPU</strong> — frame drops.</li>
+      <li>Fix: <strong>swap real geometry for a normal-map texture</strong> on a simple mesh.</li>
+      <li>Visually it still "punches through" the surface like real 3D, at a fraction of the cost.</li>
+    </ul>
+
+    <div class="sub warn">Problem 2 · Hero SVGs too heavy</div>
+    <ul>
+      <li>The hero SVGs were <strong>beautiful but huge</strong> — tens of MB of paths.</li>
+      <li>They killed the first paint.</li>
+      <li>Fix: <strong>simplified paths</strong>, kept only the load-bearing ones.</li>
+      <li>Added motion to the reduced paths — <em>consistency of the pattern system, at a fraction of the weight</em>.</li>
+    </ul>
+
+    <div class="sub warn">Problem 3 · Color target across 3 systems</div>
+    <ul>
+      <li>Requirement: click a color variant → <strong>all product images AND the 3D shader update</strong>.</li>
+      <li>Color data lives in <strong>Shopify</strong> (inventory), UI lives in <strong>Webflow</strong>, 3D lives in <strong>WebGL</strong>.</li>
+      <li>Fix: custom bridge — Shopify emits the color as a data-attribute through Webflow's Liquid binding, Webflow passes it as a <strong>uniform into the WebGL shader</strong>.</li>
+      <li>One click = three systems synced.</li>
+    </ul>
+
+    <div class="note"><b>Why this matters for Metalab:</b> brand design that survives contact with engineering. This is the slide where I show I can <b>ship</b>, not just design.</div>
+  </section>
+
+  <!-- 13. IYO VISUALS -->
+  <section class="step" data-step="13">
+    <div class="num">13 — show, don't tell</div>
+    <div class="phase">iyO · Final visuals</div>
+    <h2>Let it run.</h2>
+    <ul>
+      <li>Walk the live site.</li>
+      <li>Hero motion → color variants → checkout.</li>
+      <li><em>Pause. Stop talking. Let them look.</em></li>
+    </ul>
+    <div class="bubbles">
+      <span class="b">live walk-through</span>
+      <span class="b warn">stop talking</span>
+    </div>
+  </section>
+
+  <!-- 14. PROGETTO HAPPINESS -->
+  <section class="step" data-step="14">
+    <div class="num">14 — second piece</div>
+    <div class="phase">Progetto Happiness</div>
+    <h2>Progetto Happiness.</h2>
+    <ul>
+      <li>Micro-site for a <strong>documentary film</strong>.</li>
+      <li>Interactive <strong>3D globe</strong> drives the narrative.</li>
+      <li>Stack: React + Three.js + GSAP.</li>
+      <li>Different constraints (narrative, not ecommerce) — <em>same level of craft</em>.</li>
+    </ul>
+    <div class="bubbles">
+      <span class="b">documentary micro-site</span>
+      <span class="b">R3F · Three.js · GSAP</span>
+    </div>
+  </section>
+
+  <!-- 15. METALAB INTRO -->
+  <section class="step" data-step="15">
+    <div class="num">15 — the extra</div>
+    <div class="phase alt">Metalab · Redesign</div>
+    <h2>One more thing.</h2>
+    <ul>
+      <li>I <strong>redesigned your homepage</strong> — index only, not the full site.</li>
+      <li>Framed as a <strong>proactive case study</strong>, not "here's how to fix your site".</li>
+      <li>The role is Senior Brand Designer — I wanted to show I'd <em>already done the work</em>, not just that I can.</li>
+    </ul>
+    <div class="bubbles">
+      <span class="b hot">proactive, not presumptuous</span>
+      <span class="b">index only</span>
+    </div>
+  </section>
+
+  <!-- 16. PERCEPTION -->
+  <section class="step" data-step="16">
+    <div class="num">16 — the gap</div>
+    <div class="phase">Metalab · Perception vs. reality</div>
+    <h2>The perception gap.</h2>
+    <ul>
+      <li>Metalab is perceived as the agency behind <strong>apps used by billions</strong>: Slack, Uber, Headspace, Robinhood, Midjourney.</li>
+      <li>The current site is <strong>live and unchanged since June 28, 2024</strong>.</li>
+      <li>On arrival, the visitor doesn't feel the weight of that roster.</li>
+      <li>The <strong>showreel is buried in the menu</strong>, not in the hero.</li>
+      <li>The value isn't visible <em>above the fold</em>.</li>
+    </ul>
+    <div class="bubbles">
+      <span class="b warn">unchanged since Jun 28, 2024</span>
+      <span class="b">value hidden below the fold</span>
+      <span class="b">showreel buried in menu</span>
+    </div>
+  </section>
+
+  <!-- 17. HERO REDESIGN -->
+  <section class="step" data-step="17">
+    <div class="num">17 — the move</div>
+    <div class="phase">Metalab · The hero</div>
+    <h2>Value at a glance.</h2>
+    <ul>
+      <li>The Metalab logo becomes the <strong>source</strong>.</li>
+      <li>Client logos <strong>radiate outward</strong> from it — into the world that uses the products.</li>
+      <li>You <em>feel</em> the roster <strong>before</strong> you read any title.</li>
+      <li>Implicit hierarchy: who you are → who you made → what you do.</li>
+    </ul>
+    <div class="bubbles">
+      <span class="b hot">logo as source</span>
+      <span class="b">clients radiate outward</span>
+    </div>
+  </section>
+
+  <!-- 18. REEL + HIDDEN PROJECTS -->
+  <section class="step" data-step="18">
+    <div class="num">18 — restraint</div>
+    <div class="phase">Metalab · Reel + hidden work</div>
+    <h2>Reel on invitation. Work surfaced.</h2>
+
+    <div class="sub hot">Reel</div>
+    <ul>
+      <li>The reel <strong>doesn't grab the stage</strong> on open.</li>
+      <li>Hover the logo → <strong>loop preview</strong>.</li>
+      <li>Click → opens full.</li>
+      <li>Principle: content is <em>suggested</em>, not imposed.</li>
+    </ul>
+
+    <div class="sub hot">Hidden projects surfaced</div>
+    <ul>
+      <li>On the current site, projects like <strong>Windsurf, Upwork, The Athletic, Genies, Pitch</strong> are buried as small cards in /work.</li>
+      <li><strong>Windsurf</strong> especially — it's your latest big piece, and it's hidden. A waste.</li>
+      <li>Solution: <strong>interactive pill text</strong>.</li>
+      <li>Centered text, hover reveals media (video + background).</li>
+      <li><em>The eye doesn't have to hunt</em> for title and description — content takes the spotlight.</li>
+    </ul>
+
+    <div class="bubbles">
+      <span class="b">reel: hint → click to expand</span>
+      <span class="b hot">Windsurf · Upwork · Athletic · Genies · Pitch</span>
+      <span class="b">pill text → hover reveal</span>
+    </div>
+  </section>
+
+  <!-- 19. PERFORMANCE -->
+  <section class="step" data-step="19">
+    <div class="num">19 — receipts</div>
+    <div class="phase alt">Metalab · Performance</div>
+    <h2>The numbers.</h2>
+
+    <div class="sub">What I measured</div>
+    <ul>
+      <li>Ran <strong>Lighthouse three times</strong> on the current live site.</li>
+      <li>Performance scores: <strong>49 / 52 / 47</strong>. Average ~50. <em>Low.</em></li>
+    </ul>
+
+    <div class="sub warn">Where the problem comes from</div>
+    <ul>
+      <li><strong>One problem, but heavy</strong>: Largest Contentful Paint.</li>
+      <li>The site loads <strong>22.3 MB of images</strong> on open — PNG and JPG, unoptimized.</li>
+      <li>PNG and JPG are <em>legacy formats</em>: large files, slow decoding, no modern benefits.</li>
+      <li><strong>WebP</strong> (standard since 2010, supported by every browser) is <strong>5–10× lighter</strong> at the same visual quality.</li>
+    </ul>
+
+    <div class="sub hot">My fix</div>
+    <ul>
+      <li>Converted all images to <strong>WebP</strong>.</li>
+      <li>Added <strong>5 more projects</strong> than the current site shows (Windsurf, Upwork, Athletic, Genies, Pitch).</li>
+      <li>Total weight now: <strong>1.8 MB</strong>.</li>
+    </ul>
+
+    <div class="note"><b>The punchline:</b> more work on screen (+5 projects), ~<b>12× lighter</b> (22.3 MB → 1.8 MB). Let the number land. Don't talk over it.</div>
+  </section>
+
+  <!-- 20. STACK -->
+  <section class="step" data-step="20">
+    <div class="num">20 — how it's built</div>
+    <div class="phase">Metalab · Stack</div>
+    <h2>Built in the open.</h2>
+    <ul>
+      <li><strong>GSAP</strong> — animation timelines.</li>
+      <li><strong>Three.js / React Three Fiber</strong> — the 3D logo.</li>
+      <li><strong>WebGL shader transitions</strong> — wave sweep + brightness strip between projects.</li>
+      <li>Custom <strong>preloader</strong> with staged lettering.</li>
+      <li>Custom cursor — two-layer (dot + ring with magnetic morph on Play Reel).</li>
+      <li>Everything <em>production-ready</em>, not a prototype.</li>
+    </ul>
+    <div class="bubbles">
+      <span class="b">GSAP</span>
+      <span class="b">Three.js · R3F</span>
+      <span class="b">WebGL shaders</span>
+      <span class="b">preloader + custom cursor</span>
+    </div>
+  </section>
+
+</div>
+
+<!-- CLOSE -->
+<section class="close" data-step="21">
+  <div class="kicker" style="color:var(--accent-2)">The close</div>
+  <h2>That's what I'd bring to <em>Metalab</em>.</h2>
+  <p class="end">Brand thinking, motion craft, and the engineering honesty to ship it. I'd love to do this inside your team, on work that reaches real users. Thank you.</p>
+</section>
+
+<script>
+  // active step + rail progress
+  const steps = [...document.querySelectorAll('[data-step]')];
+  const rail = document.getElementById('rail');
+  const counter = document.getElementById('counter');
+  const total = steps.length - 1; // hero is 0
+
+  function update(){
+    const sc = window.scrollY;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    rail.style.height = Math.min(100, (sc / max) * 100) + '%';
+
+    const center = window.innerHeight * 0.5;
+    let active = 0;
+    steps.forEach((s, i) => {
+      const r = s.getBoundingClientRect();
+      if (r.top < center && r.bottom > 0) active = i;
+    });
+    steps.forEach((s, i) => s.classList.toggle('active', i === active));
+    const shown = Math.max(0, active);
+    counter.textContent = String(shown).padStart(2,'0') + ' / ' + String(total).padStart(2,'0');
+  }
+
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  update();
+
+  // J / K navigation
+  window.addEventListener('keydown', (e) => {
+    const tag = (e.target?.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+    const order = steps.map(s => s.getBoundingClientRect().top + window.scrollY - 40);
+    const y = window.scrollY;
+    if (e.key === 'j' || e.key === 'J' || e.key === 'ArrowDown' && e.shiftKey){
+      const next = order.find(t => t > y + 8);
+      if (next != null) window.scrollTo({ top: next, behavior: 'smooth' });
+    } else if (e.key === 'k' || e.key === 'K' || e.key === 'ArrowUp' && e.shiftKey){
+      const prev = [...order].reverse().find(t => t < y - 8);
+      if (prev != null) window.scrollTo({ top: prev, behavior: 'smooth' });
+    } else if (e.key === 'p' || e.key === 'P'){
+      window.print();
+    }
+  });
+</script>
+</body>
+</html>

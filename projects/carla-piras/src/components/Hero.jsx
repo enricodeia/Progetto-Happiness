@@ -1,9 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import gsap from "gsap";
 import StaggerButton from "./StaggerButton.jsx";
 import ContactModal from "./ContactModal.jsx";
 import Flower from "./Flower.jsx";
 import FlowerBurst from "./FlowerBurst.jsx";
+import HamburgerMenu from "./HamburgerMenu.jsx";
 import "./Hero.css";
 
 const CARLA = "Carla".split("");
@@ -21,7 +23,42 @@ const FLOWERS = [
   { size: 24, delay: 2.1, offsetY: 28, variant: "lean" },
 ];
 
-export default function Hero({ preloader, typography, chisono, tilt, meta }) {
+export default function Hero({
+  preloader,
+  typography,
+  chisono,
+  tilt,
+  meta,
+  mobile,
+  isMobile,
+}) {
+  const ePreloader = useMemo(() => {
+    if (!isMobile || !mobile) return preloader;
+    return {
+      ...preloader,
+      letterTopOffset: mobile.letterTopOffsetVh,
+      letterBottomOffset: mobile.letterBottomOffsetVh,
+      lettersSideOffset: mobile.lettersSideOffsetVw,
+      letterFinalYVh: mobile.letterFinalYVh,
+      imageHeightVh: mobile.imageHeightVh,
+      imageAspect: mobile.imageAspect,
+    };
+  }, [preloader, mobile, isMobile]);
+
+  const eTypography = useMemo(() => {
+    if (!isMobile || !mobile) return typography;
+    return { ...typography, titleSizeVw: mobile.titleSizeVw };
+  }, [typography, mobile, isMobile]);
+
+  const eMeta = useMemo(() => {
+    if (!isMobile || !mobile) return meta;
+    return {
+      leftX: mobile.metaLeftX,
+      leftY: mobile.metaLeftY,
+      rightX: mobile.metaRightX,
+      rightY: mobile.metaRightY,
+    };
+  }, [meta, mobile, isMobile]);
   const rootRef = useRef(null);
   const carlaWordRef = useRef(null);
   const pirasWordRef = useRef(null);
@@ -41,6 +78,7 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
   const badgeRef = useRef(null);
   const metaLeftRef = useRef(null);
   const metaRightRef = useRef(null);
+  const roleRef = useRef(null);
   const logoRef = useRef(null);
   const logoCharsRef = useRef([]);
 
@@ -49,10 +87,81 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
   const [navCtaHover, setNavCtaHover] = useState(false);
   const [footCtaHover, setFootCtaHover] = useState(false);
   const ctaHover = navCtaHover || footCtaHover;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [version, setVersion] = useState("A");
+  const versionBLeftRef = useRef(null);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
+      if (e.key === "1") setVersion("A");
+      if (e.key === "2") setVersion("B");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
+    if (!preloadComplete) return;
+    const tl = gsap.timeline();
+    if (version === "B") {
+      tl.to(
+        [...carlaCharsRef.current, ...pirasCharsRef.current],
+        {
+          autoAlpha: 0,
+          duration: 0.5,
+          ease: "power3.in",
+          stagger: 0.018,
+        },
+        0
+      );
+      tl.to(
+        photoRef.current,
+        { x: "20vw", duration: 0.9, ease: "power3.inOut" },
+        0.1
+      );
+      if (versionBLeftRef.current) {
+        tl.fromTo(
+          versionBLeftRef.current,
+          { autoAlpha: 0, x: -30 },
+          { autoAlpha: 1, x: 0, duration: 0.7, ease: "power3.out" },
+          0.3
+        );
+      }
+    } else {
+      if (versionBLeftRef.current) {
+        tl.to(
+          versionBLeftRef.current,
+          {
+            autoAlpha: 0,
+            x: -30,
+            duration: 0.4,
+            ease: "power3.in",
+          },
+          0
+        );
+      }
+      tl.to(
+        photoRef.current,
+        { x: 0, duration: 0.9, ease: "power3.inOut" },
+        0
+      );
+      tl.to(
+        [...carlaCharsRef.current, ...pirasCharsRef.current],
+        {
+          autoAlpha: 1,
+          duration: 0.55,
+          ease: "power3.out",
+          stagger: 0.018,
+        },
+        0.2
+      );
+    }
+  }, [version, preloadComplete]);
 
   // Synchronous initial state — runs BEFORE paint so there's no FOUC
   useLayoutEffect(() => {
-    const p = preloader;
+    const p = ePreloader;
     const topY = `-${50 - p.letterTopOffset}vh`;
     const bottomY = `${50 - p.letterBottomOffset}vh`;
 
@@ -98,6 +207,7 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
           badgeRef.current,
           metaLeftRef.current,
           metaRightRef.current,
+          roleRef.current,
         ],
         { autoAlpha: 0, y: 14 }
       );
@@ -124,11 +234,11 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
       ctx.revert();
       rootRef.current?.setAttribute("data-ready", "false");
     };
-  }, [preloader]);
+  }, [ePreloader]);
 
   // Async timeline — waits for image decode to avoid reveal jank
   useEffect(() => {
-    const p = preloader;
+    const p = ePreloader;
     let ctx = null;
     let cancelled = false;
 
@@ -249,6 +359,7 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
             badgeRef.current,
             metaLeftRef.current,
             metaRightRef.current,
+            roleRef.current,
           ],
           {
             autoAlpha: 1,
@@ -281,7 +392,7 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
       setPreloadComplete(false);
       prevSectionRef.current = null;
     };
-  }, [preloader]);
+  }, [ePreloader]);
 
   // Photo tilt + momentum — only after preloader completes, to avoid matrix
   // conflicts with the mask reveal scale animation on .photo-inner.
@@ -335,7 +446,7 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
     const nextIsPanel = PANEL_SECTIONS.includes(next);
 
     const c = chisono;
-    const p = preloader;
+    const p = ePreloader;
 
     const tl = gsap.timeline();
 
@@ -345,14 +456,16 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
 
     const isMobile = window.matchMedia("(max-width: 900px)").matches;
     const fillX = isMobile ? 0 : "-25vw";
-    const fillY = isMobile ? "-25vh" : 0;
+    const fillY = isMobile ? "-20vh" : 0;
 
     const footItems = footRef.current
       ? footRef.current.querySelectorAll(".tagline, .foot-cta")
       : [];
-    const metaItems = [metaLeftRef.current, metaRightRef.current].filter(
-      Boolean
-    );
+    const metaItems = [
+      metaLeftRef.current,
+      metaRightRef.current,
+      roleRef.current,
+    ].filter(Boolean);
 
     if (nextIsPanel && !prevIsPanel) {
       tl.to(
@@ -591,23 +704,23 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
         );
       }
     }
-  }, [activeSection, preloadComplete, chisono, preloader]);
+  }, [activeSection, preloadComplete, chisono, ePreloader]);
 
   const toggleSection = (name) => {
     setActiveSection((cur) => (cur === name ? null : name));
   };
 
   const photoStyle = {
-    "--photo-home-w": `calc(${preloader.imageHeightVh}vh * ${preloader.imageAspect})`,
-    "--photo-home-h": `${preloader.imageHeightVh}vh`,
+    "--photo-home-w": `calc(${ePreloader.imageHeightVh}vh * ${ePreloader.imageAspect})`,
+    "--photo-home-h": `${ePreloader.imageHeightVh}vh`,
   };
 
   const titleStyle = {
-    fontFamily: typography.titleFont,
-    fontWeight: typography.titleWeight,
+    fontFamily: eTypography.titleFont,
+    fontWeight: eTypography.titleWeight,
     fontStyle: "normal",
-    letterSpacing: `${typography.titleTracking}em`,
-    fontSize: `clamp(60px, ${typography.titleSizeVw}vw, 260px)`,
+    letterSpacing: `${eTypography.titleTracking}em`,
+    fontSize: `clamp(60px, ${eTypography.titleSizeVw}vw, 260px)`,
   };
 
   const navItems = [
@@ -617,7 +730,22 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
   ];
 
   return (
-    <div className="hero" ref={rootRef} data-active={activeSection || "home"}>
+    <div
+      className="hero"
+      ref={rootRef}
+      data-active={activeSection || "home"}
+      data-version={version}
+      data-preload-complete={preloadComplete ? "true" : undefined}
+      style={
+        isMobile && mobile
+          ? {
+              "--tagline-size": `${mobile.taglineSize}px`,
+              "--tagline-ml": `${mobile.taglineMarginLeft}px`,
+              "--logo-size": `${mobile.logoSize}px`,
+            }
+          : undefined
+      }
+    >
       <div className="decor" ref={decorRef} aria-hidden="true">
         <svg
           className="decor-line decor-line--top"
@@ -661,10 +789,10 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
           onClick={() => setActiveSection(null)}
           aria-label="Torna alla home"
           style={{
-            fontFamily: typography.titleFont,
-            fontWeight: typography.titleWeight,
-            letterSpacing: `${typography.titleTracking}em`,
-            color: typography.titleColorCarla,
+            fontFamily: eTypography.titleFont,
+            fontWeight: eTypography.titleWeight,
+            letterSpacing: `${eTypography.titleTracking}em`,
+            color: eTypography.titleColorCarla,
           }}
         >
           {LOGO.map((c, i) => (
@@ -718,7 +846,7 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
       <div
         className="hero-meta hero-meta--left"
         ref={metaLeftRef}
-        style={{ left: `${meta.leftX}vw`, top: `${meta.leftY}vh` }}
+        style={{ left: `${eMeta.leftX}vw`, top: `${eMeta.leftY}vh` }}
       >
         <div className="meta-col">
           <span className="meta-label">Ricevo a</span>
@@ -729,7 +857,7 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
       <div
         className="hero-meta hero-meta--right"
         ref={metaRightRef}
-        style={{ left: `${meta.rightX}vw`, top: `${meta.rightY}vh` }}
+        style={{ left: `${eMeta.rightX}vw`, top: `${eMeta.rightY}vh` }}
       >
         <div className="meta-col">
           <span className="meta-label">Adatto per:</span>
@@ -742,7 +870,7 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
       <div
         className="letter carla"
         ref={carlaWordRef}
-        style={{ ...titleStyle, color: typography.titleColorCarla }}
+        style={{ ...titleStyle, color: eTypography.titleColorCarla }}
         aria-label="Carla"
       >
         {CARLA.map((c, i) => (
@@ -759,7 +887,7 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
       <div
         className="letter piras"
         ref={pirasWordRef}
-        style={{ ...titleStyle, color: typography.titleColorPiras }}
+        style={{ ...titleStyle, color: eTypography.titleColorPiras }}
         aria-label="Piras"
       >
         {PIRAS.map((c, i) => (
@@ -772,6 +900,38 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
           </span>
         ))}
       </div>
+
+      <div className="photo-role" ref={roleRef} aria-hidden="true">
+        Psicologa
+      </div>
+
+      <aside className="version-b-left" ref={versionBLeftRef} aria-hidden={version !== "B"}>
+        <span className="vbl-eyebrow">Psicologa clinica · Milano &amp; Online</span>
+        <h2 className="vbl-title">
+          Carla <em>Piras</em>
+        </h2>
+        <p className="vbl-body">
+          Uno spazio per ascoltare, comprendere
+          <br />
+          e accogliere ciò che stai vivendo.
+        </p>
+        <div className="vbl-actions">
+          <button
+            type="button"
+            className="vbl-cta vbl-cta--primary"
+            onClick={() => setActiveSection("contatti")}
+          >
+            Prenota un colloquio
+          </button>
+          <button
+            type="button"
+            className="vbl-cta vbl-cta--secondary"
+            onClick={() => toggleSection("chi-sono")}
+          >
+            Chi sono
+          </button>
+        </div>
+      </aside>
 
       <figure className="photo" ref={photoRef} style={photoStyle}>
         <div className="photo-inner" ref={photoInnerRef}>
@@ -787,96 +947,101 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
 
       <div className="percentage" ref={percRef}>00</div>
 
-      <aside
-        className="bio-panel"
-        ref={(el) => (panelsRef.current["chi-sono"] = el)}
-        aria-hidden={activeSection !== "chi-sono"}
-      >
-        <button type="button" className="bio-close" onClick={() => toggleSection("chi-sono")} aria-label="Chiudi">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-            <line x1="6" y1="6" x2="18" y2="18" />
-            <line x1="18" y1="6" x2="6" y2="18" />
-          </svg>
-        </button>
-        <span className="bio-index">02 · Chi sono</span>
-        <h2 className="bio-title">
-          Uno spazio <em>d'ascolto,</em>
-          <br />
-          senza giudizio.
-        </h2>
-        <div className="bio-body">
-          <p className="bio-lead">
-            Sono <strong>Carla Piras</strong>, psicologa clinica e specializzanda
-            in psicoterapia integrata, iscritta all'Albo degli Psicologi della
-            Lombardia n. 26906.
-          </p>
-          <p>
-            Ho maturato esperienza in contesti ospedalieri e territoriali, tra
-            cui il Policlinico di Milano e l'Ospedale San Paolo, Centro per i
-            Disturbi della Nutrizione e dell'Alimentazione in età evolutiva,
-            accompagnando adolescenti, adulti e famiglie.
-          </p>
-          <p>
-            Credo che ogni vissuto meriti ascolto, comprensione e uno spazio in
-            cui potersi sentire accolti, senza giudizio.
-          </p>
-        </div>
-        <div className="bio-sign">
-          <span className="sign-line" />
-          <span>Milano &amp; Online · Adolescenti · Adulti · Famiglie</span>
-        </div>
-      </aside>
+      {createPortal(
+        <>
+          <aside
+            className="bio-panel"
+            ref={(el) => (panelsRef.current["chi-sono"] = el)}
+            aria-hidden={activeSection !== "chi-sono"}
+          >
+            <button type="button" className="bio-close" onClick={() => toggleSection("chi-sono")} aria-label="Chiudi">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                <line x1="6" y1="6" x2="18" y2="18" />
+                <line x1="18" y1="6" x2="6" y2="18" />
+              </svg>
+            </button>
+            <span className="bio-index">02 · Chi sono</span>
+            <h2 className="bio-title">
+              Uno spazio <em>d'ascolto,</em>
+              <br />
+              senza giudizio.
+            </h2>
+            <div className="bio-body">
+              <p className="bio-lead">
+                Sono <strong>Carla Piras</strong>, psicologa clinica e specializzanda
+                in psicoterapia integrata, iscritta all'Albo degli Psicologi della
+                Lombardia n. 26906.
+              </p>
+              <p>
+                Ho maturato esperienza in contesti ospedalieri e territoriali, tra
+                cui il Policlinico di Milano e l'Ospedale San Paolo, Centro per i
+                Disturbi della Nutrizione e dell'Alimentazione in età evolutiva,
+                accompagnando adolescenti, adulti e famiglie.
+              </p>
+              <p>
+                Credo che ogni vissuto meriti ascolto, comprensione e uno spazio in
+                cui potersi sentire accolti, senza giudizio.
+              </p>
+            </div>
+            <div className="bio-sign">
+              <span className="sign-line" />
+              <span>Milano &amp; Online · Adolescenti · Adulti · Famiglie</span>
+            </div>
+          </aside>
 
-      <aside
-        className="bio-panel"
-        ref={(el) => (panelsRef.current["come-lavoro"] = el)}
-        aria-hidden={activeSection !== "come-lavoro"}
-      >
-        <button type="button" className="bio-close" onClick={() => toggleSection("come-lavoro")} aria-label="Chiudi">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-            <line x1="6" y1="6" x2="18" y2="18" />
-            <line x1="18" y1="6" x2="6" y2="18" />
-          </svg>
-        </button>
-        <span className="bio-index">01 · Come lavoro</span>
-        <h2 className="bio-title">
-          Un percorso costruito <em>insieme,</em>
-          <br />
-          nel rispetto dei tuoi tempi.
-        </h2>
-        <ol className="bio-steps">
-          <li>
-            <span className="step-num">01</span>
-            <div>
-              <h3>Primo colloquio</h3>
-              <p>
-                Un momento di conoscenza reciproca in cui potrai raccontare ciò
-                che ti ha portato a chiedere supporto.
-              </p>
-            </div>
-          </li>
-          <li>
-            <span className="step-num">02</span>
-            <div>
-              <h3>Frequenza e durata</h3>
-              <p>
-                Sedute di circa 50 minuti, generalmente con cadenza settimanale,
-                da definire insieme.
-              </p>
-            </div>
-          </li>
-          <li>
-            <span className="step-num">03</span>
-            <div>
-              <h3>Modalità</h3>
-              <p>
-                Ricevo a Milano, in Via Cosimo del Fante e in Viale Famagosta, e
-                online: scegli ciò che si adatta meglio alle tue esigenze.
-              </p>
-            </div>
-          </li>
-        </ol>
-      </aside>
+          <aside
+            className="bio-panel"
+            ref={(el) => (panelsRef.current["come-lavoro"] = el)}
+            aria-hidden={activeSection !== "come-lavoro"}
+          >
+            <button type="button" className="bio-close" onClick={() => toggleSection("come-lavoro")} aria-label="Chiudi">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                <line x1="6" y1="6" x2="18" y2="18" />
+                <line x1="18" y1="6" x2="6" y2="18" />
+              </svg>
+            </button>
+            <span className="bio-index">01 · Come lavoro</span>
+            <h2 className="bio-title">
+              Un percorso costruito <em>insieme,</em>
+              <br />
+              nel rispetto dei tuoi tempi.
+            </h2>
+            <ol className="bio-steps">
+              <li>
+                <span className="step-num">01</span>
+                <div>
+                  <h3>Primo colloquio</h3>
+                  <p>
+                    Un momento di conoscenza reciproca in cui potrai raccontare ciò
+                    che ti ha portato a chiedere supporto.
+                  </p>
+                </div>
+              </li>
+              <li>
+                <span className="step-num">02</span>
+                <div>
+                  <h3>Frequenza e durata</h3>
+                  <p>
+                    Sedute di circa 50 minuti, generalmente con cadenza settimanale,
+                    da definire insieme.
+                  </p>
+                </div>
+              </li>
+              <li>
+                <span className="step-num">03</span>
+                <div>
+                  <h3>Modalità</h3>
+                  <p>
+                    Ricevo a Milano, in Via Cosimo del Fante e in Viale Famagosta, e
+                    online: scegli ciò che si adatta meglio alle tue esigenze.
+                  </p>
+                </div>
+              </li>
+            </ol>
+          </aside>
+        </>,
+        document.body
+      )}
 
       <ContactModal
         open={activeSection === "contatti"}
@@ -884,6 +1049,16 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
       />
 
       <FlowerBurst active={ctaHover} count={36} />
+
+      <HamburgerMenu
+        open={menuOpen}
+        onToggle={() => setMenuOpen((v) => !v)}
+        onNavigate={(key) => {
+          setMenuOpen(false);
+          toggleSection(key);
+        }}
+        activeSection={activeSection}
+      />
 
       <div className="flower-field" aria-hidden="true">
         {FLOWERS.map((f, i) => (
@@ -908,25 +1083,37 @@ export default function Hero({ preloader, typography, chisono, tilt, meta }) {
             </em>
           </p>
         </div>
-        <button
-          type="button"
-          className="foot-cta"
-          onClick={() => setActiveSection("contatti")}
-          onPointerEnter={() => setFootCtaHover(true)}
-          onPointerLeave={() => setFootCtaHover(false)}
-        >
-          <StaggerButton
-            as="span"
-            className="foot-cta-label"
-            triggerSelector=".foot-cta"
+        <div className="foot-ctas">
+          <button
+            type="button"
+            className="foot-cta foot-cta--secondary"
+            onClick={() => toggleSection("chi-sono")}
           >
-            Primo colloquio
-          </StaggerButton>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
-        </button>
+            <span className="foot-cta-label">Chi sono</span>
+          </button>
+          <button
+            type="button"
+            className="foot-cta foot-cta--primary"
+            onClick={() => setActiveSection("contatti")}
+            onPointerEnter={() => setFootCtaHover(true)}
+            onPointerLeave={() => setFootCtaHover(false)}
+          >
+            <span className="foot-cta-stack">
+              <StaggerButton
+                as="span"
+                className="foot-cta-label"
+                triggerSelector=".foot-cta--primary"
+              >
+                Primo colloquio
+              </StaggerButton>
+              <span className="foot-cta-sub">Albo Psicologi Lombardia · n. 26906</span>
+            </span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );

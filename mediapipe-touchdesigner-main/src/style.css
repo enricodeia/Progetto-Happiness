@@ -1,0 +1,47 @@
+html, body {
+  background-color: rgba(0, 255, 0, 0); /* Transparent background */
+  margin: 0;
+  overflow: hidden; /* Hide scrollbars */
+}
+video {
+  opacity: 1;
+}
+.highlighter {
+  background: rgba(0, 255, 0, 0);
+  border: 5px solid #9D44F8;
+  z-index: 1;
+  position: absolute;
+}
+.objects p, .faces p {
+  /* display: block; */
+  white-space: nowrap;
+  position: absolute;
+  background-color: #9D44F8;
+  color: #fff;
+  /* border: 5px solid rgba(255, 255, 255, 0.7); */
+  z-index: 2;
+  font-family: Roboto;
+  font-size: 24px;
+  margin: 5px;
+  padding: 0px 10px 5px 5px 
+}
+
+video, canvas, .objects, .faces {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;   /* Fill the viewport width */
+  height: 100vh;  /* Fill the viewport height */
+  object-fit: cover; /* Crop to fill */
+}
+
+.key-point {
+  position: absolute;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  background-color: #ffffff;
+  /* border: 1px solid #ffffff; */
+  border-radius: 50%;
+  /* display: block; */
+}

@@ -1,0 +1,206 @@
+.toolbox {
+  position: fixed;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(15, 15, 18, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  max-width: min(900px, 90vw);
+  animation: toolbox-in 220ms cubic-bezier(0.2, 0.9, 0.3, 1.05);
+}
+
+@keyframes toolbox-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.toolbox--collapsed {
+  padding: 6px 10px;
+}
+
+.toolbox__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.toolbox__toggle {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.toolbox__toggle:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.toolbox__title {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.toolbox__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  background: rgba(140, 180, 255, 0.18);
+  color: #c7d8ff;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.toolbox__hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-left: 4px;
+}
+
+.toolbox__actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.toolbox__btn {
+  padding: 5px 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.toolbox__btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.toolbox__btn--primary {
+  background: #ffd658;
+  color: #0a0a0b;
+  border-color: #ffd658;
+}
+
+.toolbox__btn--primary:hover {
+  background: #ffe48b;
+}
+
+.toolbox__btn--ghost {
+  background: transparent;
+}
+
+/* Scrollable row of material chips */
+.toolbox__items {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px;
+  max-width: 100%;
+}
+
+.toolbox__items::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tool-chip {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  cursor: grab;
+  transition: transform 120ms ease, border-color 140ms ease, background 140ms ease;
+  width: 72px;
+}
+
+.tool-chip:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(140, 180, 255, 0.45);
+  transform: translateY(-2px);
+}
+
+.tool-chip:active {
+  cursor: grabbing;
+}
+
+.tool-chip__thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #333, #111);
+  background-size: cover;
+  background-position: center;
+  image-rendering: pixelated;
+  pointer-events: none; /* let the parent handle drag */
+}
+
+.tool-chip__thumb--empty {
+  background: linear-gradient(135deg, #303040, #15151b);
+}
+
+.tool-chip__name {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: center;
+}
+
+/* When dragging an asset, give the scene a glowing drop affordance */
+body.is-dragging-asset .scene::after {
+  content: 'Drop on a mesh to apply';
+  position: absolute;
+  inset: 8px;
+  border-radius: 12px;
+  border: 2px dashed rgba(255, 214, 88, 0.5);
+  background: rgba(255, 214, 88, 0.04);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 214, 88, 0.9);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 5;
+  animation: dz-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes dz-pulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}

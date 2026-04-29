@@ -10,7 +10,6 @@
   background: var(--beige-100);
   overflow: hidden;
   isolation: isolate;
-  perspective: 1400px;
 }
 
 .hero:not([data-ready="true"]) .letter,
@@ -51,7 +50,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
   color: var(--blue-900);
 }
 
@@ -321,6 +320,7 @@
   --mask-y: 50%;
   clip-path: inset(var(--mask-y) 0% var(--mask-y) 0%);
   will-change: clip-path, transform, width, height;
+  perspective: 1400px;
   transform-style: preserve-3d;
   transition:
     width 0.9s cubic-bezier(0.65, 0, 0.35, 1),
@@ -341,7 +341,7 @@
   .hero[data-active="chi-sono"] .photo,
   .hero[data-active="come-lavoro"] .photo {
     width: 100vw;
-    height: 50vh;
+    height: 60dvh;
   }
 }
 
@@ -368,6 +368,151 @@
   filter: saturate(0.92) contrast(1.02);
 }
 
+/* VERSION B — text left, photo right */
+.version-b-left {
+  position: fixed;
+  top: 50%;
+  left: 8vw;
+  transform: translateY(-50%);
+  width: min(420px, 34vw);
+  z-index: 25;
+  opacity: 0;
+  visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  pointer-events: none;
+}
+
+.hero[data-version="B"] .version-b-left {
+  pointer-events: auto;
+}
+
+.vbl-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  opacity: 0.75;
+}
+
+.vbl-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: clamp(48px, 5.4vw, 88px);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: var(--blue-900);
+  margin: 0;
+}
+
+.vbl-title em {
+  font-style: italic;
+  color: var(--ink);
+}
+
+.vbl-body {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: italic;
+  font-size: clamp(18px, 1.5vw, 22px);
+  line-height: 1.35;
+  color: var(--ink);
+  max-width: 360px;
+  margin: 0;
+}
+
+.vbl-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.vbl-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  cursor: inherit;
+  border: 1px solid var(--ink);
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.vbl-cta--primary {
+  background: var(--ink);
+  color: var(--beige-100);
+}
+
+.vbl-cta--primary:hover {
+  background: var(--blue-900);
+  border-color: var(--blue-900);
+}
+
+.vbl-cta--secondary {
+  background: transparent;
+  color: var(--ink);
+}
+
+.vbl-cta--secondary:hover {
+  background: var(--ink);
+  color: var(--beige-100);
+}
+
+@media (max-width: 900px) {
+  .version-b-left {
+    left: 6vw;
+    right: 6vw;
+    width: auto;
+    top: 22vh;
+    transform: none;
+    gap: 14px;
+  }
+
+  .vbl-title {
+    font-size: clamp(40px, 13vw, 72px);
+  }
+
+  .vbl-body {
+    font-size: 15px;
+  }
+}
+
+/* PHOTO ROLE (above the photo) */
+.photo-role {
+  position: absolute;
+  top: 13vh;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 11;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-style: italic;
+  font-size: 22px;
+  letter-spacing: 0;
+  color: var(--blue-900);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.hero:not([data-ready="true"]) .photo-role {
+  visibility: hidden;
+}
+
+@media (max-width: 900px) {
+  .photo-role {
+    top: 23vh;
+    font-size: 18px;
+  }
+}
+
 /* PERCENTAGE */
 .percentage {
   position: absolute;
@@ -391,11 +536,11 @@
 
 /* BIO PANEL — editorial chi sono */
 .bio-panel {
-  position: absolute;
+  position: fixed;
   top: 50%;
   right: 6vw;
   translate: 0 -50%;
-  z-index: 18;
+  z-index: 9999;
   width: min(440px, 38vw);
   padding: 36px 40px 40px;
   background: rgba(247, 240, 227, 0.6);
@@ -650,6 +795,10 @@ a.ct-val:hover::after {
   font-weight: inherit;
 }
 
+.foot-ctas {
+  display: contents;
+}
+
 .foot-cta {
   display: inline-flex;
   align-items: center;
@@ -664,7 +813,33 @@ a.ct-val:hover::after {
   line-height: 1;
   font-family: inherit;
   cursor: inherit;
-  transition: background 0.3s ease, color 0.3s ease;
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.foot-cta--secondary {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+}
+
+.foot-cta--secondary:hover {
+  background: var(--ink);
+  color: var(--beige-100);
+}
+
+@media (min-width: 901px) {
+  .foot-cta--secondary {
+    display: none;
+  }
+}
+
+.foot-cta-stack {
+  display: inline-flex;
+  align-items: center;
+}
+
+.foot-cta-sub {
+  display: none;
 }
 
 .foot-cta:hover {
@@ -687,22 +862,12 @@ a.ct-val:hover::after {
   }
 
   .logo-home {
-    font-size: 17px;
     padding-top: 4px;
+    font-size: var(--logo-size, 17px);
   }
 
   .nav-right {
-    gap: 6px;
-    align-items: flex-end;
-  }
-
-  .nav-cta {
-    padding: 10px 16px;
-    font-size: 11px;
-  }
-
-  .nav-badge {
-    font-size: 7.2px;
+    display: none;
   }
 
   .hero-foot {
@@ -713,8 +878,53 @@ a.ct-val:hover::after {
     gap: 18px;
   }
 
+  .hero-foot > .foot-cta {
+    justify-self: stretch;
+    width: 100%;
+  }
+
   .tagline {
-    font-size: 17px;
+    font-size: var(--tagline-size, 17px);
+    margin-left: var(--tagline-ml, 0px);
+  }
+
+  .foot-left {
+    padding-left: 0;
+  }
+
+  .foot-ctas {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .foot-cta {
+    flex: 1;
+    justify-content: space-between;
+    padding: 14px 18px;
+  }
+
+  .foot-cta--secondary {
+    flex: 0 1 auto;
+  }
+
+  .foot-cta-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    text-align: left;
+  }
+
+  .foot-cta-sub {
+    display: block;
+    color: #ffffff;
+    opacity: 0.45;
+    font-size: 7.2px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
 
   .bio-panel {
@@ -724,17 +934,10 @@ a.ct-val:hover::after {
     padding: 26px 22px 28px;
   }
 
-  .hero[data-active="chi-sono"] .bio-panel,
-  .hero[data-active="come-lavoro"] .bio-panel {
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100vw;
-    height: 50vh;
-    translate: 0 0;
-    border-radius: var(--r-card, 14px) var(--r-card, 14px) 0 0;
+  .bio-panel[aria-hidden="false"] {
+    max-height: calc(100dvh - 48px);
     overflow-y: auto;
-    padding: 24px 22px 28px;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--r-card, 30px);
   }
 }

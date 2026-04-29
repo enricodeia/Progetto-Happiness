@@ -1,0 +1,31 @@
+2026-03-09T11:49:17+01:00 START: Running lead generation pipeline
+Error: Claude Code cannot be launched inside another Claude Code session.
+Nested sessions share runtime resources and will crash all active sessions.
+To bypass this check, unset the CLAUDECODE environment variable.
+2026-03-10T00:42:05+01:00 START: Running lead generation pipeline (agentic loop)
+
+=== Run: 2026-03-10 (automated daily job) ===
+Status: FAILED - Apify credits depleted
+Total businesses scraped: 0
+Total contacts found: 0
+Total pushed to Notion: 0
+Errors: 40/40 combos returned HTTP 402 (Payment Required)
+Note: Apify account needs credit top-up before next run.
+Existing Notion entries at time of run: 100+
+==============================================
+**Daily run summary: 2026-03-10**
+
+| Metric | Value |
+|---|---|
+| Combos attempted | 40 (5 categories x 8 cities) |
+| Businesses scraped | 0 |
+| Contacts found | 0 |
+| Pushed to Notion | 0 |
+| Errors | 40 |
+
+**Root cause:** All 40 Apify API calls returned **HTTP 402 (Payment Required)**. The Apify account has no remaining credits.
+
+**Action needed:** Top up the Apify account at [console.apify.com](https://console.apify.com) before the next scheduled run. A full batch run costs approximately $4.30.
+
+Run logged to `projects/lead-scraper/runs.log`.
+2026-03-10T00:45:34+01:00 DONE

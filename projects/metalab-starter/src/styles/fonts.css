@@ -1,0 +1,40 @@
+/* ============================================================
+   Fonts
+   Drop the licensed Metalab fonts into /public/fonts/ to
+   activate. Until then the stack falls back gracefully:
+   - "Basis Grotesque Pro" -> Inter (loaded via index.html CDN)
+   - "PP Eiko"             -> Editorial New / Times
+   See README.md "Font setup" for purchase + drop-in steps.
+   ============================================================ */
+
+@font-face {
+  font-family: "Basis Grotesque Pro";
+  src: url("/fonts/basis-grotesque-light.woff2") format("woff2");
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Basis Grotesque Pro";
+  src: url("/fonts/basis-grotesque-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Basis Grotesque Pro";
+  src: url("/fonts/basis-grotesque-medium.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PP Eiko";
+  src: url("/fonts/ppeiko-light.woff2") format("woff2");
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: "PP Eiko";
+  src: url("/fonts/ppeiko-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}

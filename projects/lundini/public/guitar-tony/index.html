@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guitar Tony</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+  :root {
+    --white: #fff;
+    --black: #000;
+    --green: #2FFF2F;
+    --font-display: 'Inter', sans-serif;
+    --font-mono: 'Courier New', monospace;
+    --border: 3px solid #000;
+    --radius-toon: 14px;
+    --shadow-toon-sm: 4px 4px 0px #000;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Inter', sans-serif; color: #fff; }
+
+  .pianony-overlay {
+    z-index: 60; background: #000; display: flex; flex-direction: column;
+    width: 100%; height: 100%; position: fixed; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden;
+  }
+
+  .piano-bg {
+    z-index: 0; transform-origin: 50%; will-change: transform;
+    background: url(/Lundinoz%201.webp) 50%/cover no-repeat;
+    position: absolute; top: 0; bottom: 0; left: 0; right: 0;
+  }
+
+  .piano-lightrays {
+    z-index: 2; pointer-events: none; mix-blend-mode: screen;
+    width: 100%; height: 100%; position: absolute; top: 0; bottom: 0; left: 0; right: 0;
+  }
+
+  .piano-close {
+    font-family: var(--font-display); color: var(--black); background: var(--white);
+    border: var(--border); border-radius: var(--radius-toon); z-index: 55;
+    pointer-events: auto; cursor: pointer; width: 44px; height: 44px;
+    box-shadow: var(--shadow-toon-sm); justify-content: center; align-items: center;
+    font-size: 24px; transition: transform .15s, box-shadow .15s, background .15s;
+    display: flex; position: absolute; top: 16px; right: 20px;
+  }
+  .piano-close:hover { box-shadow: 6px 6px 0px var(--white); background: var(--green); transform: translate(-2px, -2px) rotate(-6deg); }
+  .piano-close:active { box-shadow: 1px 1px 0px var(--white); transform: translate(2px, 2px) rotate(0); }
+
+  .piano-falling-area {
+    z-index: 3; perspective: 600px; perspective-origin: 50% 85%;
+    flex: 1; position: relative; overflow: hidden;
+  }
+  .piano-falling-area-inner {
+    transform-origin: 50% 100%; height: 200%; transform-style: preserve-3d;
+    position: absolute; bottom: 0; left: 0; right: 0; transform: rotateX(50deg);
+  }
+  .piano-falling-area:before {
+    content: ""; pointer-events: none; z-index: 4;
+    background: linear-gradient(#000000b3 0%, #0003 40%, #0000 70%);
+    position: absolute; top: 0; bottom: 0; left: 0; right: 0;
+  }
+
+  .piano-lanes {
+    z-index: 0; pointer-events: none; padding: 0 2%; display: flex;
+    position: absolute; top: 0; bottom: 0; left: 0; right: 0;
+  }
+  .piano-lane-line {
+    background: linear-gradient(#0000 0%, #ffffff04 100%);
+    border-right: 1px solid #ffffff14; flex: 1; position: relative;
+  }
+  .piano-lane-line:last-child { border-right: none; }
+  .piano-lane-line:after {
+    content: ""; pointer-events: none; height: 28%;
+    position: absolute; bottom: 0; left: 0; right: 0;
+  }
+  .piano-lane-line:nth-child(1):after { background: linear-gradient(#0000 0%, #ff444438 100%); }
+  .piano-lane-line:nth-child(2):after { background: linear-gradient(#0000 0%, #ff880038 100%); }
+  .piano-lane-line:nth-child(3):after { background: linear-gradient(#0000 0%, #ffdd0038 100%); }
+  .piano-lane-line:nth-child(4):after { background: linear-gradient(#0000 0%, #2fff2f38 100%); }
+  .piano-lane-line:nth-child(5):after { background: linear-gradient(#0000 0%, #00ccff38 100%); }
+  .piano-lane-line:nth-child(6):after { background: linear-gradient(#0000 0%, #8855ff38 100%); }
+  .piano-lane-line:nth-child(7):after { background: linear-gradient(#0000 0%, #ff44aa38 100%); }
+
+  .piano-hit-zone {
+    border-top: 3px solid var(--green); z-index: 5;
+    background: linear-gradient(#0000, #2fff2f33); height: 28px;
+    position: absolute; bottom: 0; left: 0; right: 0;
+    box-shadow: 0 0 40px #2fff2f66, 0 0 80px #2fff2f33, inset 0 2px 20px #2fff2f1a;
+  }
+
+  .piano-note {
+    background: linear-gradient(180deg, var(--lane-color, var(--green)), color-mix(in srgb, var(--lane-color, var(--green)) 60%, transparent));
+    height: 50px; box-shadow: 0 0 14px color-mix(in srgb, var(--lane-color, var(--green)) 50%, transparent), inset 0 1px 0 #ffffff4d;
+    z-index: 2; pointer-events: none; border: 2px solid #ffffff40; border-radius: 12px; position: absolute;
+  }
+  .piano-note[data-key="e"] { --lane-color: #f44; }
+  .piano-note[data-key="r"] { --lane-color: #f80; }
+  .piano-note[data-key="t"] { --lane-color: #fd0; }
+  .piano-note[data-key="y"] { --lane-color: #2fff2f; }
+  .piano-note[data-key="u"] { --lane-color: #0cf; }
+  .piano-note[data-key="i"] { --lane-color: #85f; }
+  .piano-note[data-key="o"] { --lane-color: #f4a; }
+
+  .piano-keyboard {
+    z-index: 10; transform-origin: 50% 0; background: #000000d9;
+    border-top: 2px solid #ffffff1f; justify-content: center; align-items: center;
+    gap: 0; height: 120px; padding: 0 20%; display: flex; position: relative;
+    transform: perspective(500px) rotateX(-8deg);
+  }
+  .piano-key {
+    cursor: pointer; user-select: none; background: 0 0; border: none;
+    flex-direction: column; flex: 1; justify-content: center; align-items: center;
+    gap: 6px; display: flex;
+  }
+  .piano-key-circle {
+    background: var(--lane-color); border: 3px solid var(--white); border-radius: 16px;
+    width: 58px; height: 58px; transition: transform 80ms, box-shadow 80ms;
+    box-shadow: 4px 4px #0006;
+  }
+  .piano-key .key-shortcut {
+    font-family: var(--font-display); color: var(--white); opacity: .5;
+    text-transform: uppercase; letter-spacing: .05em; font-size: 12px;
+  }
+  .piano-key[data-lane="e"] { --lane-color: #f44; }
+  .piano-key[data-lane="r"] { --lane-color: #f80; }
+  .piano-key[data-lane="t"] { --lane-color: #fd0; }
+  .piano-key[data-lane="y"] { --lane-color: #2fff2f; }
+  .piano-key[data-lane="u"] { --lane-color: #0cf; }
+  .piano-key[data-lane="i"] { --lane-color: #85f; }
+  .piano-key[data-lane="o"] { --lane-color: #f4a; }
+  .piano-key.playing .piano-key-circle {
+    box-shadow: 1px 1px 0px #0006, 0 0 20px var(--lane-color), 0 0 40px color-mix(in srgb, var(--lane-color) 40%, transparent);
+    border-color: var(--white); transform: scale(.9) translate(2px, 2px);
+  }
+  .piano-key.error .piano-key-circle {
+    background: #f22; transform: scale(.9) translate(2px, 2px); box-shadow: 1px 1px #0006;
+  }
+
+  .piano-hud {
+    z-index: 11; pointer-events: none; flex-direction: row; justify-content: center;
+    align-items: center; gap: 24px; width: 20%; height: 120px; display: none;
+    position: absolute; bottom: 0; left: 0;
+  }
+  .piano-hud.visible { display: flex; }
+  .piano-stat { flex-direction: column; align-items: center; gap: 2px; display: flex; }
+  .piano-stat-label { font-family: var(--font-mono); color: #fff6; letter-spacing: .15em; text-transform: uppercase; font-size: 9px; }
+  .piano-stat-value { font-family: var(--font-display); color: var(--white); font-size: 48px; line-height: 1; font-weight: 900; }
+  .piano-stat-score .piano-stat-value { color: var(--green); font-size: 56px; }
+  .piano-stat-combo .piano-stat-value { color: #f80; transition: transform .15s; }
+  .piano-stat-combo.active .piano-stat-value { animation: .3s combo-pulse; }
+  @keyframes combo-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.3); } to { transform: scale(1); } }
+  .piano-combo-row { align-items: baseline; gap: 6px; display: flex; }
+
+  .piano-multiplier-badge {
+    font-family: var(--font-mono); color: #f80; opacity: .6; letter-spacing: .05em;
+    font-size: 13px; font-weight: 700; transition: opacity .3s, color .3s, transform .2s;
+  }
+  .piano-multiplier-badge.tier-1 { color: #fa0; opacity: .9; }
+  .piano-multiplier-badge.tier-2 { color: #f60; opacity: 1; }
+  .piano-multiplier-badge.tier-3 { color: #f20; opacity: 1; text-shadow: 0 0 12px #f208; }
+
+  .multiplier-popup {
+    z-index: 20; font-family: var(--font-display); letter-spacing: .04em; pointer-events: none;
+    font-size: clamp(80px, 16vw, 160px); font-weight: 900; line-height: 1;
+    display: flex; position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%);
+  }
+  .mp-char { -webkit-text-stroke: 4px var(--white); paint-order: stroke fill; display: inline-block; }
+  .multiplier-popup.tier-1 { color: #00e5ff; text-shadow: 0 0 30px #00e5ff99, 0 0 60px #00e5ff4d; }
+  .multiplier-popup.tier-2 { color: #bf40ff; text-shadow: 0 0 30px #bf40ff99, 0 0 60px #bf40ff4d; }
+  .multiplier-popup.tier-3 { color: gold; text-shadow: 0 0 30px #ffd700aa, 0 0 60px #ffd70066; }
+
+  .piano-start-screen {
+    z-index: 25; pointer-events: auto;
+    background: radial-gradient(80% 60% at 50% 100%, #2fff2f14 0%, #0000 70%);
+    flex-direction: column; justify-content: center; align-items: center; gap: 40px;
+    display: flex; position: absolute; top: 0; bottom: 0; left: 0; right: 0;
+  }
+  .piano-game-logo {
+    object-fit: contain; user-select: none; pointer-events: none;
+    width: clamp(120px, 14vw, 260px); height: auto;
+    position: absolute; bottom: 60%; left: 50%; transform: translate(-50%);
+  }
+  .piano-play-btn-hero {
+    font-family: var(--font-display); letter-spacing: .12em; color: var(--black);
+    background: var(--green); border: 3px solid var(--black); cursor: pointer;
+    border-radius: 60px; align-items: center; gap: 14px;
+    padding: clamp(14px, 2.5vw, 22px) clamp(36px, 7vw, 72px);
+    font-size: clamp(20px, 4vw, 38px); font-weight: 900;
+    transition: transform .12s, box-shadow .12s; display: flex;
+    box-shadow: 5px 5px #0009, 0 0 40px #2fff2f59;
+  }
+  .piano-play-btn-hero:hover { transform: translate(-3px, -3px); box-shadow: 8px 8px #0009, 0 0 70px #2fff2f8c; }
+  .piano-play-btn-hero:active { transform: translate(2px, 2px); box-shadow: 2px 2px #00000080, 0 0 20px #2fff2f40; }
+  .piano-play-icon { object-fit: contain; width: clamp(18px, 2.5vw, 32px); height: auto; display: block; }
+
+  .piano-pause-floating {
+    z-index: 15; font-family: var(--font-display); letter-spacing: .1em; color: var(--white);
+    backdrop-filter: blur(8px); pointer-events: auto; background: #0000008c;
+    border: 2px solid #ffffff40; border-radius: 40px; justify-content: center;
+    align-items: center; gap: 8px; padding: 10px 20px; font-size: 14px; font-weight: 700;
+    transition: all .15s; display: none; position: absolute; bottom: 20px; right: 24px; cursor: pointer;
+  }
+  .piano-pause-floating svg { flex-shrink: 0; }
+  .piano-pause-floating.visible { display: flex; }
+  .piano-pause-floating:hover { background: #ffffff26; border-color: #ffffff80; }
+  .piano-pause-floating:active { transform: scale(.92); }
+
+  .piano-pause-overlay {
+    z-index: 60; backdrop-filter: blur(8px); background: #000000bf;
+    justify-content: center; align-items: center; display: none;
+    position: absolute; top: 0; bottom: 0; left: 0; right: 0;
+  }
+  .piano-pause-overlay.visible { display: flex; }
+  .piano-pause-card {
+    background: #141414e6; border: 2px solid #ffffff1a; border-radius: 20px;
+    flex-direction: column; align-items: center; gap: 24px; padding: 40px 60px;
+    display: flex; box-shadow: 0 20px 60px #00000080;
+  }
+  .piano-pause-title { font-family: var(--font-display); color: var(--white); letter-spacing: .08em; font-size: 48px; font-weight: 900; line-height: 1; }
+  .piano-pause-score { font-family: var(--font-display); color: var(--white); font-size: 72px; font-weight: 900; line-height: 1; }
+  .piano-pause-score-label { font-family: var(--font-mono); color: #fff6; letter-spacing: .15em; text-transform: uppercase; margin-top: -8px; font-size: 10px; }
+  .piano-pause-actions { gap: 16px; display: flex; }
+  .piano-resume-btn {
+    font-family: var(--font-display); letter-spacing: .08em; color: var(--black);
+    background: var(--green); border: var(--border); border-radius: var(--radius-toon);
+    box-shadow: var(--shadow-toon-sm); cursor: pointer; padding: 10px 36px; font-size: 22px; font-weight: 900;
+    transition: all .15s;
+  }
+  .piano-resume-btn:hover { box-shadow: 6px 6px 0px var(--white); transform: translate(-2px, -2px); }
+  .piano-resume-btn:active { box-shadow: 1px 1px 0px var(--white); transform: translate(2px, 2px); }
+  .piano-quit-btn {
+    font-family: var(--font-display); letter-spacing: .08em; color: var(--white);
+    border-radius: var(--radius-toon); cursor: pointer; background: 0 0;
+    border: 2px solid #ffffff4d; padding: 10px 28px; font-size: 18px; font-weight: 700;
+    transition: all .15s;
+  }
+  .piano-quit-btn:hover { color: #f44; border-color: #f44; }
+
+  .piano-end-screen {
+    z-index: 65; backdrop-filter: blur(16px); background: #000000eb;
+    flex-direction: column; justify-content: center; align-items: center; gap: 36px;
+    display: none; position: absolute; top: 0; bottom: 0; left: 0; right: 0;
+  }
+  .piano-end-logo { object-fit: contain; user-select: none; pointer-events: none; width: clamp(100px, 22vw, 200px); height: auto; }
+  .piano-end-stats { align-items: flex-end; gap: clamp(20px, 5vw, 48px); display: flex; }
+  .piano-end-stat { flex-direction: column; align-items: center; gap: 4px; display: flex; }
+  .piano-end-stat-label { font-family: var(--font-mono); color: #fff6; letter-spacing: .15em; text-transform: uppercase; font-size: 9px; }
+  .piano-end-stat-value { font-family: var(--font-display); color: var(--white); font-size: clamp(36px, 7vw, 60px); font-weight: 900; line-height: 1; }
+  .piano-end-stat-green { color: var(--green); }
+  .piano-end-stat-red { color: #f44; }
+  .piano-end-actions { flex-wrap: wrap; justify-content: center; align-items: center; gap: 16px; display: flex; }
+  .piano-share-btn {
+    font-family: var(--font-display); letter-spacing: .08em; color: var(--white);
+    border-radius: var(--radius-toon); cursor: pointer; background: 0 0;
+    border: 2px solid #ffffff4d; padding: 10px 28px; font-size: 18px; font-weight: 700;
+    transition: all .15s;
+  }
+  .piano-share-btn:hover { border-color: var(--green); color: var(--green); }
+
+  @media (max-width: 768px) {
+    .piano-keyboard { gap: 0; height: 96px; padding: 0 2%; }
+    .piano-key-circle { border-radius: 12px; width: 44px; height: 44px; }
+    .piano-hud {
+      backdrop-filter: blur(8px); background: #0009; justify-content: center;
+      gap: 32px; width: auto; height: auto; padding: 12px 16px;
+      top: 0; bottom: auto; left: 0; right: 0;
+    }
+    .piano-stat-value { font-size: 24px; }
+    .piano-stat-label { font-size: 8px; }
+    .piano-game-logo { width: 180px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="pianony-overlay" class="pianony-overlay" style="display:flex">
+  <div id="piano-bg" class="piano-bg"></div>
+  <canvas id="piano-lightrays" class="piano-lightrays"></canvas>
+
+  <button id="btn-close-piano" class="piano-close">X</button>
+
+  <div id="piano-falling-area" class="piano-falling-area">
+    <div id="piano-falling-inner" class="piano-falling-area-inner">
+      <div class="piano-lanes"></div>
+      <div class="piano-hit-zone"></div>
+    </div>
+  </div>
+
+  <div id="piano-keyboard" class="piano-keyboard"></div>
+  <div id="multiplier-popup" class="multiplier-popup"></div>
+
+  <div id="piano-hud" class="piano-hud">
+    <div class="piano-stat piano-stat-score">
+      <span class="piano-stat-label">PUNTI</span>
+      <span id="piano-score" class="piano-stat-value">0</span>
+    </div>
+    <div class="piano-stat piano-stat-combo">
+      <span class="piano-stat-label">COMBO</span>
+      <div class="piano-combo-row">
+        <span id="piano-combo" class="piano-stat-value">0</span>
+        <span id="piano-multiplier" class="piano-multiplier-badge">x1</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="piano-start-screen" class="piano-start-screen">
+    <img src="guitar-tony-logo.webp" alt="Guitar Tony" class="piano-game-logo" />
+    <button id="piano-play-btn" class="piano-play-btn-hero">
+      <img src="play.svg" class="piano-play-icon" alt="" />
+      <span>PLAY</span>
+    </button>
+  </div>
+
+  <button id="piano-pause-floating" class="piano-pause-floating">
+    <svg width="14" height="16" viewBox="0 0 14 16" fill="currentColor"><rect x="0" y="0" width="4" height="16" rx="1"/><rect x="10" y="0" width="4" height="16" rx="1"/></svg>
+    <span>PAUSA</span>
+  </button>
+
+  <div id="piano-end-screen" class="piano-end-screen" style="display:none">
+    <img src="guitar-tony-logo.webp" alt="Guitar Tony" class="piano-end-logo" />
+    <div class="piano-end-stats">
+      <div class="piano-end-stat">
+        <span class="piano-end-stat-label">PUNTI</span>
+        <span id="end-score" class="piano-end-stat-value">0</span>
+      </div>
+      <div class="piano-end-stat">
+        <span class="piano-end-stat-label">PRESE</span>
+        <span id="end-hits" class="piano-end-stat-value piano-end-stat-green">0</span>
+      </div>
+      <div class="piano-end-stat">
+        <span class="piano-end-stat-label">MANCATE</span>
+        <span id="end-misses" class="piano-end-stat-value piano-end-stat-red">0</span>
+      </div>
+    </div>
+    <div class="piano-end-actions">
+      <button id="piano-retry-btn" class="piano-play-btn-hero">
+        <span class="piano-play-icon">↺</span>
+        <span>RIPROVA</span>
+      </button>
+      <button id="piano-share-btn" class="piano-share-btn">CONDIVIDI ↗</button>
+      <button id="piano-end-close-btn" class="piano-quit-btn">ESCI</button>
+    </div>
+  </div>
+
+  <div id="piano-pause-overlay" class="piano-pause-overlay">
+    <div class="piano-pause-card">
+      <span class="piano-pause-title">PAUSA</span>
+      <span id="pause-score" class="piano-pause-score">0</span>
+      <span class="piano-pause-score-label">PUNTI</span>
+      <div class="piano-pause-actions">
+        <button id="piano-resume-btn" class="piano-resume-btn">RIPRENDI</button>
+        <button id="piano-quit-btn" class="piano-quit-btn">ESCI</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================
+// GUITAR TONY — STANDALONE GAME
+// ============================================
+
+const FALL_TIME = 2000;
+const NOTE_OFFSET = 0;
+const KEY_FREQS = { e:369.99, r:392, t:440, y:493.88, u:523.25, i:587.33, o:659.25 };
+const LANES = ['e','r','t','y','u','i','o'];
+
+const SONG = [
+  {"key":"t","time":5002},{"key":"y","time":5137},{"key":"t","time":5314},{"key":"u","time":6323},
+  {"key":"y","time":6451},{"key":"u","time":6587},{"key":"i","time":7481},{"key":"u","time":7627},
+  {"key":"i","time":7786},{"key":"o","time":8210},{"key":"t","time":9533},{"key":"y","time":9540},
+  {"key":"y","time":10646},{"key":"u","time":10650},{"key":"y","time":11906},{"key":"t","time":11914},
+  {"key":"u","time":12995},{"key":"y","time":13004},{"key":"y","time":14334},{"key":"t","time":14336},
+  {"key":"u","time":15510},{"key":"y","time":15522},{"key":"y","time":16750},{"key":"t","time":16760},
+  {"key":"u","time":17870},{"key":"y","time":17876},{"key":"o","time":19137},{"key":"i","time":19140},
+  {"key":"i","time":20349},{"key":"u","time":20371},{"key":"o","time":21558},{"key":"i","time":21569},
+  {"key":"i","time":22756},{"key":"u","time":22774},{"key":"o","time":24018},{"key":"i","time":24294},
+  {"key":"u","time":24626},{"key":"y","time":24898},{"key":"t","time":25104},{"key":"t","time":26380},
+  {"key":"y","time":26687},{"key":"u","time":26957},{"key":"i","time":27201},{"key":"o","time":27422},
+  {"key":"t","time":28550},{"key":"y","time":28840},{"key":"u","time":29467},{"key":"y","time":29737},
+  {"key":"i","time":30033},{"key":"u","time":30253},{"key":"o","time":30419},{"key":"i","time":31293},
+  {"key":"u","time":31883},{"key":"y","time":32468},{"key":"t","time":33329},{"key":"y","time":33497},
+  {"key":"u","time":33732},{"key":"i","time":34395},{"key":"u","time":34999},{"key":"o","time":35813},
+  {"key":"i","time":36089},{"key":"u","time":36442},{"key":"y","time":36711},{"key":"t","time":37807},
+  {"key":"u","time":38179},{"key":"y","time":38544},{"key":"i","time":39889},{"key":"u","time":40017},
+  {"key":"o","time":40202},{"key":"i","time":40777},{"key":"t","time":41848},{"key":"u","time":42029},
+  {"key":"y","time":42224},{"key":"i","time":42803},{"key":"o","time":43292},{"key":"u","time":43706},
+  {"key":"o","time":44613},{"key":"t","time":44894},{"key":"i","time":45204},{"key":"y","time":45508},
+  {"key":"u","time":45847},{"key":"i","time":46174},{"key":"t","time":46976},{"key":"y","time":47277},
+  {"key":"u","time":47582},{"key":"i","time":47924},{"key":"y","time":48237},{"key":"u","time":48885},
+  {"key":"y","time":49446},{"key":"t","time":49451},{"key":"u","time":50050},{"key":"y","time":50062},
+  {"key":"u","time":50675},{"key":"i","time":50679},{"key":"o","time":51599},{"key":"u","time":51868},
+  {"key":"i","time":52189},{"key":"t","time":52809},{"key":"y","time":53118},{"key":"u","time":53387},
+  {"key":"i","time":53699},{"key":"o","time":54000},{"key":"i","time":54299},{"key":"u","time":54595},
+  {"key":"y","time":54893},{"key":"t","time":55214},{"key":"t","time":55752},{"key":"y","time":56130},
+  {"key":"u","time":56765},{"key":"i","time":57341},{"key":"o","time":58222},{"key":"u","time":58528},
+  {"key":"i","time":58822},{"key":"y","time":59182},{"key":"t","time":59737},{"key":"u","time":60411}
+];
+
+// State
+let gameActive = false, paused = false, startTime = 0, pausedTime = 0, pauseStart = 0;
+let score = 0, combo = 0, maxCombo = 0, hits = 0, misses = 0, multiplierTier = 0;
+let notes = [], timeouts = [], endTimeout = null, songDuration = 0;
+let audioCtx = null, lastMissIdx = -1;
+let queuedNotes = [];
+let vocalsAudible = false; // tracks if vocals should be heard
+const VOCALS_FADE_MS = 80; // fast crossfade for vocals
+
+// Audio — two main tracks
+const sndMusic = new Audio('/audio%20%5Bmusic%5D.mp3');   // background instrumental, always plays
+const sndVocals = new Audio('/audio%20%5Bvocals%5D.mp3'); // vocals, volume controlled by hits
+sndMusic.preload = 'auto';
+sndVocals.preload = 'auto';
+sndVocals.volume = 0; // start silent
+
+const sndClick = new Audio('click-play.mp3');
+const sndReady = new Audio('get-ready.mp3');
+const sndEnd = new Audio('end-sound.mp3');
+const sndMissed = [1,2,3,4,5,6].map(i => { const a = new Audio(`missed_0${i}.mp3`); a.preload = 'auto'; return a; });
+[sndClick, sndReady, sndEnd].forEach(a => a.preload = 'auto');
+
+function playAudio(a) { a.currentTime = 0; a.play().catch(() => {}); }
+
+// Smooth volume fade for vocals
+let vocalsFadeRaf = null;
+function fadeVocals(targetVol) {
+  if (vocalsFadeRaf) cancelAnimationFrame(vocalsFadeRaf);
+  const startVol = sndVocals.volume;
+  const startT = performance.now();
+  function step() {
+    const elapsed = performance.now() - startT;
+    const t = Math.min(elapsed / VOCALS_FADE_MS, 1);
+    sndVocals.volume = startVol + (targetVol - startVol) * t;
+    if (t < 1) vocalsFadeRaf = requestAnimationFrame(step);
+    else vocalsFadeRaf = null;
+  }
+  vocalsFadeRaf = requestAnimationFrame(step);
+}
+
+function showVocals() {
+  if (!vocalsAudible) { vocalsAudible = true; fadeVocals(1); }
+}
+
+function muteVocals() {
+  if (vocalsAudible) { vocalsAudible = false; fadeVocals(0); }
+}
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+// ============================================
+// WEBGL LIGHT RAYS
+// ============================================
+let glCtx = null, glProg = null, glUniforms = {}, glActive = false, glRaf = null, glStart = 0;
+let mouseSmooth = { x: 0.5, y: 0.5 }, mouseTarget = { x: 0.5, y: 0.5 };
+
+const VS = `#version 300 es
+in vec2 position; out vec2 vUv;
+void main() { vUv = position * 0.5 + 0.5; gl_Position = vec4(position, 0.0, 1.0); }`;
+
+const FS = `#version 300 es
+precision highp float;
+uniform float iTime; uniform vec2 iResolution; uniform vec2 rayPos; uniform vec2 rayDir;
+uniform vec3 raysColor; uniform float raysSpeed; uniform float lightSpread;
+uniform float rayLength; uniform float pulsating; uniform float fadeDistance;
+uniform float saturation; uniform vec2 mousePos; uniform float mouseInfluence;
+uniform float noiseAmount; uniform float distortion;
+out vec4 fragColor;
+float noise(vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123); }
+float rayStrength(vec2 src, vec2 dir, vec2 coord, float sA, float sB, float spd) {
+  vec2 d = coord - src; vec2 dn = normalize(d); float ca = dot(dn, dir);
+  float da = ca + distortion * sin(iTime * 2.0 + length(d) * 0.01) * 0.2;
+  float sf = pow(max(da, 0.0), 1.0 / max(lightSpread, 0.001));
+  float dist = length(d); float md = iResolution.x * rayLength;
+  float lf = clamp((md - dist) / md, 0.0, 1.0);
+  float ff = clamp((iResolution.x * fadeDistance - dist) / (iResolution.x * fadeDistance), 0.5, 1.0);
+  float pulse = pulsating > 0.5 ? (0.8 + 0.2 * sin(iTime * spd * 3.0)) : 1.0;
+  float bs = clamp((0.45 + 0.15 * sin(da * sA + iTime * spd)) + (0.3 + 0.2 * cos(-da * sB + iTime * spd)), 0.0, 1.0);
+  return bs * lf * ff * sf * pulse;
+}
+void main() {
+  vec2 coord = vec2(gl_FragCoord.x, iResolution.y - gl_FragCoord.y);
+  vec2 fd = rayDir;
+  if (mouseInfluence > 0.0) { vec2 ms = mousePos * iResolution.xy; fd = normalize(mix(rayDir, normalize(ms - rayPos), mouseInfluence)); }
+  vec4 r1 = vec4(1.0) * rayStrength(rayPos, fd, coord, 36.2214, 21.11349, 1.5 * raysSpeed);
+  vec4 r2 = vec4(1.0) * rayStrength(rayPos, fd, coord, 22.3991, 18.0234, 1.1 * raysSpeed);
+  fragColor = r1 * 0.5 + r2 * 0.4;
+  if (noiseAmount > 0.0) { float n = noise(coord * 0.01 + iTime * 0.1); fragColor.rgb *= (1.0 - noiseAmount + noiseAmount * n); }
+  float b = 1.0 - (coord.y / iResolution.y);
+  fragColor.x *= 0.1 + b * 0.8; fragColor.y *= 0.3 + b * 0.6; fragColor.z *= 0.5 + b * 0.5;
+  if (saturation != 1.0) { float g = dot(fragColor.rgb, vec3(0.299, 0.587, 0.114)); fragColor.rgb = mix(vec3(g), fragColor.rgb, saturation); }
+  fragColor.rgb *= raysColor;
+}`;
+
+function hexToRGB(hex) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return m ? [parseInt(m[1],16)/255, parseInt(m[2],16)/255, parseInt(m[3],16)/255] : [1,1,1];
+}
+
+function initLightRays(canvas) {
+  if (glActive) destroyLightRays();
+  glCtx = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: false });
+  if (!glCtx) return;
+  const gl = glCtx;
+  function mkShader(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
+  const vs = mkShader(gl.VERTEX_SHADER, VS), fs = mkShader(gl.FRAGMENT_SHADER, FS);
+  glProg = gl.createProgram(); gl.attachShader(glProg, vs); gl.attachShader(glProg, fs); gl.linkProgram(glProg); gl.useProgram(glProg);
+  const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+  const pos = gl.getAttribLocation(glProg, 'position'); gl.enableVertexAttribArray(pos); gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+  glUniforms = {};
+  ['iTime','iResolution','rayPos','rayDir','raysColor','raysSpeed','lightSpread','rayLength','pulsating','fadeDistance','saturation','mousePos','mouseInfluence','noiseAmount','distortion'].forEach(n => glUniforms[n] = gl.getUniformLocation(glProg, n));
+  const c = hexToRGB('#2FFF2F');
+  gl.uniform3f(glUniforms.raysColor, c[0], c[1], c[2]);
+  gl.uniform1f(glUniforms.raysSpeed, 0.8); gl.uniform1f(glUniforms.lightSpread, 1.2);
+  gl.uniform1f(glUniforms.rayLength, 2.5); gl.uniform1f(glUniforms.pulsating, 1);
+  gl.uniform1f(glUniforms.fadeDistance, 1); gl.uniform1f(glUniforms.saturation, 1.2);
+  gl.uniform1f(glUniforms.mouseInfluence, 0.08); gl.uniform1f(glUniforms.noiseAmount, 0.05);
+  gl.uniform1f(glUniforms.distortion, 0.15);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  function resize() {
+    const dpr = Math.min(devicePixelRatio, 2), w = canvas.clientWidth * dpr, h = canvas.clientHeight * dpr;
+    canvas.width = w; canvas.height = h; gl.viewport(0, 0, w, h); gl.useProgram(glProg);
+    gl.uniform2f(glUniforms.iResolution, w, h);
+    const ov = 0.2; gl.uniform2f(glUniforms.rayPos, 0.5 * w, h + ov * h); gl.uniform2f(glUniforms.rayDir, 0, -1);
+  }
+  window.addEventListener('resize', resize); resize(); canvas._resize = resize;
+  glActive = true; glStart = performance.now();
+  function loop() {
+    if (!glActive) return;
+    const t = (performance.now() - glStart) * 0.001;
+    gl.useProgram(glProg); gl.uniform1f(glUniforms.iTime, t);
+    mouseSmooth.x += (mouseTarget.x - mouseSmooth.x) * 0.08;
+    mouseSmooth.y += (mouseTarget.y - mouseSmooth.y) * 0.08;
+    gl.uniform2f(glUniforms.mousePos, mouseSmooth.x, mouseSmooth.y);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    glRaf = requestAnimationFrame(loop);
+  }
+  glRaf = requestAnimationFrame(loop);
+}
+
+function updateLightRaysUniforms(params) {
+  if (!glCtx || !glActive || !glProg) return;
+  glCtx.useProgram(glProg);
+  if (params.rayLength !== undefined) glCtx.uniform1f(glUniforms.rayLength, params.rayLength);
+  if (params.lightSpread !== undefined) glCtx.uniform1f(glUniforms.lightSpread, params.lightSpread);
+}
+
+function destroyLightRays() {
+  glActive = false;
+  if (glRaf) { cancelAnimationFrame(glRaf); glRaf = null; }
+  if (glCtx?.canvas?._resize) { window.removeEventListener('resize', glCtx.canvas._resize); }
+  glCtx = null; glProg = null; glUniforms = {};
+}
+
+// ============================================
+// DOM REFS
+// ============================================
+const overlay = document.getElementById('pianony-overlay');
+const keyboard = document.getElementById('piano-keyboard');
+const fallingArea = document.getElementById('piano-falling-area');
+const fallingInner = document.getElementById('piano-falling-inner');
+const lrCanvas = document.getElementById('piano-lightrays');
+const bgEl = document.getElementById('piano-bg');
+const startScreen = document.getElementById('piano-start-screen');
+const hudEl = document.getElementById('piano-hud');
+const endScreen = document.getElementById('piano-end-screen');
+const pauseOverlay = document.getElementById('piano-pause-overlay');
+
+// ============================================
+// BUILD KEYBOARD & LANES
+// ============================================
+function buildLanes() {
+  const lanesEl = fallingInner.querySelector('.piano-lanes');
+  lanesEl.innerHTML = '';
+  for (let i = 0; i < LANES.length; i++) {
+    const d = document.createElement('div'); d.className = 'piano-lane-line'; lanesEl.appendChild(d);
+  }
+}
+
+function buildKeyboard() {
+  keyboard.innerHTML = '';
+  LANES.forEach(key => {
+    const el = document.createElement('div');
+    el.className = 'piano-key'; el.id = `pkey-${key}`; el.dataset.lane = key;
+    el.innerHTML = `<div class="piano-key-circle"></div><span class="key-shortcut">${key.toUpperCase()}</span>`;
+    const handler = (ev) => { ev.preventDefault(); pressKey(key); };
+    el.addEventListener('mousedown', handler);
+    el.addEventListener('touchstart', handler, { passive: false });
+    keyboard.appendChild(el);
+  });
+}
+
+// ============================================
+// GAME FLOW
+// ============================================
+
+function warmAudio() {
+  [sndMusic, sndVocals, sndEnd, ...sndMissed].forEach(a => {
+    if (a.readyState === 0) return;
+    const prev = { muted: a.muted, vol: a.volume }; a.muted = true;
+    const p = a.play(); if (p) p.then(() => { a.pause(); a.currentTime = 0; a.muted = prev.muted; a.volume = prev.vol; }).catch(() => {});
+  });
+}
+
+function startCountdown() {
+  if (gameActive) return;
+  startScreen.style.pointerEvents = 'none';
+  warmAudio(); playAudio(sndClick);
+
+  gsap.to(startScreen, { opacity: 0, scale: 0.94, duration: 0.5, ease: 'power2.in', onComplete: () => startScreen.style.display = 'none' });
+  gsap.to(bgEl, { scale: 1, duration: 3, ease: 'power4.inOut' });
+
+  const keys = Array.from(keyboard.querySelectorAll('.piano-key'));
+  const mid = Math.floor(keys.length / 2);
+  const sorted = keys.slice().sort((a, b) => Math.abs(keys.indexOf(a) - mid) - Math.abs(keys.indexOf(b) - mid));
+  gsap.set(keys, { y: 200, opacity: 0 });
+
+  setTimeout(() => {
+    // Start both tracks synced — music audible, vocals silent
+    sndMusic.currentTime = 0; sndMusic.play().catch(() => {});
+    sndVocals.currentTime = 0; sndVocals.volume = 0; sndVocals.play().catch(() => {});
+    vocalsAudible = false;
+    gsap.fromTo(sorted, { y: 200, opacity: 0 }, { y: 0, opacity: 1, duration: 0.75, stagger: 0.07, ease: 'power3.out', onComplete: beginGame });
+  }, 2000);
+}
+
+function beginGame() {
+  if (gameActive) return;
+  hudEl.classList.add('visible');
+  const pauseBtn = document.getElementById('piano-pause-floating');
+  pauseBtn.classList.add('visible');
+  gameActive = true; paused = false; pausedTime = 0;
+  score = 0; combo = 0; maxCombo = 0; hits = 0; misses = 0; multiplierTier = 0;
+  startTime = Date.now();
+  clearAllNotes();
+  gsap.set(bgEl, { filter: 'brightness(1)' });
+
+  notes = SONG.map(n => ({ ...n, time: Math.max(0, n.time + NOTE_OFFSET), hit: false }));
+  notes.forEach(n => scheduleNote(n.key, n.time));
+
+  songDuration = Math.max(...notes.map(n => n.time)) + 2000;
+  endTimeout = setTimeout(endGame, songDuration);
+
+  document.getElementById('piano-score').textContent = '0';
+  document.getElementById('piano-combo').textContent = '0';
+  const mult = document.getElementById('piano-multiplier');
+  mult.textContent = 'x1'; mult.className = 'piano-multiplier-badge';
+}
+
+function scheduleNote(key, time) {
+  const delay = Math.max(0, time - FALL_TIME);
+  const id = setTimeout(() => {
+    timeouts = timeouts.filter(t => t !== id);
+    if (gameActive) {
+      if (paused) { queuedNotes.push({ key }); return; }
+      spawnNote(key);
+    }
+  }, delay);
+  timeouts.push(id);
+}
+
+function spawnNote(key) {
+  if (paused) { queuedNotes.push({ key }); return; }
+  const area = fallingInner || fallingArea;
+  if (!area) return;
+  const idx = LANES.indexOf(key); if (idx === -1) return;
+  const el = document.createElement('div');
+  el.className = 'piano-note'; el.dataset.key = key;
+  const pad = window.innerWidth < 768 ? 2 : 20;
+  const laneW = (100 - pad * 2) / LANES.length, margin = 1.5, noteW = laneW - margin;
+  el.style.width = `${noteW}%`; el.style.left = `${pad + idx * laneW + margin / 2}%`; el.style.top = '-50px';
+  area.appendChild(el);
+  const h = area.offsetHeight;
+  el.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${h}px)` }], { duration: FALL_TIME, easing: 'linear' }).onfinish = () => el.remove();
+}
+
+function clearAllNotes() {
+  timeouts.forEach(t => clearTimeout(t)); timeouts = []; queuedNotes = [];
+  (fallingInner || fallingArea).querySelectorAll('.piano-note').forEach(n => n.remove());
+}
+
+function pressKey(key) {
+  key = key.toLowerCase();
+  if (!KEY_FREQS[key]) return;
+  flashKey(key, 'playing');
+  if (gameActive && !paused) {
+    if (checkHit(key)) {
+      // Correct hit — make vocals audible
+      showVocals();
+    } else {
+      // Miss — mute vocals, play miss sound
+      muteVocals();
+      const pool = sndMissed.filter((_, i) => i !== lastMissIdx);
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      lastMissIdx = sndMissed.indexOf(pick); if (pick) playAudio(pick);
+    }
+  }
+}
+
+function checkHit(key) {
+  const now = Date.now() - startTime - pausedTime;
+  const idx = notes.findIndex(n => n.key === key && Math.abs(n.time - now) < 250 && !n.hit);
+  if (idx !== -1) {
+    notes[idx].hit = true; hits++; combo++; if (combo > maxCombo) maxCombo = combo;
+    const mult = 1 + Math.floor(combo / 10) * 0.5;
+    score += Math.round(10 * mult);
+    document.getElementById('piano-score').textContent = score;
+    updateCombo(); updateMultiplier(getMultTier(combo));
+    return true;
+  } else {
+    combo = 0; misses++; updateCombo(); updateMultiplier(0); flashKey(key, 'error');
+    return false;
+  }
+}
+
+function updateCombo() {
+  const el = document.getElementById('piano-combo'); el.textContent = combo;
+  const stat = el?.closest('.piano-stat-combo');
+  if (stat) { stat.classList.remove('active'); if (combo > 0) { stat.offsetWidth; stat.classList.add('active'); } }
+}
+
+function getMultTier(c) { return c >= 60 ? 3 : c >= 20 ? 2 : c >= 10 ? 1 : 0; }
+
+const TIER_BG = [
+  { br: 1, rl: 2.5, ls: 1.2 }, { br: 1.3, rl: 3.5, ls: 1.5 },
+  { br: 1.7, rl: 5, ls: 2 }, { br: 2.5, rl: 7, ls: 2.8 }
+];
+
+function updateMultiplier(tier) {
+  if (tier === multiplierTier) return;
+  multiplierTier = tier;
+  const badge = document.getElementById('piano-multiplier');
+  const texts = ['x1', 'x1.5', 'x2', 'x4'];
+  badge.textContent = texts[tier]; badge.className = 'piano-multiplier-badge' + (tier > 0 ? ` tier-${tier}` : '');
+  const bg = TIER_BG[tier];
+  gsap.to(bgEl, { filter: `brightness(${bg.br})`, duration: 0.6, ease: 'power2.out' });
+  updateLightRaysUniforms({ rayLength: bg.rl, lightSpread: bg.ls });
+  if (tier > 0) {
+    const popup = document.getElementById('multiplier-popup');
+    popup.className = `multiplier-popup tier-${tier}`;
+    popup.innerHTML = texts[tier].split('').map(c => `<span class="mp-char">${c}</span>`).join('');
+    const chars = popup.querySelectorAll('.mp-char');
+    gsap.killTweensOf(chars);
+    gsap.fromTo(chars, { opacity: 0, y: 60, scale: 0, rotation: () => gsap.utils.random(-20, 20) },
+      { opacity: 1, y: 0, scale: 1, rotation: 0, duration: 0.5, stagger: 0.06, ease: 'elastic.out(1.4, 0.35)' });
+    gsap.to(chars, { opacity: 0, y: -50, scale: 1.4, duration: 0.3, stagger: 0.04, delay: 1.4, ease: 'power3.in' });
+  }
+}
+
+function flashKey(key, cls) {
+  const el = document.getElementById(`pkey-${key}`);
+  if (!el) return; el.classList.remove('playing', 'error');
+  if (cls) { el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 200); }
+}
+
+// Pause / Resume
+function togglePause() {
+  if (!gameActive) return;
+  if (paused) {
+    // Resume
+    const elapsed = Date.now() - pauseStart; pausedTime += elapsed; paused = false;
+    (fallingInner || fallingArea).querySelectorAll('.piano-note').forEach(n => n.getAnimations().forEach(a => a.play()));
+    queuedNotes.forEach(n => spawnNote(n.key)); queuedNotes = [];
+    sndMusic.play().catch(() => {}); sndVocals.play().catch(() => {});
+    const remaining = songDuration - (Date.now() - startTime - pausedTime);
+    if (remaining > 0) endTimeout = setTimeout(endGame, remaining);
+    pauseOverlay.classList.remove('visible');
+  } else {
+    // Pause
+    pauseStart = Date.now(); paused = true;
+    (fallingInner || fallingArea).querySelectorAll('.piano-note').forEach(n => n.getAnimations().forEach(a => a.pause()));
+    sndMusic.pause(); sndVocals.pause();
+    if (endTimeout) { clearTimeout(endTimeout); endTimeout = null; }
+    document.getElementById('pause-score').textContent = score;
+    pauseOverlay.classList.add('visible');
+  }
+}
+
+function endGame() {
+  if (!gameActive) return;
+  gameActive = false; paused = false;
+  const pauseBtn = document.getElementById('piano-pause-floating');
+  pauseBtn.classList.remove('visible');
+  if (endTimeout) { clearTimeout(endTimeout); endTimeout = null; }
+  clearAllNotes(); playAudio(sndEnd);
+  sndMusic.pause(); sndMusic.currentTime = 0;
+  sndVocals.pause(); sndVocals.currentTime = 0; sndVocals.volume = 0; vocalsAudible = false;
+  const h = notes.filter(n => n.hit).length, m = notes.length - h;
+  document.getElementById('end-score').textContent = score;
+  document.getElementById('end-hits').textContent = h;
+  document.getElementById('end-misses').textContent = m;
+  endScreen.style.display = 'flex';
+  gsap.fromTo(endScreen, { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.7, ease: 'power3.out' });
+}
+
+function closeGame() {
+  gameActive = false; paused = false;
+  if (endTimeout) { clearTimeout(endTimeout); endTimeout = null; }
+  clearAllNotes(); destroyLightRays();
+  hudEl.classList.remove('visible');
+  document.getElementById('piano-pause-floating').classList.remove('visible');
+  pauseOverlay.classList.remove('visible');
+  score = 0; combo = 0; hits = 0; misses = 0; multiplierTier = 0;
+  document.getElementById('piano-score').textContent = '0';
+  document.getElementById('piano-combo').textContent = '0';
+  const mult = document.getElementById('piano-multiplier');
+  mult.textContent = 'x1'; mult.className = 'piano-multiplier-badge';
+  keyboard.querySelectorAll('.piano-key').forEach(k => k.classList.remove('playing', 'error'));
+  sndMusic.pause(); sndMusic.currentTime = 0;
+  sndVocals.pause(); sndVocals.currentTime = 0; sndVocals.volume = 0; vocalsAudible = false;
+  endScreen.style.display = 'none';
+  // Tell parent to close
+  window.parent.postMessage({ type: 'close-guitar-tony' }, '*');
+}
+
+function resetAndPlay() {
+  playAudio(sndClick);
+  endScreen.style.display = 'none';
+  gsap.set(keyboard.querySelectorAll('.piano-key'), { y: 0, opacity: 1 });
+  beginGame();
+}
+
+// ============================================
+// EVENTS
+// ============================================
+function keyDown(ev) {
+  if (ev.repeat) return;
+  const k = ev.key.toLowerCase();
+  if (KEY_FREQS[k]) { ev.preventDefault(); ev.stopPropagation(); pressKey(k); }
+}
+function keyUp(ev) {
+  const k = ev.key.toLowerCase();
+  if (KEY_FREQS[k]) flashKey(k, null);
+}
+
+// ============================================
+// INIT
+// ============================================
+buildLanes();
+buildKeyboard();
+gsap.set(bgEl, { scale: 2 });
+gsap.set(keyboard.querySelectorAll('.piano-key'), { y: 200, opacity: 0 });
+
+// Light rays
+initLightRays(lrCanvas);
+
+// Mouse tracking for light rays
+window.addEventListener('mousemove', (ev) => {
+  const rect = overlay.getBoundingClientRect();
+  mouseTarget.x = (ev.clientX - rect.left) / rect.width;
+  mouseTarget.y = (ev.clientY - rect.top) / rect.height;
+});
+
+// Keyboard
+window.addEventListener('keydown', keyDown, true);
+window.addEventListener('keyup', keyUp, true);
+
+// Buttons
+document.getElementById('btn-close-piano').addEventListener('click', closeGame);
+document.getElementById('piano-play-btn').addEventListener('click', startCountdown);
+document.getElementById('piano-resume-btn').addEventListener('click', () => { playAudio(sndClick); togglePause(); });
+document.getElementById('piano-pause-floating').addEventListener('click', () => { playAudio(sndClick); togglePause(); });
+document.getElementById('piano-quit-btn').addEventListener('click', () => { playAudio(sndClick); if (paused) { pauseOverlay.classList.remove('visible'); paused = false; } if (gameActive) endGame(); else closeGame(); });
+document.getElementById('piano-retry-btn').addEventListener('click', resetAndPlay);
+document.getElementById('piano-share-btn').addEventListener('click', function() {
+  const txt = `Ho fatto ${score} punti su Guitar Tony! 🎸`;
+  if (navigator.share) navigator.share({ title: 'Guitar Tony', text: txt }).catch(() => {});
+  else { navigator.clipboard.writeText(txt).catch(() => {}); this.textContent = 'COPIATO ✓'; setTimeout(() => { this.textContent = 'CONDIVIDI ↗'; }, 2000); }
+});
+document.getElementById('piano-end-close-btn').addEventListener('click', () => { playAudio(sndClick); closeGame(); });
+</script>
+</body>
+</html>

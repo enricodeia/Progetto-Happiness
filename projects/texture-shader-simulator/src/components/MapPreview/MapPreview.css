@@ -1,0 +1,21 @@
+.map-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.map-preview__label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.map-preview__canvas {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 6px;
+  background: #1a1a1e;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  image-rendering: pixelated;
+}

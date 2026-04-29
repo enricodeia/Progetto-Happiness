@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+<style>
+  body { font-family: -apple-system, sans-serif; padding: 20px; margin: 0; color: #171717; }
+  h2 { margin: 0 0 4px; font-size: 14px; }
+  .sub { font-size: 11px; color: #777; margin: 0 0 14px; }
+  fieldset { border: 1px solid #eee; border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
+  legend { font-size: 11px; font-weight: 600; color: #333; padding: 0 6px; }
+  label { display: flex; align-items: center; font-size: 12px; gap: 8px; padding: 4px 0; cursor: pointer; }
+  input[type=checkbox] { accent-color: #584dff; }
+  button { width: 100%; padding: 12px; font-size: 13px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; margin-top: 6px; }
+  .primary { background: #584dff; color: white; }
+  .secondary { background: #f0f0f0; color: #171717; }
+  .log { font-family: ui-monospace, Menlo, monospace; font-size: 11px; background: #fafafa; padding: 10px; border-radius: 4px; max-height: 180px; overflow: auto; white-space: pre-wrap; margin-top: 12px; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <h2>Metalab Design Test Builder</h2>
+  <p class="sub">Builds a complete starting file: tokens + components + layouts.</p>
+
+  <fieldset>
+    <legend>Build</legend>
+    <label><input type="checkbox" id="opt-tokens" checked> Tokens (variables + styles)</label>
+    <label><input type="checkbox" id="opt-cover" checked> Cover page</label>
+    <label><input type="checkbox" id="opt-tokenpage" checked> Token specimen page</label>
+    <label><input type="checkbox" id="opt-components" checked> Components (Button, Card, NavBar, Hero, Marquee, Footer)</label>
+    <label><input type="checkbox" id="opt-layouts" checked> Layout archetypes (Editorial, System, Hero)</label>
+  </fieldset>
+
+  <button class="primary" id="run">Build the file</button>
+  <button class="secondary" id="cancel">Close</button>
+
+  <div class="log" id="log">Ready. Pick what to build, then click Build the file.</div>
+
+<script>
+const log = document.getElementById('log');
+document.getElementById('run').onclick = () => {
+  log.textContent = 'Working...';
+  parent.postMessage({
+    pluginMessage: {
+      type: 'build',
+      opts: {
+        tokens:     document.getElementById('opt-tokens').checked,
+        cover:      document.getElementById('opt-cover').checked,
+        tokenpage:  document.getElementById('opt-tokenpage').checked,
+        components: document.getElementById('opt-components').checked,
+        layouts:    document.getElementById('opt-layouts').checked,
+      }
+    }
+  }, '*');
+};
+document.getElementById('cancel').onclick = () => {
+  parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+};
+window.onmessage = (e) => {
+  const msg = e.data.pluginMessage;
+  if (msg && msg.type === 'log') log.textContent = msg.text;
+};
+</script>
+</body>
+</html>

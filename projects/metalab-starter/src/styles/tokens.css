@@ -1,0 +1,138 @@
+/* ============================================================
+   Metalab Design Tokens
+   Reverse-engineered from metalab.com production CSS, 2026-04-27
+   ============================================================ */
+
+:root {
+  /* ---------- Type families ---------- */
+  --font-sans: "Basis Grotesque Pro", "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: "PP Eiko", "Editorial New", "Times New Roman", serif;
+
+  /* ---------- Type scale (rem-based on 10px html root) ---------- */
+  --text-xs: 1.2rem;     /* 12px */
+  --text-sm: 1.4rem;     /* 14px */
+  --text-base: 1.6rem;   /* 16px */
+  --text-md: 1.8rem;     /* 18px */
+  --text-lg: 2rem;       /* 20px */
+  --text-xl: 2.2rem;     /* 22px */
+  --text-2xl: 2.4rem;    /* 24px */
+  --text-3xl: 2.8rem;    /* 28px */
+  --text-4xl: 3.2rem;    /* 32px */
+  --text-5xl: 4rem;      /* 40px */
+  --text-6xl: 4.4rem;    /* 44px */
+  --text-7xl: 5.6rem;    /* 56px */
+  --text-8xl: 6.4rem;    /* 64px */
+  --text-9xl: 6.8rem;    /* 68px */
+  --h1: 8.8rem;          /* 88px */
+  --display-sm: 10.9rem; /* 109px */
+  --display: 12rem;      /* 120px */
+  --display-lg: 14rem;   /* 140px */
+  --display-xl: 16.32rem;/* 163px */
+  --hero: 22rem;         /* 220px */
+  --hero-mega: 27.2rem;  /* 272px */
+
+  /* ---------- Tracking ---------- */
+  --track-display-tight: -0.04em;
+  --track-display: -0.03em;
+  --track-headline: -0.02em;
+  --track-body-tight: -0.015em;
+  --track-body: -0.01em;
+  --track-default: 0;
+  --track-eyebrow: 0.01em;
+
+  /* ---------- Leading ---------- */
+  --leading-display: 0.9;
+  --leading-tight: 1;
+  --leading-headline: 1.16;
+  --leading-snug: 1.25;
+  --leading-relaxed: 1.4;
+  --leading-body: 1.5;
+  --leading-long: 1.6;
+
+  /* ---------- Color: Brand ---------- */
+  --brand-primary: #584dff;
+  --brand-accent: #ff6060;
+  --brand-accent-deep: #b60000;
+
+  /* ---------- Color: Ink (text) ---------- */
+  --ink-pure: #000000;
+  --ink-near: #171717;
+  --ink-strong: #313033;
+  --ink: #48464a;
+  --ink-muted: #545156;
+  --ink-soft: #605d62;
+  --ink-softer: #79767a;
+  --ink-faint: #938f94;
+
+  /* ---------- Color: Surface (bg) ---------- */
+  --surface-pure: #ffffff;
+  --surface-near: #fffbff;
+  --surface-warm: #f4eff4;
+  --surface-paper: #edf1f5;
+  --surface-tint: #e6e1e6;
+  --surface-soft: #c7c7c7;
+  --surface-mute: #cac5ca;
+  --surface-line: #bababa;
+  --surface-divider: #aeaaae;
+
+  /* ---------- Color: Signal ---------- */
+  --signal-success: #14a800;
+  --signal-link: #007aff;
+  --signal-deep: #100037;
+
+  /* ---------- Radius ---------- */
+  --radius-flat: 0;
+  --radius-hairline: 0.2rem;
+  --radius-card: 0.8rem;
+  --radius-card-lg: 1rem;
+  --radius-card-xl: 3rem;
+  --radius-block: 5rem;
+  --radius-pill: 100rem;
+  --radius-circle: 50%;
+
+  /* ---------- Motion ---------- */
+  --dur-tap: 0.1s;
+  --dur-quick: 0.2s;
+  --dur-fast: 0.3s;
+  --dur-ui: 0.4s;
+  --dur-medium: 0.6s;
+  --dur-glass: 0.7s;
+  --dur-section: 1s;
+  --dur-ambient: 7s;
+  --dur-marquee: 20s;
+
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  /* ---------- Spacing (8px-derived in rem) ---------- */
+  --space-1: 0.4rem;   /* 4px */
+  --space-2: 0.8rem;   /* 8px */
+  --space-3: 1.2rem;   /* 12px */
+  --space-4: 1.6rem;   /* 16px */
+  --space-5: 2.4rem;   /* 24px */
+  --space-6: 3.2rem;   /* 32px */
+  --space-7: 4.8rem;   /* 48px */
+  --space-8: 6.4rem;   /* 64px */
+  --space-9: 9.6rem;   /* 96px */
+  --space-10: 12.8rem; /* 128px */
+
+  /* ---------- Layout ---------- */
+  --container-max: 144rem;     /* 1440px */
+  --container-pad: 4rem;       /* 40px desktop */
+  --grid-cols-desktop: 12;
+  --grid-cols-tablet: 6;
+  --grid-cols-mobile: 4;
+  --grid-gutter: 2.4rem;       /* 24px */
+}
+
+/* Optional dark surface */
+[data-theme="dark"] {
+  --surface-pure: #000000;
+  --surface-near: #0a0a0a;
+  --surface-paper: #111114;
+  --ink-pure: #ffffff;
+  --ink-near: #f4eff4;
+  --ink-strong: #e6e1e6;
+  --ink: #cac5ca;
+}

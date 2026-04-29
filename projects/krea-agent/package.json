@@ -1,0 +1,19 @@
+{
+  "name": "krea-agent",
+  "version": "0.1.0",
+  "description": "CLI bridge to Krea AI API",
+  "type": "module",
+  "bin": {
+    "krea": "./bin/krea.js"
+  },
+  "scripts": {
+    "krea": "node bin/krea.js"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
+    "ora": "^8.1.0",
+    "sharp": "^0.34.5"
+  }
+}

@@ -1,0 +1,9 @@
+node_modules
+dist
+.DS_Store
+*.log
+.vite
+public/fonts/*.woff2
+public/fonts/*.woff
+public/fonts/*.otf
+public/fonts/*.ttf

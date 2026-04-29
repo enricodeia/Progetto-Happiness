@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pura World — Infinite Forest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="frame" id="frame">
+
+  <!-- ── Setup Panel ──────────────────────────────────────────────── -->
+  <div class="setup" id="setup-panel">
+    <div class="setup__card">
+      <div class="setup__title">Pura World</div>
+
+      <div class="setup__row">
+        <div class="setup__field">
+          <label class="setup__label" for="setup-day">Day Number</label>
+          <input type="number" class="setup__input" id="setup-day" placeholder="e.g. 15" value="15" min="1" max="999">
+        </div>
+        <div class="setup__field">
+          <label class="setup__label" for="setup-streak">Streak</label>
+          <input type="number" class="setup__input" id="setup-streak" placeholder="e.g. 15" value="15" min="1" max="999">
+        </div>
+      </div>
+
+      <div class="setup__field">
+        <label class="setup__label" for="setup-month">Month</label>
+        <input type="text" class="setup__input" id="setup-month" placeholder="e.g. January" value="January" maxlength="20">
+      </div>
+
+      <div class="setup__row">
+        <div class="setup__field">
+          <label class="setup__label" for="setup-previous">Yesterday</label>
+          <input type="number" class="setup__input" id="setup-previous" placeholder="e.g. 1200" value="1200" min="0">
+        </div>
+        <div class="setup__field">
+          <label class="setup__label" for="setup-current">Today</label>
+          <input type="number" class="setup__input" id="setup-current" placeholder="e.g. 1450" value="1450" min="0">
+        </div>
+      </div>
+
+      <div class="setup__growth-preview" id="setup-growth-preview"></div>
+
+      <div class="setup__field">
+        <label class="setup__label" for="setup-quality">Export Quality</label>
+        <select class="setup__input setup__input--select" id="setup-quality">
+          <option value="high">High (1080p - Same View)</option>
+          <option value="tiktok" selected>TikTok/Reels (1080x1920 9:16)</option>
+          <option value="medium">Medium (720p - Same View)</option>
+          <option value="preview">Preview (390x844)</option>
+        </select>
+      </div>
+
+      <div class="setup__buttons">
+        <button class="setup__btn setup__btn--preview" id="setup-play">Preview</button>
+        <button class="setup__btn setup__btn--record" id="setup-record">Record Video</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Recording Indicator ──────────────────────────────────────── -->
+  <div class="recording" id="recording-indicator">
+    <div class="recording__dot"></div>
+    <span class="recording__text">Recording</span>
+  </div>
+
+  <!-- ── Cinematic Intro ──────────────────────────────────────────── -->
+  <div class="intro" id="intro">
+    <div class="intro__content">
+
+      <div class="intro__day" id="intro-day-section">
+        <div class="intro__day-label">Day</div>
+        <div class="intro__day-number" id="intro-day-number">0</div>
+        <div class="intro__day-month" id="intro-day-month">January</div>
+      </div>
+
+      <div class="intro__count" id="intro-count-section">
+        <div class="intro__count-label">Followers</div>
+        <div class="intro__count-number" id="intro-count-number">0</div>
+
+        <div class="badge" id="intro-growth-badge">
+          <div class="badge__glow" id="badge-glow"></div>
+          <div class="badge__container">
+            <div class="badge__border" id="badge-border"></div>
+            <div class="badge__shimmer" id="badge-shimmer"></div>
+            <div class="badge__icon" id="badge-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 19V5M5 12l7-7 7 7"/>
+              </svg>
+            </div>
+            <div class="badge__text">
+              <span class="badge__plus" id="badge-plus">+</span>
+              <span class="badge__value" id="badge-value">0</span>
+              <span class="badge__label" id="badge-label">new</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── 3D Canvas ────────────────────────────────────────────────── -->
+  <div class="canvas" id="canvas-container"></div>
+
+  <!-- ── Vignette ─────────────────────────────────────────────────── -->
+  <div class="vignette"></div>
+
+  <!-- ── CTA Screen ───────────────────────────────────────────────── -->
+  <div class="cta" id="cta-overlay">
+
+    <div class="confetti-container" id="confetti-container"></div>
+
+    <!-- Streak -->
+    <div class="cta__streak" id="cta-streak">
+      <span class="cta__streak-fire">&#x1f525;</span>
+      <span class="cta__streak-value" id="cta-streak-value">15</span>
+      <span class="cta__streak-label">day streak</span>
+    </div>
+
+    <!-- Level Badge -->
+    <div class="cta__level" id="cta-level-badge">
+      <div class="cta__level-label">LEVEL</div>
+      <div class="cta__level-value" id="cta-level">1</div>
+    </div>
+
+    <!-- Button + Progress Ring -->
+    <div class="cta__ring-wrapper" id="cta-button-wrapper">
+      <svg class="cta__ring" id="progress-ring" viewBox="0 0 260 260" style="overflow: visible;">
+        <defs>
+          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#4ade80"/>
+            <stop offset="100%" stop-color="#22c55e"/>
+          </linearGradient>
+        </defs>
+        <circle class="cta__ring-bg" cx="130" cy="130" r="120" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="6"/>
+        <circle class="cta__ring-fill" id="progress-ring-fill" cx="130" cy="130" r="120"
+          fill="none" stroke="#4ade80" stroke-width="6" stroke-linecap="round"
+          stroke-dasharray="754" stroke-dashoffset="754"
+          style="transform: rotate(-90deg); transform-origin: center;"/>
+      </svg>
+
+      <div class="cta__button" id="cta-button">
+        <div class="cta__button-border"></div>
+        <div class="cta__button-content">
+          <div class="cta__text-wrapper">
+            <span class="cta__text cta__text--logo" id="cta-text-logo">
+              <svg class="cta__logo" viewBox="0 0 258 108" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M28.2081 0C42.6216 0 54.2055 7.60469 54.2055 18.1275C54.2055 31.2146 40.8531 37.935 30.4188 38.0234H12.9103V54.0287C12.9103 57.9194 15.1209 59.4227 17.5085 61.2796H4.86346C4.95189 60.5722 5.21717 59.7764 5.12874 59.069C5.21717 42.6216 5.3056 23.6983 5.12874 1.6801L0 0H28.2081ZM29.5345 37.1392C38.8193 36.9623 45.0976 29.5345 45.0976 18.3927C45.0976 8.48896 39.4383 1.41482 22.7256 1.41482H12.9103V37.1392H29.5345Z" fill="white"/>
+                <path d="M64.9535 30.1535V0H73.8846V28.4734C74.1498 49.6073 79.986 60.3954 93.7805 60.3954C110.847 60.3954 119.247 46.1587 119.247 28.4734V0H120.928V28.4734C120.928 45.5397 112.704 62.0755 93.7805 62.0755C79.5439 62.0755 64.9535 53.1444 64.9535 30.1535Z" fill="white"/>
+                <path d="M179.708 61.2796C175.11 51.6411 148.67 53.675 148.67 30.4188V28.8271H157.866C165.913 28.8271 173.253 27.147 173.253 15.8284C173.253 4.77503 165.471 0.884265 157.778 0.884265H141.507V61.2796H133.461V0H159.723C171.926 0 182.095 6.72042 182.095 15.5631C182.095 25.909 170.6 29.4461 161.138 29.5345H149.466C149.466 38.4656 157.336 43.2406 170.335 45.8934C180.415 48.4578 184.571 54.2939 185.19 61.2796H179.708Z" fill="white"/>
+                <path d="M205.577 38.554L201.597 46.7777C196.557 59.2458 201.951 59.2458 209.733 61.2796H193.462L219.813 6.18986C218.133 3.09493 212.385 1.23797 210.352 0H225.561L257.306 61.2796H247.668L236.172 38.554H205.577ZM235.73 37.5813L220.521 7.42783L206.019 37.5813H235.73Z" fill="white"/>
+                <path d="M17.1624 98.5152L15.3422 107.336H9.70688L4.38655 86.3344H8.65682L10.757 95.89C11.317 98.6552 11.842 101.21 12.262 103.906H13.2071C13.6621 101.14 14.0822 98.5852 14.6772 95.925L16.9173 86.3344H21.9927L24.1978 95.925C24.7578 98.5502 25.2479 101.14 25.6679 103.906H26.5429C26.998 101.245 27.523 98.6552 28.083 95.89L30.0782 86.3344H34.1734L28.9231 107.336H23.0427L21.2226 98.5152C20.6976 95.925 19.9975 92.5298 19.5775 89.6946H18.8425C18.3524 92.5298 17.6874 95.96 17.1624 98.5152Z" fill="white"/>
+                <path d="M80.9602 107.791C74.2047 107.791 70.4595 103.415 70.4595 96.7651C70.4595 90.1497 74.3797 85.8794 80.9602 85.8794C87.5756 85.8794 91.4608 90.1497 91.4608 96.7651C91.4608 103.415 87.6806 107.791 80.9602 107.791ZM80.9251 104.326C85.4754 104.326 87.4706 101.35 87.4706 96.7651C87.4706 92.3548 85.4404 89.3796 80.9602 89.3796C76.4449 89.3796 74.4147 92.3548 74.4147 96.7651C74.4147 101.315 76.4099 104.326 80.9251 104.326Z" fill="white"/>
+                <path d="M138.442 89.6946H133.891V96.1H138.372C141.102 96.1 142.537 95.05 142.537 92.8098C142.537 90.6747 141.452 89.6946 138.442 89.6946ZM143.027 107.336L137.812 99.4602H133.891V107.336H129.901V86.3344H138.722C143.972 86.3344 146.457 88.5396 146.457 92.7048C146.457 95.995 144.777 98.1652 141.837 99.0402L147.682 106.951V107.336H143.027Z" fill="white"/>
+                <path d="M189.889 86.3344V103.766H199.375V107.336H185.899V86.3344H189.889Z" fill="white"/>
+                <path d="M245.572 89.6596H241.546V104.046H245.782C250.717 104.046 252.677 101.385 252.677 96.6601C252.677 91.7248 250.612 89.6596 245.572 89.6596ZM237.556 107.336V86.3344H246.097C253.342 86.3344 256.667 90.0097 256.667 96.6601C256.667 103.31 252.677 107.336 246.097 107.336H237.556Z" fill="white"/>
+              </svg>
+            </span>
+            <span class="cta__text cta__text--cta" id="cta-text-cta">Follow to Grow</span>
+            <span class="cta__text cta__text--handle" id="cta-text-handle">@pura.pharma</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress to next level -->
+    <div class="cta__progress" id="cta-progress-text">
+      <span class="cta__progress-highlight" id="progress-highlight">+1,050</span>
+      <span class="cta__progress-label">to Level 4</span>
+    </div>
+
+    <!-- Stats -->
+    <div class="cta__stats" id="cta-stats">
+      <div class="cta__stat">
+        <span class="cta__stat-value" id="cta-acres">0</span>
+        <div class="cta__stat-label">Acres</div>
+      </div>
+      <div class="cta__stat">
+        <span class="cta__stat-value" id="cta-trees">1,450</span>
+        <div class="cta__stat-label">Trees</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Dependencies -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+<!-- App modules -->
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/shaders.js"></script>
+<script src="js/scene.js"></script>
+<script src="js/ground.js"></script>
+<script src="js/trees.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/recorder.js"></script>
+<script src="js/intro.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
