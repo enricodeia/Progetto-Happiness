@@ -1,0 +1,263 @@
+/* The teach page. `style.css` is imported first and owns the design tokens,
+   the Exposure @font-face, the nav furniture (.was-logo / .was-search /
+   .was-cta) and the reveal primitives (.was-line / .was-word) — everything
+   here is the page's own layout on top of them. */
+
+:root {
+  --tch-x: 55vw;       /* where the copy column starts */
+  --tch-w: 37vw;       /* its measure */
+  --tch-y: 50%;        /* its vertical centre */
+  --tch-cta: #16301f;  /* the green pill */
+}
+
+html,
+body {
+  height: 100%;
+}
+body.tch {
+  overflow: hidden;          /* the hero is the whole page, nothing scrolls */
+  background: var(--page-bg);
+}
+
+/* ── nav ──────────────────────────────────────────────────────────────── */
+
+.tch-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 2.2vw;
+}
+.tch-nav[hidden] {
+  display: none;
+}
+
+.tch-links {
+  display: flex;
+  align-items: center;
+  gap: 2.4vw;
+  margin-left: 4vw;
+  min-width: 0;
+}
+.tch-link {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--left-ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tch-link:hover {
+  opacity: 0.6;
+}
+
+/* the black "About us" pill with the book glyph */
+.tch-pill {
+  appearance: none;
+  flex: 0 0 auto;
+  margin-left: 2.4vw;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--left-ink);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 13px 24px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tch-pill svg {
+  width: 18px;
+  height: 18px;
+}
+
+.tch-nav .was-search {
+  margin-left: auto;
+}
+.tch-nav .was-cta {
+  margin-left: 12px;
+}
+
+/* ── the canvas: the whole viewport ───────────────────────────────────────
+   Full bleed on purpose — the tower is COMPOSED into a region (config.js →
+   tower.region) but never clipped by one, so a card thrown out by the
+   parallax or by the focus zoom keeps drawing across the page. It is also
+   the drag surface: the copy and the nav sit above it and keep their own
+   clicks. */
+
+.tch-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+.tch-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: pan-y;
+}
+.tch-canvas:active {
+  cursor: grabbing;
+}
+
+/* ── the copy, right ──────────────────────────────────────────────────── */
+
+.tch-copy {
+  position: fixed;
+  left: var(--tch-x);
+  top: var(--tch-y);
+  width: var(--tch-w);
+  transform: translateY(-50%);
+  z-index: 5;
+}
+
+.tch-title {
+  margin: 0;
+  font-family: "Exposure", Georgia, serif;
+  font-variation-settings: "EXPO" 0;
+  font-weight: 400;
+  font-size: var(--tch-title-size, 3vw);
+  line-height: var(--tch-title-lh, 1.06);
+  letter-spacing: -0.015em;
+  color: var(--left-ink);
+}
+
+.tch-para {
+  margin: 1.6vw 0 0;
+  max-width: 26vw;
+  font-family: var(--ui);
+  font-size: var(--tch-para-size, 1.05vw);
+  line-height: 1.5;
+  color: var(--left-ink);
+}
+
+.tch-cta {
+  appearance: none;
+  margin-top: 2.2vw;
+  border: 0;
+  border-radius: 999px;
+  background: var(--tch-cta);
+  color: #f6f4ec;
+  font: inherit;
+  font-family: var(--ui);
+  font-size: 1.02vw;
+  font-weight: 500;
+  padding: 1.05vw 2.1vw;
+  cursor: pointer;
+}
+.tch-cta:hover {
+  opacity: 0.88;
+}
+
+/* the reveal primitives need a clip box per line */
+.tch-copy .was-line {
+  display: block;
+  overflow: hidden;
+}
+.tch-copy .was-line-in {
+  display: block;
+}
+
+/* ── chrome ───────────────────────────────────────────────────────────── */
+
+/* the shared panel docks left on the main page — here the left is the
+   tower's, so it moves out of the way to the empty right, and stops short of
+   the shelf */
+body.tch .was-panel {
+  left: auto;
+  right: 12px;
+}
+
+.tch-legend {
+  position: fixed;
+  right: 2.2vw;
+  bottom: 18px;
+  z-index: 8;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: rgba(0, 0, 0, 0.38);
+  pointer-events: none;
+}
+
+.tch-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 31;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--left-ink);
+  color: #fff;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.tch-toast.is-on {
+  opacity: 1;
+}
+
+body.is-clean .tch-legend,
+body.is-clean .tch-toast,
+body.is-clean .was-panel {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  /* the tower is behind the type here, not beside it */
+  .tch-canvas {
+    opacity: 0.2;
+  }
+  .tch-copy {
+    left: 8vw;
+    width: 84vw;
+  }
+  /* the tower is centred on the whole screen here (tower.region.mobile), so
+     the type needs a paper wash to stay readable over the portraits */
+  .tch-copy::before {
+    content: "";
+    position: absolute;
+    inset: -6vh -8vw;
+    z-index: -1;
+    background: radial-gradient(
+      120% 90% at 40% 50%,
+      var(--page-bg) 0%,
+      var(--page-bg) 58%,
+      transparent 100%
+    );
+  }
+  .tch-title {
+    font-size: 8vw;
+  }
+  .tch-para {
+    max-width: 80vw;
+    font-size: 3.4vw;
+  }
+  .tch-cta {
+    font-size: 3.4vw;
+    padding: 3.2vw 6vw;
+  }
+  .tch-links,
+  .tch-pill,
+  .tch-nav .was-search {
+    display: none;
+  }
+  .tch-nav .was-cta {
+    margin-left: auto;
+  }
+}

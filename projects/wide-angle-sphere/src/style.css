@@ -1,0 +1,1835 @@
+/* Exposure — the display serif, with its real EXPO axis (−100 → +100) */
+@font-face {
+  font-family: "Exposure";
+  /* woff2 (217 kB) in place of the raw TTF (440 kB) — perf pass, 2026-09-17;
+     the file is also <link rel="preload">ed from index.html, so it is asked
+     for with the HTML and not after main.js has run and parsed this sheet */
+  src: url("/fonts/ExposureTrialVAR.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  --left-bg: #9a9a9a;
+  --left-ink: #0a0a0a;
+  --copy-ink: #0a0a0a;
+  --right-bg: #ffffff;
+  --page-bg: #faf9f2;
+  --split: 50%;
+  --copyw: 50%;
+  --pad: 6vw;
+  --overlap: 100vh;
+  --ui: Inter, "Helvetica Neue", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--page-bg);
+  color: var(--left-ink);
+  font-family: var(--ui);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── the opening act: nav, hero, "Until now", bowl layer ────────────────── */
+
+/* z-index 4: nothing occludes the bowl, so the handover is entirely its own
+   fade — it shrinks to the centre and dissolves as the pinned section slides
+   up underneath it, whatever the section heights are. */
+.was-bowl-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.was-bowl-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.was-nav {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 22px 2.2vw;
+}
+
+/* the search rides the viewport's own centre line, so nothing either side of
+   it can push it off centre */
+.was-nav-mid {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+/* the icon hangs off the search's left edge instead of sharing a row with it,
+   so it is the SEARCH that sits on the centre line, not the pair of them */
+.was-nav-mid .was-nav-icon {
+  position: absolute;
+  right: calc(100% + 14px);
+  top: 50%;
+  margin-top: -20px;
+}
+
+.was-logo {
+  font-family: "Exposure", Georgia, serif;
+  font-variation-settings: "EXPO" 0;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--left-ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* the round icon button that opens the filters */
+.was-nav-icon {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 50%;
+  background: none;
+  color: var(--left-ink);
+  cursor: pointer;
+}
+.was-nav-icon svg { width: 18px; height: 18px; }
+
+.was-cta {
+  appearance: none;
+  flex: 0 0 auto;
+  border: 0;
+  background: var(--left-ink);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 14px 26px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* sticky: it rides along at the top, over everything including the bowl,
+   with a soft white fade under it so type passing beneath stays clean */
+body.is-nav-sticky .was-nav { position: fixed; }
+/* No band behind it. The soft fade was there so type could pass under the bar
+   cleanly, but it cuts a rectangle of the wrong paper across everything the
+   page opens into — so the bar is transparent and the type takes its chances.
+   `hero.nav.fade` above 0 brings it back. */
+body.is-nav-sticky .was-nav::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 calc(var(--nav-fade, 0px) * -1) 0;
+  background: linear-gradient(
+    to bottom,
+    var(--nav-bg, transparent) 0%,
+    var(--nav-bg, transparent) 62%,
+    transparent 100%
+  );
+  opacity: var(--nav-fade-on, 0);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.was-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  width: 19vw;
+  min-width: 190px;
+  padding: 8px 8px 8px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 999px;
+  /* light glass: whatever scrolls under the bar shows through, softened */
+  background: rgba(255, 255, 255, var(--search-alpha, 0.55));
+  -webkit-backdrop-filter: blur(var(--search-blur, 14px)) saturate(1.2);
+  backdrop-filter: blur(var(--search-blur, 14px)) saturate(1.2);
+}
+.was-search svg { width: 16px; height: 16px; opacity: 0.55; flex: 0 0 auto; }
+.was-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--left-ink);
+}
+.was-search input::placeholder { color: rgba(0, 0, 0, 0.42); }
+.was-search-bowl {
+  width: 34px;
+  height: 26px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+/* above the bowl layer (4): the bowl rises BEHIND the opening copy, and the
+   later sections still sit below it so nothing ever occludes it */
+.was-hero,
+.was-until {
+  position: relative;
+  z-index: 6;
+}
+
+.was-hero { position: relative; overflow: visible; }
+
+/* ONE line with a hole in the middle of it: the bowl lives in that hole, on
+   its own fixed layer, so the two halves are literally set around the object.
+   Both are measured from the CENTRE of the viewport — the left half's right
+   edge sits `--gap` before it, the right half's left edge `--gap` after it —
+   so the composition stays symmetrical around the bowl however long each piece
+   of lettering is. Each half slides out sideways as the page scrolls
+   (written from the hero's own scroll) and slides back as it comes up. */
+.was-hero-line {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  font-weight: 400;
+  pointer-events: none;
+}
+.was-hero-half {
+  position: absolute;
+  top: var(--y, 50%);
+  display: block;
+  white-space: nowrap;
+  transform: translate3d(0, -50%, 0);
+  will-change: transform;
+}
+.was-hero-half.is-a { right: calc(50% + var(--gap, 11vw)); text-align: right; }
+.was-hero-half.is-b { left: calc(50% + var(--gap, 11vw)); text-align: left; }
+
+/* act two: 200vh of scroll, one screen that holds while the two beats
+   alternate across the bowl */
+.was-until-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+}
+
+.was-hero-para,
+.was-until-left,
+.was-until-text {
+  margin: 0;
+  text-align: center;
+  font-weight: 400;
+  color: var(--left-ink);
+}
+
+.was-hero-line,
+.was-until-left,
+.was-until-text {
+  font-family: "Exposure", Georgia, serif;
+  font-size: var(--copy-size, 4vw);
+  line-height: var(--copy-lh, 1.06);
+  letter-spacing: -0.018em;
+  color: var(--left-ink);
+}
+
+/* the left beat sits high on the left, the right one low on the right: they
+   read as a diagonal across the bowl rather than a pair of columns */
+.was-until-left,
+.was-until-text {
+  position: absolute;
+  top: var(--until-y, 30%);
+  max-width: var(--until-w, 30vw);
+}
+.was-until-left {
+  left: var(--until-x, 7vw);
+  text-align: var(--align, left);
+}
+.was-until-text {
+  right: var(--until-x, 7vw);
+  text-align: var(--align, right);
+}
+
+/* bottom-left corner, opposite the card swap */
+.was-hero-para {
+  position: absolute;
+  left: var(--para-left, 2.6vw);
+  bottom: var(--para-bottom, 4vh);
+  margin: 0;
+  text-align: var(--align, left);
+  font-family: var(--ui);
+  font-size: var(--copy-size, 0.92vw);
+  line-height: var(--copy-lh, 1.45);
+  letter-spacing: -0.004em;
+}
+
+/* ── V2 — the ring act (keyboard 2) ─────────────────────────────────────── */
+
+/* The ground: layer 2, BELOW the under-layer (3) and the bowl (4), and below
+   the pinned sections (3) — which in V2 are transparent where the ring act is,
+   so this is what shows through. `.was-below` and the held stage are opaque at
+   5, so the act ends the way everything on this page ends: covered. */
+.was-ground {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.was-ground-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+body:not(.is-v2) .was-ground { display: none; }
+
+/* In V2 the first pinned stage carries the RING ACT, and the ring act is the
+   bowl on the open ground — so the stage itself paints nothing. */
+body.is-v2 #stageA { background: none; }
+
+/* ...and the step copy in that stage goes to the top-left corner, out of the
+   left column it sits in for the canvas experience. */
+.was-copy-box.is-act {
+  left: var(--act-x, 5vw);
+  top: var(--act-y, 18%);
+  right: auto;
+  bottom: auto;
+  width: auto;
+  max-width: var(--act-w, 32vw);
+  padding: 0;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+.was-copy-box.is-act .was-copy-stack { max-width: none; margin: 0; }
+.was-copy-box.is-act .was-copy { text-align: var(--copy-align, left); }
+
+/* one copy column at a time: V1 uses the one in the first stage, V2 the one in
+   the second, because that is where its canvas experience lives */
+body:not(.is-v2) #copyboxB { display: none; }
+
+/* V2's canvas experience does not take the frame: it sits in a box of its
+   own on the right of the evidence section, while the statement, the three
+   steps and the summary have the left column. */
+.was-canvas-layer.is-box {
+  top: auto;
+  right: auto;
+  left: var(--cb-x, 3%);
+  bottom: var(--cb-y, 5%);
+  width: var(--cb-w, 36%);
+  height: var(--cb-h, 46%);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* The trust network — the SAME box the sphere canvas above occupies (they
+   share the `--cb-*` vars, `placeStages()` sets both), just never both shown
+   at once: `v2.network.show` decides which one the corner actually holds. */
+.was-network-box {
+  position: absolute;
+  top: auto;
+  right: auto;
+  left: var(--cb-x, 3%);
+  bottom: var(--cb-y, 5%);
+  width: var(--cb-w, 36%);
+  height: var(--cb-h, 46%);
+  pointer-events: none;
+}
+.was-network-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Once the ground is open, everything standing on it is set in light, not in
+   ink — including the nav, which is over it too. It is a transition rather than
+   a switch because the field itself arrives over a couple of seconds, and a
+   line that snapped from black to cream halfway through would read as a bug. */
+body.is-v2.is-ground .was-v2-block,
+body.is-v2.is-ground .was-copy-box.is-act .was-copy,
+body.is-v2.is-ground .was-nav .was-logo,
+body.is-v2.is-ground .was-nav .was-nav-icon {
+  color: var(--v2-ink, #f4ece1);
+  transition: color 0.5s ease;
+}
+body.is-v2.is-ground .was-nav-icon { border-color: rgba(255, 255, 255, 0.28); }
+
+/* ── V2 — act two, rebuilt (keyboard 2) ─────────────────────────────────── */
+
+/* The layer UNDER the bowl. Z-INDEX 3 against the bowl layer's 4 is the whole
+   mechanism: "Until now" is real DOM type, set in the real variable font, and
+   the object is genuinely in front of it. The descent then uncovers it with
+   nothing animated but the bowl. It is only lit while act two is on screen —
+   it is fixed, so otherwise it would hang over the whole page. */
+.was-under {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+}
+body.is-v2 .was-under.is-on { opacity: 1; }
+body:not(.is-v2) .was-under { display: none; }
+
+.was-v2-until {
+  position: absolute;
+  left: var(--until-x, 50%);
+  top: var(--until-y, 47%);
+  transform: translate(-50%, -50%);
+  margin: 0;
+  max-width: var(--until-w, 60vw);
+  text-align: var(--align, center);
+  font-family: "Exposure", Georgia, serif;
+  font-size: var(--copy-size, 2.6vw);
+  line-height: 1.1;
+  letter-spacing: -0.018em;
+  font-weight: 400;
+  color: var(--left-ink);
+}
+
+/* The two statements. Both are placed the same way — a measure, an inset from
+   their OWN edge and a top — so moving one across the page is a dropdown, not
+   a different rule. */
+.was-v2-block {
+  position: absolute;
+  top: var(--until-y, 20%);
+  left: var(--until-x, 12vw);
+  max-width: var(--until-w, 34vw);
+  margin: 0;
+  text-align: var(--align, left);
+  font-family: "Exposure", Georgia, serif;
+  font-size: var(--copy-size, 2vw);
+  line-height: var(--copy-lh, 1.16);
+  letter-spacing: -0.018em;
+  font-weight: 400;
+  color: var(--left-ink);
+}
+.was-v2-block.is-right {
+  left: auto;
+  right: var(--until-x, 6vw);
+  text-align: var(--align, right);
+}
+
+/* one act at a time, both built */
+body.is-v2 .was-until-left,
+body.is-v2 .was-until-text { display: none; }
+body:not(.is-v2) .was-v2-block { display: none; }
+
+/* The quiet section the bowl descends into. Opaque and ABOVE the bowl's layer,
+   so it takes the bowl over as it rises — the bowl goes inside it rather than
+   fading away in front of it. `hidden` in V1: display none, so it adds nothing
+   to the page's height and every landmark stays where it was. */
+.was-quiet {
+  position: relative;
+  z-index: 5;
+  overflow: hidden;
+  background: var(--page-bg);
+}
+.was-quiet[hidden] { display: none; }
+.was-quiet-bg {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.was-quiet-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: var(--dim, 0);
+}
+
+/* ── the card swap, bottom-right of the hero ───────────────────────────── */
+
+.was-swap {
+  position: absolute;
+  right: var(--swap-right, 2.6vw);
+  bottom: var(--swap-bottom, 4vh);
+  display: flex;
+  align-items: flex-end;
+  gap: 2.4vw;
+  z-index: 2;
+}
+.was-swap[hidden] { display: none; }
+
+.was-swap-cap {
+  margin: 0 0 0.4em;
+  max-width: 14vw;
+  text-align: right;
+  font-size: var(--swap-cap, 0.78vw);
+  line-height: 1.42;
+  letter-spacing: -0.003em;
+  color: var(--left-ink);
+}
+.was-swap-cap span { display: block; }
+
+.was-swap-stack {
+  position: relative;
+  width: var(--swap-w, 210px);
+  height: var(--swap-h, 132px);
+  perspective: var(--swap-persp, 600px);
+}
+
+/* the drag layer: one transform for the throw, one for the deck pose */
+.was-swap-rotate {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+  touch-action: none;
+  will-change: transform;
+}
+.was-swap-rotate.is-dragging { cursor: grabbing; }
+
+.was-swap-card {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--swap-r, 14px);
+  background-size: cover;
+  background-position: center;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 10px 30px -12px rgba(20, 18, 12, 0.45);
+  will-change: transform;
+  overflow: hidden;
+  user-select: none;
+}
+.was-swap-card img { pointer-events: none; -webkit-user-drag: none; }
+.was-swap-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(200deg, rgba(255, 255, 255, 0.16), rgba(0, 0, 0, 0.12));
+  pointer-events: none;
+}
+
+.was-swap-play {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #0a0a0a;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+  transition: transform 0.24s ease, background 0.24s ease;
+}
+.was-swap-play svg { width: 26px; height: 26px; }
+.was-swap-rotate:hover .was-swap-play { transform: translate(-50%, -50%) scale(1.08); }
+
+/* ── the two clean sections around the piece ────────────────────────────── */
+
+/* every section is transparent: the page colour is the body, and the white
+   canvas fades up under the sticky pair */
+.was-above { position: relative; z-index: 3; }
+
+/* above the bowl layer, and opaque: once the Atlas has scrolled off, this is
+   what is on screen, and the bowl must not come back out over it */
+.was-below {
+  position: relative;
+  z-index: 5;
+  background: var(--page-bg);
+}
+
+
+/* ── the pinned, two-column stages ──────────────────────────────────────── */
+
+.was-pin { position: relative; z-index: 3; }
+
+.was-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Both stages are ordinary sticky sections: they arrive from below, pin, and
+   leave. Nothing is faded, cut or unveiled — the last one is opaque, so it
+   simply COLLAPSES over the one before it as it rises. */
+.was-stage.is-solid { background: var(--right-bg); }
+
+/* ── the last section: Atlas ─────────────────────────────────────────────── */
+
+/* The canvas section stays BELOW the bowl layer (4) — that is the whole point
+   of the bowl: it floats over that stage, on the seam of the two columns.
+   The two sections after it sit ABOVE it, so as each one rises it simply
+   COVERS the bowl. That is how the bowl leaves: it is occluded by the section
+   taking over, never faded out under one. Its last frame is the last frame of
+   the canvas section, and scrolling back up uncovers it exactly in place. */
+.was-held { z-index: 5; }
+
+.was-atlas { z-index: 5; }
+/* ...and it is the only thing on the page that brings its own paper */
+.was-atlas .was-stage.is-solid { background: var(--atlas-bg, var(--right-bg)); }
+.was-atlas[hidden] { display: none; }
+body.is-atlas-shadow .was-atlas .was-stage {
+  box-shadow: 0 -40px 90px -34px rgba(27, 26, 23, 0.34);
+}
+
+.was-atlas-view { position: absolute; inset: 0; }
+.was-atlas-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* the mark answers the pointer but never captures it */
+  touch-action: pan-y;
+}
+
+/* the header introducing the mark — a plain opacity fade, no travel, driven
+   the same way `readAtlas()` drives everything else in the section: it is
+   the FIRST thing that arrives, and then it simply stays. */
+.was-atlas-title {
+  position: absolute;
+  top: var(--atlas-title-top, 108px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(var(--atlas-title-w, 640px), 80vw);
+  text-align: var(--align, center);
+  z-index: 4;
+  pointer-events: none;
+}
+.was-atlas-title[hidden] { display: none; }
+
+/* the small 2D sketch above the heading — a preview of the mark, MORPHING
+   from a circle into a 3-lobed curve once as the section arrives (his ask,
+   2026-09-15: "vada a tirarsi su quando scrollo nella sezione"). Driven by
+   the same `atlasQ/title.dur` ramp as the heading's own opacity, so the two
+   arrive together. */
+.was-atlas-sketch-mount { display: flex; justify-content: center; margin-bottom: 18px; }
+.was-atlas-sketch {
+  width: 72px;
+  height: 72px;
+  color: #1b1a17;
+  overflow: visible;
+  will-change: transform, opacity;
+}
+
+.was-atlas-h {
+  margin: 0 0 0.6em;
+  font-family: "Exposure", Georgia, serif;
+  font-weight: 400;
+  font-size: var(--atlas-title-size, 2.15vw);
+  line-height: 1.16;
+  color: #1b1a17;
+}
+.was-atlas-sub {
+  margin: 0 auto;
+  max-width: 86%;
+  font-family: var(--ui);
+  font-size: var(--atlas-sub-size, 0.95vw);
+  line-height: 1.45;
+  color: rgba(27, 26, 23, 0.6);
+}
+
+.was-atlas-cards {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.was-atl-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.was-atl-lines line {
+  stroke: rgba(27, 26, 23, 0.4);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  transition: stroke 0.3s ease;
+}
+
+.was-atl-card {
+  position: absolute;
+  margin: 0;
+  width: min(var(--card-w, 324px), 40vw);
+  padding: 15px 18px 16px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow:
+    0 1px 2px rgba(27, 26, 23, 0.04),
+    0 14px 34px -20px rgba(27, 26, 23, 0.28);
+  /* Left, on both sides of the mark. The box moves; the text never does. */
+  text-align: left;
+  translate: 0 var(--rise, 0);
+  filter: blur(var(--soft, 0));
+  transition:
+    background 0.34s ease,
+    box-shadow 0.34s ease,
+    scale 0.34s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: left, top, opacity;
+}
+@supports (corner-shape: squircle) {
+  .was-atl-card { border-radius: 34px; corner-shape: squircle; }
+}
+.was-atl-card:hover {
+  background: #fff;
+  box-shadow:
+    0 2px 4px rgba(27, 26, 23, 0.05),
+    0 26px 56px -22px rgba(27, 26, 23, 0.34);
+  scale: 1.012;
+}
+
+.was-atl-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: #1b1a17;
+}
+
+/* The numbers are the point, so they sit in the open under the title. */
+.was-atl-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 11px 0 0;
+}
+.was-atl-stats dt {
+  font-size: 1.06rem;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+  color: #1b1a17;
+}
+.was-atl-stats dd {
+  margin: 3px 0 0;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(27, 26, 23, 0.42);
+}
+
+/* `0fr → 1fr` animates an auto height honestly, which max-height cannot. */
+.was-atl-more {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.3s ease;
+}
+.was-atl-more > .was-atl-body {
+  overflow: hidden;
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: rgba(27, 26, 23, 0.6);
+}
+/* The gap has to live INSIDE the clipped box, or the card never closes. */
+.was-atl-more > .was-atl-body::before {
+  content: "";
+  display: block;
+  height: 12px;
+}
+.was-atl-card:hover .was-atl-more { grid-template-rows: 1fr; opacity: 1; }
+@media (hover: none) {
+  .was-atl-more { grid-template-rows: 1fr; opacity: 1; }
+  .was-atl-stats { display: grid; grid-template-columns: 1fr 1fr; }
+}
+
+/* the chip that sits on the vertex itself, carrying that strand's colour */
+.was-atl-marker {
+  position: absolute;
+  display: block;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 7px;
+  background: var(--accent, rgba(27, 26, 23, 0.55));
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.6);
+  scale: var(--pop, 1);
+  transition: box-shadow 0.3s ease;
+  will-change: left, top, opacity, scale;
+}
+.was-atl-marker.hot { box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.85); }
+
+/* The canvas lives INSIDE the first stage, under the left column: it rides up
+   with its section, pins with it and leaves with it. It never resizes — the
+   camera frustum is skewed instead, so the composition stays centred in
+   whatever the left column leaves exposed. */
+.was-canvas-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--right-bg);
+  pointer-events: auto;
+}
+
+.was-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.was-panel-left {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--split);
+  background: var(--left-bg);
+  overflow: hidden;
+  will-change: width;
+}
+/* ...and the same column across the whole frame, for a stage that places its
+   own content in both halves */
+.was-panel-left.is-full { width: 100%; }
+
+/* ── left column: one photograph per step, glass card on top ───────────────
+   Everything inside is sized in viewport pixels, so when the column closes in
+   step 4 the moving edge WIPES the card instead of squeezing it. */
+
+.was-left-media,
+.was-left-dim {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.was-left-img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transform-origin: 50% 50%;
+  will-change: opacity, transform;
+}
+
+.was-left-dim { background: #000; opacity: 0; }
+
+.was-card { position: absolute; }
+.was-card[hidden] { display: none; }
+
+/* clip-path (not border-radius) so the silhouette is a real superellipse —
+   and so backdrop-filter follows it.
+   The card is solid; the glass is the MAT around it. */
+.was-card-frost {
+  position: absolute;
+  will-change: backdrop-filter;
+  isolation: isolate;
+}
+.was-card-frost[hidden] { display: none; }
+
+/* React Bits' GlassSurface: the filter svg is invisible, it only drives the
+   backdrop */
+.was-glass-defs {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+.was-card-frost.is-glass-svg {
+  box-shadow:
+    0 0 2px 1px rgba(0, 0, 0, 0.06) inset,
+    0 0 10px 4px rgba(0, 0, 0, 0.05) inset;
+}
+
+.was-card-glass {
+  position: absolute;
+  inset: 0;
+}
+
+.was-card-edge,
+.was-card-shadow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.was-card-shadow { z-index: -1; }
+
+/* ── steps 4–6: the evidence panel ─────────────────────────────────────── */
+/* Rebuilt to his own reference (2026-09-15): the statement at the TOP, the
+   three sources in a HORIZONTAL row at the middle, and a smaller summary at
+   the BOTTOM — all three sharing the same left margin (`--ev-*-x`), so the
+   whole thing reads as one column of blocks, not a title-and-list pair. */
+.was-evidence {
+  position: absolute;
+  inset: 0;
+  color: var(--left-ink);
+}
+.was-evidence[hidden] { display: none; }
+
+.was-ev-title {
+  position: absolute;
+  top: var(--ev-top, 12%);
+  left: var(--ev-title-x, 4vw);
+  margin: 0;
+  width: var(--ev-title-w, 36vw);
+  text-align: var(--align, left);
+  font-family: "Exposure", Georgia, serif;
+  font-weight: 400;
+  font-size: var(--copy-size, 1.75vw);
+  line-height: var(--copy-lh, 1.16);
+  letter-spacing: -0.014em;
+}
+
+.was-ev-rows {
+  position: absolute;
+  top: var(--ev-rows-top, 47%);
+  left: var(--ev-rows-x, 4vw);
+  display: flex;
+  gap: var(--ev-row-gap, 3vw);
+}
+
+.was-ev-row {
+  position: relative;
+  width: var(--ev-row-w, 15.5vw);
+}
+
+.was-ev-rail {
+  position: relative;
+  width: 100%;
+  height: var(--ev-bar-h, 2px);
+  margin-bottom: 0.85em;
+  background: var(--ev-bar-bg, #d7d5d1);
+  overflow: hidden;
+}
+.was-ev-rail i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--ev-bar-ink, #0a0a0a);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  will-change: transform;
+}
+
+.was-ev-label {
+  font-family: "Exposure", Georgia, serif;
+  font-size: var(--ev-label, 0.85vw);
+  letter-spacing: -0.004em;
+  opacity: 0.55;
+}
+.was-ev-row.is-active .was-ev-label { opacity: 1; }
+
+.was-ev-para {
+  position: relative;
+  margin: 0.6em 0 0;
+  font-size: var(--ev-para, 0.62vw);
+  line-height: 1.55;
+  color: rgba(10, 10, 10, 0.55);
+  opacity: 0;
+  will-change: opacity;
+}
+.was-ev-para span { display: block; }
+
+.was-ev-summary {
+  position: absolute;
+  left: var(--ev-summary-x, 4vw);
+  bottom: var(--ev-summary-bottom, 10%);
+  margin: 0;
+  width: var(--ev-summary-w, 27vw);
+  text-align: var(--align, left);
+  font-family: var(--ui);
+  font-size: var(--ev-summary-size, 0.95vw);
+  line-height: 1.5;
+  color: rgba(10, 10, 10, 0.6);
+  letter-spacing: -0.004em;
+}
+
+.was-copy-box {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--copyw);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--pad);
+  color: var(--copy-ink);
+  pointer-events: none;
+  will-change: width;
+}
+
+/* ── scroll style: stack — the sections collapse over each other ────────── */
+
+body.is-stack .was-above {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+body.is-stack .was-pin { z-index: 1; }
+body.is-stack .was-below {
+  position: relative;
+  z-index: 2;
+  margin-top: calc(var(--overlap) * -1);
+}
+body.is-stack.is-stack-shadow .was-below {
+  box-shadow: 0 -40px 80px -30px rgba(0, 0, 0, 0.28);
+}
+
+/* ── left copy ──────────────────────────────────────────────────────────── */
+
+.was-copy-stack {
+  position: relative;
+  width: 100%;
+  max-width: var(--copy-max, 100%);
+  margin: 0 auto;
+  display: grid;
+}
+
+.was-copy {
+  grid-area: 1 / 1;
+  font-family: var(--copy-font, "Exposure"), Georgia, serif;
+  font-weight: 400;
+  font-size: var(--copy-size, 2.5vw);
+  line-height: var(--copy-lh, 1.14);
+  letter-spacing: var(--copy-track, -0.01em);
+  text-align: var(--copy-align, center);
+}
+
+.was-line { display: block; }
+/* Perf pass (2026-09-17): no `will-change` on the word/line/char spans. It
+   promoted ~200 text fragments to their own compositor layers for a reveal
+   that repaints its block anyway; the blocks are a few hundred px of type. */
+.was-line-in { display: block; }
+
+/* clipped line reveal — the mask needs a little room for descenders */
+.is-lines .was-line {
+  overflow: hidden;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+}
+
+.was-word {
+  display: inline-block;
+  white-space: pre;
+}
+
+/* chars mode: every LETTER is its own unit — word/line spans above it just
+   pass their opacity and transform straight through to it, unless it is the
+   active unit, which is why this costs nothing when a block is never split */
+.was-char { display: inline-block; white-space: pre; }
+
+/* intro mode: every word is its own clip box, the inner span is what rises */
+.was-word-in { display: inline-block; white-space: pre; }
+.is-intro.is-clip .was-word {
+  overflow: hidden;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+
+/* ── debug markers ──────────────────────────────────────────────────────── */
+
+.was-debug { position: fixed; inset: 0; z-index: 30; pointer-events: none; }
+.was-debug.is-hidden { display: none; }
+
+.was-track {
+  position: absolute;
+  right: 18px;
+  top: 12vh;
+  height: 76vh;
+  width: 130px;
+}
+
+.was-track-bar {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 130px;
+  border-right: 1px solid rgba(0, 0, 0, 0.35);
+}
+
+.was-seg {
+  position: absolute;
+  right: 0;
+  width: 130px;
+  border-top: 1px solid rgba(0, 0, 0, 0.55);
+}
+.was-seg[data-odd="1"] { background: rgba(0, 0, 0, 0.045); }
+
+.was-seg-label {
+  position: absolute;
+  right: 8px;
+  top: 4px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  gap: 8px;
+}
+.was-seg-label em { font-style: normal; opacity: 0.5; }
+
+.was-win { position: absolute; right: 0; width: 130px; }
+.was-win span {
+  position: absolute;
+  right: 8px;
+  bottom: 2px;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.was-win-copy { width: 5px; right: 0; background: rgba(0, 0, 0, 0.55); }
+.was-win-copy.is-out { background: rgba(0, 0, 0, 0.22); }
+.was-win-asm { right: 8px; width: 5px; background: #d8523c; }
+.was-win-asm span { color: #d8523c; right: 16px; }
+.was-win-pill { right: 16px; width: 5px; background: #2f6bd8; }
+.was-win-pill span { color: #2f6bd8; right: 24px; }
+.was-win-fin { right: 24px; width: 5px; background: #1e8a5f; }
+.was-win-fin span { color: #1e8a5f; right: 32px; }
+.was-win-ev { right: 32px; width: 5px; background: #8a5fd8; }
+.was-win-ev span { color: #8a5fd8; right: 40px; }
+
+.was-track-dot {
+  position: absolute;
+  right: -6px;
+  width: 150px;
+  height: 0;
+  border-top: 2px solid #111;
+}
+.was-track-dot::after {
+  content: "";
+  position: absolute;
+  right: -4px;
+  top: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #111;
+}
+
+.was-hud {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(0, 0, 0, 0.8);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(6px);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+.was-hud b {
+  font-weight: 500;
+  opacity: 0.42;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-right: 5px;
+}
+
+body.is-grid .was-panel-left { outline: 1px dashed rgba(255, 0, 0, 0.55); outline-offset: -1px; }
+body.is-grid .was-copy-box { outline: 1px dashed rgba(0, 0, 255, 0.45); outline-offset: -2px; }
+body.is-grid .was-copy { outline: 1px dashed rgba(0, 0, 0, 0.35); }
+
+/* ── panel ──────────────────────────────────────────────────────────────── */
+/* The big "Wide Angle Sphere" scroll panel is GONE (his ask, 2026-09-16 —
+   "togli il control panel wide angle sphere che non abbiamo più"): only two
+   panels are left, each independently docked — Titles on the LEFT (his ask,
+   same message), Bowl · look on the RIGHT, same as it always was. */
+.was-panel {
+  position: fixed;
+  top: 12px;
+  width: 306px;
+  max-height: calc(100vh - 24px);
+  z-index: 40;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  border-radius: 8px;
+  scrollbar-width: thin;
+}
+.was-panel.is-hidden { display: none; }
+
+.was-panel-titles { left: 12px; }
+.was-panel-bowl { right: 12px; }
+/* The third panel is a SECOND LEFT-HAND COLUMN (12 + 306 + 12), not a stack
+   under Titles — stacking would have cost Titles half its height, and it is
+   the longest pane on the page. Left on purpose: the disc it tunes lives in
+   the bottom-RIGHT box (`v2.canvasBox.x` is 52%), and the Bowl panel already
+   owns that side, so a right-hand second column would sit on the very thing
+   being dialled. At 1500px the two left panes end at 636 and the Bowl pane
+   starts at 1182, so nothing ever meets. */
+.was-panel-v3 { left: 330px; }
+
+.was-panel::-webkit-scrollbar { width: 8px; }
+.was-panel::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 4px;
+}
+
+/* C — the clean frame: every panel, the markers and the legend, gone */
+body.is-clean .was-legend,
+body.is-clean .was-panel,
+body.is-clean .was-debug { display: none !important; }
+
+/* ── "The Great Team Behind" — the last section ──────────────────────────── */
+
+.was-team {
+  position: relative;
+  background: #ffffff;
+  color: #0a0a0a;
+  padding: 96px 4vw 120px;
+}
+
+.was-team-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 4vw;
+  margin-bottom: 64px;
+}
+.was-team-title {
+  flex: 0 0 auto;
+  margin: 0;
+  max-width: 32vw;
+  font-family: "Exposure", Georgia, serif;
+  font-weight: 400;
+  font-size: 2.6vw;
+  line-height: 1.1;
+  letter-spacing: -0.014em;
+  color: #0a0a0a;
+}
+.was-team-desc {
+  flex: 0 0 auto;
+  max-width: 22vw;
+  margin: 0;
+  font-family: var(--ui);
+  font-size: 13px;
+  line-height: 1.55;
+  color: #a6a6a6;
+}
+
+/* the second grid's own small label — no switch button any more (his ask,
+   2026-09-16), both grids sit on the page one after the other */
+.was-team-sublabel {
+  margin: 72px 0 32px;
+  font-family: "Exposure", Georgia, serif;
+  font-weight: 400;
+  font-size: 1.5vw;
+  letter-spacing: -0.01em;
+  color: #0a0a0a;
+}
+
+.was-team-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1.4vw;
+}
+.was-team-card {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 16px;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  overflow: hidden;
+}
+/* V3 — the grid reads as one quiet block of faces and the one you point at
+   comes back to life (his ask, 2026-09-17). Only the real photographs: the
+   placeholders are flat tints, and greying those says nothing. One class, set
+   by main.js from the variant AND `team.grayscale`, so the panel can lift it. */
+body.is-team-bw .was-team-card:not(.is-placeholder) {
+  filter: grayscale(1);
+  transition: filter 0.4s ease;
+}
+body.is-team-bw .was-team-card:not(.is-placeholder):hover { filter: grayscale(0); }
+
+.was-team-card.is-placeholder .was-team-initials {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Exposure", Georgia, serif;
+  font-size: 1.6vw;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ── V4: the name under the face (his ask, 2026-09-17) ────────────────────
+   It is a child of the card, so the row reveal, the row grouping and the
+   hover all keep working on exactly the element they already did — CSS is
+   what lifts it out from under the photo. The card keeps `overflow: hidden`
+   in every other version, so this is invisible unless V4 asks for it. */
+.was-team-cap { display: none; }
+body.is-team-caps .was-team-card { overflow: visible; }
+body.is-team-caps .was-team-cap {
+  position: absolute;
+  top: calc(100% + var(--tc-gap, 10px));
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--ui);
+  text-align: left;
+  pointer-events: none;
+}
+body.is-team-caps .was-team-cap-name {
+  font-size: var(--tc-size, 13px);
+  font-weight: 500;
+  color: #0a0a0a;
+  line-height: 1.25;
+}
+body.is-team-caps .was-team-cap-role {
+  font-size: var(--tc-role, 12px);
+  color: #8a8a8a;
+  line-height: 1.25;
+}
+/* ...and the grid gets the room the captions need, so the next row of faces
+   never lands on top of a name */
+body.is-team-caps .was-team-grid { row-gap: calc(1.4vw + 62px); }
+/* the tooltip is what the caption replaces — two labels for one face is one
+   too many */
+body.is-team-caps .was-team-tooltip { display: none !important; }
+
+/* V4: the world can be turned by hand — the box says so */
+.was-network-box.is-world { cursor: grab; touch-action: none; }
+.was-network-box.is-world.is-grabbing { cursor: grabbing; }
+
+.was-team-tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 220px;
+  padding: 14px 16px;
+  background: #0a0a0a;
+  border-radius: 4px;
+  pointer-events: none;
+  transform: scale(0);
+  transform-origin: 0% 100%;
+  z-index: 60;
+  will-change: transform;
+}
+.was-tt-row {
+  position: relative;
+  height: 1.3em;
+  overflow: hidden;
+}
+.was-tt-name { font-family: var(--ui); font-weight: 600; font-size: 13px; }
+.was-tt-role { font-size: 11.5px; margin-top: 2px; }
+.was-tt-in {
+  position: absolute;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+  will-change: transform, opacity;
+}
+.was-tt-name .was-tt-in { color: #fff; }
+.was-tt-role .was-tt-in { color: #a6a6a6; }
+
+@media (max-width: 860px) {
+  .was-team-head { flex-direction: column; gap: 20px; }
+  .was-team-title, .was-team-desc { max-width: 100%; }
+  .was-team-title { font-size: 7vw; }
+  .was-team-grid { grid-template-columns: repeat(3, 1fr); gap: 3vw; }
+}
+
+/* ── a spacer, in normal flow, exactly as tall as the (now fixed) footer —
+   the room the page scrolls THROUGH to reveal it (his ask, 2026-09-16:
+   "permettimi di averlo fixed... la pagina scrolla sopra e poi si rivela
+   con l'ultima sezione"). `main.js` keeps its height in lock-step with the
+   footer's own (`syncFooterSpacer()`), so a wider/narrower viewport that
+   wraps the link columns differently never leaves a gap or an overlap.
+   Deliberately NOT positioned and NOT painted with a background of its
+   own: the footer becomes revealed (see `.was-footer.is-revealed` below)
+   at the exact scroll position this spacer's own region starts to be the
+   thing on screen, and the footer's `z-index: 4` already sits above
+   everything fixed underneath it (ground/under/bowl, 2-4) — giving this
+   spacer a z-index too, even one meant as "extra" protection, would only
+   ever end up PAINTING OVER the footer it exists to make room for. */
+.was-footer-spacer { display: block; }
+
+/* ── the real footer (his reference, 2026-09-16) ──────────────────────────
+   FIXED to the viewport's own bottom edge, not in normal flow: `.was-below`
+   (z-index 5) scrolls up and OFF it, and once it has, the spacer above takes
+   its place in the flow — the footer stays exactly where it is, now with
+   nothing left to cover it, which is the whole reveal.
+
+   `z-index: 4` puts it in the SAME tier as the bowl's own layer (2-4) —
+   comfortably above it and everything under it, and safely below `.was-below`
+   (5) for as long as that section is still on screen. It starts HIDDEN
+   (`visibility`, not `display` — no layout cost either way) because a
+   bare z-index of 4 would otherwise also sit ABOVE `.was-pin`'s base tier
+   (3) — the canvas experience, `#pinA` — which would show through the
+   footer's own fixed box during THAT section's entire pin. `main.js`
+   flips `.is-revealed` on the exact frame `.was-below`'s own bottom edge
+   rises to the viewport's bottom edge, which can only happen after every
+   pinned section has already scrolled away — so the two z-indices never
+   actually have to fight over the same pixel. */
+.was-footer {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  /* It covers the WHOLE viewport (his ask, 2026-09-17: "vorrei che la height
+     fosse totale del view height... abbiamo una parte scoperta sopra"). It is
+     fixed to the BOTTOM edge, so its height is also how much of the screen it
+     hides: at less than a full viewport the page showed through above it.
+     `min-height`, not `height`, so a narrow window that wraps the columns can
+     still grow instead of being cut. `box-sizing: border-box` is global, so
+     the padding is inside this. */
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  z-index: 4;
+  visibility: hidden;
+  background: #e5ece8;
+  color: #0a0a0a;
+  /* the same inset below as at the sides, a touch less (his ask: "uguale al
+     padding di sinistra e destra, o anche un po' di meno — tanto è un footer")
+     — the player has parked long before this, so nothing sits under it */
+  padding: var(--foot-pad-top, 96px) 4vw 3vw;
+  overflow: hidden;
+
+  /* The vertical budget, written down. The link columns are the tallest
+     fixed thing here (15 rows of Browse ≈ 440px) and they are information, so
+     they never give way; the legal line likewise. What is left after them is
+     all the wordmark may have, and it is the only purely expressive element,
+     so IT is what gives. Without this the stack is 832px on a 1440×800
+     laptop — over one viewport with the gap already at zero — and a fixed,
+     bottom-anchored box spends every extra pixel off the TOP of the screen,
+     which is exactly the bug he reported. */
+  /* Written by footer.style() from `footer.padTop`. It can never go under 96:
+     the nav is fixed, 91px tall and z 7 against the footer's z 4, and at 88
+     the column headings' first 3px sat inside its box. Measured. */
+  --foot-pad-top: 96px;
+  --foot-gap-min: 56px;
+  --foot-top-h: 440px;
+  --foot-bottom-h: 78px;
+  --foot-word-cap: calc(
+    100vh - var(--foot-pad-top) - var(--foot-top-h)
+          - var(--foot-gap-min) - var(--foot-bottom-h) - 3vw
+  );
+}
+/* the column the whole thing is laid out in: link columns at the top, the
+   wordmark and the legal line pushed to the bottom, and ALL the slack in
+   between them — which is the gap he asked for, and the reason the footer can
+   fill any viewport height without the columns riding up behind the nav */
+.was-footer-in {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+.was-footer.is-revealed { visibility: visible; }
+.was-footer-top {
+  display: flex;
+  align-items: flex-start;
+}
+/* ONE left-aligned row with a real gap between the tracks (his ask,
+   2026-09-17) — not `space-between`, which stretched the three groups to the
+   full width and left canyons between them. The same `--foot-col-gap`
+   separates a group from the next AND a group's own two sub-columns, so all
+   five tracks read as one rhythm. */
+.was-footer-cols {
+  display: flex;
+  justify-content: flex-start;
+  gap: var(--foot-col-gap, 4vw);
+  width: 100%;
+}
+.was-footer-lists {
+  display: flex;
+  gap: var(--foot-col-gap, 4vw);
+}
+.was-footer-sub {
+  display: flex;
+  flex-direction: column;
+}
+.was-footer-col h4 {
+  margin: 0 0 18px;
+  font-family: var(--ui);
+  font-weight: 600;
+  font-size: 14px;
+  color: #0a0a0a;
+}
+.was-footer-col a {
+  display: block;
+  margin-bottom: 11px;
+  font-family: var(--ui);
+  font-size: 13.5px;
+  color: #0a0a0a;
+  text-decoration: none;
+  /* the list reads as one quiet block and the one you are pointing at comes
+     forward (his ask, 2026-09-17) — opacity, not colour, so it works over the
+     paper here and would work over anything else */
+  /* .5, not .65 (his ask, 2026-09-17): the further back the list sits, the
+     more the one under the pointer reads as coming forward */
+  opacity: var(--foot-link-a, 0.5);
+  transition: opacity 0.2s ease;
+}
+.was-footer-col a:hover,
+.was-footer-col a:focus-visible { opacity: 1; }
+.was-footer-word {
+  /* it used to carry `margin: 96px 0 56px`, and THAT is what made the footer
+     taller than the viewport and pushed the link columns up behind the nav
+     (his report, 2026-09-17). The space above it is now the flex slack —
+     `margin-top: auto` — with `padding-top` as the floor it can never go
+     below, so the links and the wordmark are never "troppo attaccati"
+     however tall the window is. */
+  margin: auto 0 0;
+  padding-top: var(--foot-gap-min, 56px);
+  /* The whole width (his ask, 2026-09-17) whenever there is room for it —
+     and there is, on any window tall enough: at 1500×1000 the budget wants a
+     1736px logo and the page only has 1380, so `min()` takes the full bleed.
+     On a short laptop the budget is what it can have, converted back to a
+     width through the logo's own aspect (viewBox 160 × 27 = 5.926). `clamp`
+     rather than `min` so a viewport too short to leave any budget at all
+     lands on a floor instead of an invalid negative width. */
+  width: clamp(280px, calc(var(--foot-word-cap) * 160 / 27), 100%);
+  color: #16302a;
+}
+.was-footer-word svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.was-footer-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  /* the air UNDER the wordmark. Smaller = the logo sits lower, which is what
+     he asked for — the block is bottom-anchored, so this is the only gap
+     between the two that can move it. */
+  margin-top: var(--foot-word-bottom, 14px);
+}
+.was-footer-legal {
+  margin: 0;
+  font-family: var(--ui);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #6b6b6b;
+}
+.was-footer-policies {
+  display: flex;
+  gap: 28px;
+}
+.was-footer-policies a {
+  font-family: var(--ui);
+  font-size: 13px;
+  color: #0a0a0a;
+  text-decoration: underline;
+}
+
+/* ── the scroll bar (his ask, 2026-09-17) ───────────────────────────────────
+   A thin line along the bottom of the viewport, filled left → right by a
+   `scaleX` (one composited property, no layout per frame). The track behind
+   it is the same colour at `--pg-track`. Opacity is written by progress.js
+   from the clock, so it is invisible before the canvas act and after it. */
+.was-progress {
+  position: fixed;
+  left: var(--pg-inset, 4vw);
+  right: var(--pg-inset, 4vw);
+  bottom: var(--pg-bottom, 18px);
+  height: var(--pg-h, 4px);
+  border-radius: var(--pg-r, 2px);
+  opacity: 0;
+  z-index: 8;
+  pointer-events: none;
+  overflow: hidden;
+}
+.was-progress[hidden] { display: none; }
+.was-progress::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--pg-color, #fff);
+  opacity: var(--pg-track, 0.1);
+}
+.was-progress-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--pg-color, #fff);
+  border-radius: inherit;
+  transform-origin: left center;
+  transform: scaleX(0);
+  /* the hairline that keeps a white fill readable over a white stage */
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, var(--pg-edge, 0));
+}
+
+/* ── the player, bottom-left (his ask, 2026-09-17) ──────────────────────────
+   The nav's own furniture — white, a hairline, the UI face — pinned to the
+   viewport. The whole bar lifts on hover, not only the button. */
+.was-player {
+  position: fixed;
+  /* it lives in the RIGHT corner now (his ask, 2026-09-17) — `--pl-left` is
+     the inset from whichever side `player.side` picks, and the bottom-left is
+     handed back to the hero's paragraph */
+  left: var(--pl-left, 2.6vw);
+  right: auto;
+  bottom: var(--pl-bottom, 4vh);
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  /* no `gap`: the space before the name has to CLOSE with it, so each child
+     carries its own left margin instead.
+     The photo sits `--pl-pad` in from the bar's edge, the text a little more —
+     and closed, the right inset falls back to `--pl-pad` so the half-circle
+     end sits concentric around the play button. */
+  padding: var(--pl-pad, 4px) var(--pl-pr, 18px) var(--pl-pad, 4px) var(--pl-pad, 4px);
+  /* white glass: white at --pl-alpha over a backdrop blur, a hairline of
+     highlight along the top edge (the bevel) and a soft drop underneath */
+  background: rgba(255, 255, 255, var(--pl-alpha, 1));
+  -webkit-backdrop-filter: blur(var(--pl-blur, 0px)) saturate(var(--pl-sat, 1));
+  backdrop-filter: blur(var(--pl-blur, 0px)) saturate(var(--pl-sat, 1));
+  /* NO css border: the bar's edge is the SVG outline below, because that edge
+     is also the TIMELINE (his ask, 2026-09-17). `--pl-ink` is the ink of this
+     UI on the white page — BLACK, his ask — and `--pl-track` the faint version
+     of it that draws the edge the bar always has; `is-ground` swaps both to
+     white further down, the same way it already swaps the type. */
+  --pl-ink: #0a0a0a;
+  --pl-track: rgba(10, 10, 10, 0.18);
+  border: 0;
+  /* the RIGHT end becomes a half-circle as the bar closes — `--pl-rr` is
+     written by player.js from the same number that drives the SVG outline and
+     the width, so the three can never disagree. The left corners keep the
+     square-ish radius they share with the photo (his ask, 2026-09-17). */
+  border-radius: var(--pl-r, 16px) var(--pl-rr, 16px) var(--pl-rr, 16px) var(--pl-r, 16px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, var(--pl-bevel, 0)),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.04),
+    0 10px 30px rgba(0, 0, 0, 0.08);
+  font-family: var(--ui);
+  color: #0a0a0a;
+  /* --pl-park (0 → 1, from main.js) slides the whole bar down and out as the
+     three-step section arrives. It rides on `translate`, NOT on `transform`,
+     and neither it nor the opacity is transitioned: it is written every frame
+     as a pure function of the scroll, and a transition on it would retarget
+     every frame and trail the scroll by a third of a second (perf pass,
+     2026-09-17). The hover lift lives on `transform`, which composes with it. */
+  translate: 0 calc(var(--pl-park, 0) * 140%);
+  transform: none;
+  opacity: calc(1 - var(--pl-park, 0));
+  transition: box-shadow 0.28s ease;
+  overflow: hidden;
+}
+.was-player.is-parked { pointer-events: none; }
+.was-player.is-right { left: auto; right: var(--pl-left, 2.6vw); }
+/* ── the outline IS the timeline (his ask, 2026-09-17) ─────────────────────
+   Two copies of the same rounded-rect path: the TRACK, which is simply the
+   edge the bar always has, and over it the progress, which composes itself
+   around the box clockwise from the top-left. `player.js` writes the dash
+   (`${p} 1` against `pathLength="1"`), so there is NO transition on it — it
+   is written per frame while the track plays, and a transition would retarget
+   every frame and trail it. The colour DOES transition: that only changes
+   when the theme does. */
+.was-player-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.was-player-ring path {
+  fill: none;
+  stroke-width: var(--pl-sw, 1.5px);
+  vector-effect: non-scaling-stroke;
+  transition: stroke 0.35s ease;
+}
+.was-player-ring-track { stroke: var(--pl-track, rgba(10, 10, 10, 0.18)); }
+.was-player-ring-fill {
+  stroke: var(--pl-ink, #0a0a0a);
+  stroke-dasharray: 0 1;
+  stroke-linecap: butt;
+}
+/* over the shader — the ring act's dark field — the whole UI goes WHITE (his
+   ask, 2026-09-17): dark glass, white type, white button and pills. Keyed off
+   `body.is-ground`, the same class that already turns the copy to light. */
+.was-player,
+.was-player-btn,
+.was-player-label,
+.was-player-wave i { transition-property: transform, box-shadow, opacity, background-color, color; transition-duration: 0.35s; }
+/* ...except the root's own opacity, which IS the park and is written per frame */
+.was-player { transition-property: transform, box-shadow, background-color, color; }
+body.is-v2.is-ground .was-player {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  /* over the shader the whole UI turns white — the outline with it (his ask) */
+  --pl-ink: #ffffff;
+  --pl-track: rgba(255, 255, 255, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+    0 10px 30px rgba(0, 0, 0, 0.22);
+}
+body.is-v2.is-ground .was-player-label { color: rgba(255, 255, 255, 0.72); }
+body.is-v2.is-ground .was-player-btn { background: #fff; color: #0a0a0a; }
+body.is-v2.is-ground .was-player-wave i { background: #fff; }
+.was-player[hidden] { display: none; }
+/* Hover does NOT lift the bar any more (his ask, 2026-09-17: "non voglio che
+   si alzi leggermente in Y... fa un po' cagare"). It OPENS it instead — see
+   `applyCollapse` in player.js — and all that happens here is that the shadow
+   acknowledges the pointer. */
+.was-player:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, var(--pl-bevel, 0)),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.04),
+    0 16px 40px rgba(0, 0, 0, 0.14);
+}
+.was-player-photo {
+  flex: 0 0 auto;
+  width: var(--pl-size, 56px);
+  height: var(--pl-size, 56px);
+  /* concentric with the bar: its radius less the inset (player.js computes it) */
+  border-radius: var(--pl-r-in, 12px);
+  object-fit: cover;
+  display: block;
+}
+/* the name on top, the equaliser along the BOTTOM (his ask, 2026-09-17) —
+   the column is as tall as the photo, so the space between them is what makes
+   the bar breathe instead of being "tutto bello compatto" */
+.was-player-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-self: stretch;
+  min-height: var(--pl-size, 56px);
+  gap: 8px;
+  padding: 2px 0;
+}
+/* ...and with the equaliser switched off there is only the name to place, so
+   the column centres it on the photo rather than pinning it to the top */
+.was-player.is-nowave .was-player-main { justify-content: center; }
+
+/* ── the bar closes as you read down (his ask, 2026-09-17) ────────────────
+   `--pl-main-w` and `--pl-collapse` are written by player.js off ONE GSAP
+   value, which also draws the SVG outline — so the box, its right-hand
+   radius and its own edge all move together. Nothing here is transitioned:
+   the tween IS the animation, and a CSS transition on top would fight it. */
+.was-player-btn { margin-left: 12px; }
+.was-player-main {
+  width: var(--pl-main-w, auto);
+  margin-left: calc((1 - var(--pl-collapse, 0)) * 12px);
+  overflow: hidden;
+}
+/* closed, nothing in the column can be tabbed to or clicked through */
+.was-player.is-collapsed .was-player-main { pointer-events: none; }
+.was-player-ch { display: inline-block; white-space: pre; }
+
+/* The equaliser: pills that grow and shrink about the CENTRE line. This row's
+   height is FIXED at the tallest a pill can be (`tickWave` never eases one
+   past `wave.max`, which is the same number), and that is load-bearing now:
+   the bars animate their `height` in px every frame, so a row that grew with
+   them would resize the player and fire the outline's ResizeObserver 60×/s. */
+.was-player-wave {
+  display: flex;
+  align-items: center;
+  gap: var(--wv-gap, 3px);
+  height: var(--wv-max, 26px);
+}
+.was-player-wave[hidden] { display: none; }
+.was-player-wave i {
+  display: block;
+  width: var(--wv-w, 3px);
+  height: 3px;
+  border-radius: 999px;
+  background: var(--pl-ink, #0a0a0a);
+  opacity: 0.85;
+}
+.was-player-btn {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--pl-ink, #0a0a0a);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.was-player-btn svg { width: 20px; height: 20px; }
+.was-player-btn:hover { transform: scale(1.08); }
+.was-player-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
+.was-player-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: nowrap;
+}
+.was-player-name { font-size: 13px; font-weight: 600; }
+.was-player-label { font-size: 11.5px; color: #8a8a8a; }
+.was-player.is-empty .was-player-label { color: #b0b0b0; font-style: normal; }
+
+/* A short window (a laptop with browser chrome) has to fit the same 15-link
+   column, so the rhythm and the gaps give way before the content does. The
+   top padding does NOT: it is what keeps the columns clear of the fixed nav
+   (91px, z 7), which paints straight over the footer at z 4. */
+@media (max-height: 860px) {
+  .was-footer {
+    --foot-gap-min: 32px;
+    --foot-bottom-h: 62px;
+  }
+  .was-footer-col a { margin-bottom: 7px; }
+}
+
+@media (max-width: 860px) {
+  .was-player { left: 12px; right: auto; bottom: 12px; }
+  .was-player.is-right { left: auto; right: 12px; }
+  .was-player-label { display: none; }
+  .was-footer-top { flex-direction: column; gap: 32px; }
+  .was-footer-cols { flex-direction: column; gap: 32px; }
+  .was-footer-lists { gap: 8vw; }
+  .was-footer-word { margin: auto 0 0; padding-top: 48px; width: 100%; }
+  .was-footer-bottom { flex-direction: column; align-items: flex-start; gap: 16px; }
+}
+
+.was-legend {
+  position: fixed;
+  right: 18px;
+  bottom: 14px;
+  z-index: 40;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+@media (max-width: 860px) {
+  .was-panel, .was-track, .was-nav-icon { display: none; }
+  .was-hero-line { font-size: 9vw; }
+  .was-hero-half.is-a { right: auto; left: 6vw; top: 26%; }
+  .was-hero-half.is-b { left: auto; right: 6vw; top: 74%; }
+  .was-swap { display: none; }
+  .was-hero-para { font-size: 3.4vw; }
+  .was-until-text { font-size: 7vw; }
+  .was-atl-card { width: min(var(--card-w, 324px), 74vw); padding: 13px 15px 14px; }
+  .was-atl-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+}
