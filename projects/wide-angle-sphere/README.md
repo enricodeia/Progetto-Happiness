@@ -2434,3 +2434,18 @@ the left belongs to the carousel, and a panel over it would eat the drag.
 Under the breakpoint there is no room for two columns, so the tower is
 centred on the whole screen at low opacity behind the type, with a paper wash
 under it. That is a stopgap, not a designed mobile layout.
+
+## Bloom removed from the bowl's post-processing (his ask, 2026-09-17)
+
+`UnrealBloomPass` is out of `src/bowl.js`'s composer entirely — not disabled,
+removed: no import, no pass, no bright-pass render target. The chain is now
+just `RenderPass` → the shared vignette `ShaderPass` (`src/postfx.js`) →
+`OutputPass`. `bowl.post` in `src/config.js` keeps only `enabled` and
+`vignette`; the Bowl panel's **Post-fx** folder lost its bloom/radius/
+threshold/hi-res bindings and kept the other two. The probe's `post` getter
+dropped `bloomStrength`/`bloomHiRes`/`bloomW` accordingly, and the two
+`repro.mjs` checks that asserted bloom numbers now assert their absence
+(`bloomStrength === undefined`) alongside the vignette and antialias-off
+behaviour, which are unchanged. The Atlas scene's own (unused, off-by-default)
+post-processing code in `src/atlas/atlas.js` / `src/panel.js` still has its
+own bloom — untouched, since it is a different, inactive scene.

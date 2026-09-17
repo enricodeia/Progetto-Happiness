@@ -5,7 +5,6 @@ import { makeSlotMaterial, applySlot, classifyImage } from "./bowlMaterial.js";
 import { createEnv } from "./env.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { VIGNETTE } from "./postfx.js";
@@ -75,41 +74,21 @@ export function createBowl({ mount, cfg }) {
   camera.position.set(0, 0, B.cam.dist);
   camera.lookAt(0, 0, 0);
 
-  // ── post-processing (his ask, 2026-09-16 — on THIS canvas, not the Atlas's)
+  // ── post-processing (his ask, 2026-09-16 — on THIS canvas, not the Atlas's;
+  // bloom removed 2026-09-17, his ask — vignette only now)
   // The layer is transparent over the page (`alpha:true`, cleared to 0 alpha),
   // so every pass here has to carry that channel through: `RenderPass` with no
   // explicit clear colour/alpha of its own just reuses the renderer's, which
-  // is already transparent, and the bright-pass bloom extracts nothing from a
-  // fully transparent (black) pixel in the first place, so the halo never
-  // shows outside the object's own silhouette. Built once; `frame()` below
-  // skips the whole composer when `post.enabled` is off, so this costs
-  // nothing on a page where the bowl renders almost everywhere.
+  // is already transparent. Built once; `frame()` below skips the whole
+  // composer when `post.enabled` is off, so this costs nothing on a page
+  // where the bowl renders almost everywhere.
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  const bloomPass = new UnrealBloomPass(
-    new THREE.Vector2(window.innerWidth, window.innerHeight),
-    B.post.bloomStrength, B.post.bloomRadius, B.post.bloomThreshold
-  );
-  // Perf pass (2026-09-17): the composer hands every pass the DEVICE-pixel
-  // size, so on a retina screen the bloom's bright pass and its five mips ran
-  // at 4× the fragments — for a blur. They are sized in CSS pixels instead
-  // (`post.bloomHiRes` puts them back): the kernel is in texels, so the halo
-  // is now the same width in CSS px on every screen, as a DPR-1 viewer had it.
-  const bloomSetSize = bloomPass.setSize.bind(bloomPass);
-  bloomPass.setSize = (w, h) => {
-    const pr = B.post.bloomHiRes ? 1 : renderer.getPixelRatio();
-    bloomSetSize(w / pr, h / pr);
-  };
-  composer.addPass(bloomPass);
   const vignettePass = new ShaderPass(VIGNETTE);
   composer.addPass(vignettePass);
   composer.addPass(new OutputPass());
   function applyPostSettings() {
-    const p = B.post;
-    bloomPass.strength = p.bloomStrength;
-    bloomPass.radius = p.bloomRadius;
-    bloomPass.threshold = p.bloomThreshold;
-    vignettePass.uniforms.amount.value = p.vignette;
+    vignettePass.uniforms.amount.value = B.post.vignette;
   }
 
   const env = createEnv(renderer, scene, B.studio);
@@ -578,11 +557,7 @@ export function createBowl({ mount, cfg }) {
     get post() {
       return {
         enabled: !!B.post.enabled,
-        bloomStrength: bloomPass.strength,
         vignette: vignettePass.uniforms.amount.value,
-        bloomHiRes: !!B.post.bloomHiRes,
-        // the bright pass's own target: half the size the bloom runs at
-        bloomW: bloomPass.renderTargetBright.width,
         antialias: !!renderer.getContextAttributes?.().antialias,
       };
     },

@@ -1222,21 +1222,14 @@ export const CONFIG = {
     render: { toneMapping: "aces", exposure: 1.0 },
 
     // ── post-processing (his ask, 2026-09-16 — moved here from the Atlas
-    // scene, which is not what he meant) ────────────────────────────────────
+    // scene, which is not what he meant; bloom removed 2026-09-17, his ask)
     // The bowl's own canvas is transparent over the page (`alpha:true`), so
     // every pass here has to carry that alpha channel through untouched —
     // `frame()` skips the whole composer when off, so this never costs
     // anything on a page where the bowl is rendering almost everywhere.
     post: {
       enabled: true,
-      bloomStrength: 0.25,
-      bloomRadius: 0.3,
-      bloomThreshold: 0.82,
       vignette: 0.14,
-      // the bloom's own targets are sized in CSS pixels (a blur does not need
-      // device pixels: 4× fewer fragments on a retina screen). `true` puts
-      // them back at device resolution, for comparison.
-      bloomHiRes: false,
     },
 
     // ── look at the cursor (his ask, 2026-09-16 — "un po' di look at the

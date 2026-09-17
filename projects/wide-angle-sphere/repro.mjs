@@ -2494,9 +2494,9 @@ const checks = [
     actCopyCheck.lefts[1] !== actCopyCheck.lefts[2] &&
     actCopyCheck.lefts.every((l) => /^-?[\d.]+px$/.test(l))],
   ['post-processing sulla CANVA DELLA BOWL (non sull\'Atlas — sua correzione, ' +
-   '2026-09-16), acceso di default, sobrio (bloom + vignetta, mai un neon), ' +
-   'sulla stessa alpha:true layer trasparente sopra la pagina',
-    bowlPostFx.enabled === true && bowlPostFx.bloomStrength > 0 && bowlPostFx.bloomStrength < 0.5 &&
+   '2026-09-16), acceso di default, solo vignetta (bloom rimosso, sua ' +
+   'richiesta 2026-09-17), sulla stessa alpha:true layer trasparente sopra la pagina',
+    bowlPostFx.enabled === true && bowlPostFx.bloomStrength === undefined &&
     bowlPostFx.vignette > 0 && bowlPostFx.vignette < 0.4],
   ['il codice di post-processing dell\'Atlas resta (a costo zero, la sezione ' +
    'è spenta), pronto se l\'Atlas torna',
@@ -2525,8 +2525,8 @@ const checks = [
   // ── perf pass (2026-09-17) ───────────────────────────────────────────
   ['il ground gira a DPR 1: è sfocato per disegno, i device pixel non comprano nulla (4× meno fragment su retina)',
     perf.groundDpr === 1],
-  ['il bloom della bowl lavora in CSS px (bright pass a mezza larghezza), e il context non paga un MSAA che il composer non usa',
-    perf.post.enabled && perf.post.bloomHiRes === false && perf.post.bloomW === 750 &&
+  ['bloom rimosso dal post-processing della bowl (sua richiesta, 2026-09-17) — resta solo la vignetta, e il context non paga un MSAA che il composer non usa',
+    perf.post.enabled && perf.post.bloomStrength === undefined && perf.post.bloomHiRes === undefined &&
     perf.post.antialias === false],
   ['la bowl arriva Draco: STESSO modello (2.2M tri), 2.2 MB invece di 61.8 — e preloaded dall’HTML insieme al font',
     perf.glbOk && perf.glbBytes > 1e6 && perf.glbBytes < 4e6 && bowlModel.tris > 2e6 &&

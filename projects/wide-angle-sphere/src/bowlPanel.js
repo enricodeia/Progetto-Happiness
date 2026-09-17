@@ -273,18 +273,13 @@ export function createBowlPanel({ cfg, bowl, onLayout, onReplay, onProgress, onP
   fLook.addBinding(B.lookCursor, "strengthY", { min: 0, max: 25, step: 0.5, label: "lean °" });
   fLook.addBinding(B.lookCursor, "ease", { min: 0.01, max: 0.4, step: 0.005, label: "catch-up" });
 
-  // ── post-fx on the bowl's own canvas. Strength/radius/threshold/vignette are
-  //    read every frame; `bloomHiRes` re-sizes the bloom targets (perf pass,
-  //    2026-09-17 — CSS px by default, device px for comparison). Note that
-  //    `enabled` is also what decides at BOOT whether the context asks for
-  //    MSAA, so flipping it live is a look preview, not the shipped path.
+  // ── post-fx on the bowl's own canvas — vignette only (bloom removed,
+  //    2026-09-17, his ask). Read every frame. Note that `enabled` is also
+  //    what decides at BOOT whether the context asks for MSAA, so flipping
+  //    it live is a look preview, not the shipped path.
   const fPost = pane.addFolder({ title: "Post-fx", expanded: false });
   fPost.addBinding(B.post, "enabled");
-  fPost.addBinding(B.post, "bloomStrength", { min: 0, max: 1.5, step: 0.01, label: "bloom" });
-  fPost.addBinding(B.post, "bloomRadius", { min: 0, max: 1, step: 0.01, label: "radius" });
-  fPost.addBinding(B.post, "bloomThreshold", { min: 0, max: 1, step: 0.01, label: "threshold" });
   fPost.addBinding(B.post, "vignette", { min: 0, max: 0.6, step: 0.01 });
-  fPost.addBinding(B.post, "bloomHiRes", { label: "bloom @ device px" }).on("change", onLayout);
 
   // ── the ring act's own background: one colour per step + the falling
   //    parallax (his ask, 2026-09-17) ───────────────────────────────────────
