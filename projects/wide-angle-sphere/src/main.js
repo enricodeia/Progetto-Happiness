@@ -551,9 +551,9 @@ const titlesPanel = createTitlesPanel({
 //
 // So three things move with it: the steps array (each version has its own), the
 // `canvasFrom` index the clock measures the assembly and the pills from, and
-// the canvas DOM itself, which is simply re-parented into the other stage. The
-// choice is remembered, so a reload does not throw the work away.
-const VKEY = "was-variant";
+// the canvas DOM itself, which is simply re-parented into the other stage.
+// V4 is the shipped default (his ask, 2026-09-18) — no persistence, every
+// load starts there; the panels (below) can still switch live for review.
 const STEPS_V1 = CONFIG.steps;
 const STEPS_V2 = CONFIG.v2.steps;
 const EVIDENCE_V1 = CONFIG.evidence.show;
@@ -638,7 +638,6 @@ function applyVariant() {
   // new shape is not variant-dependent at all — neither needs rebuilding here
   // the panel may not exist yet on the very first applyVariant()
   v3Panel?.refresh();
-  try { localStorage.setItem(VKEY, String(CONFIG.variant)); } catch { /* private mode */ }
 }
 
 function setVariant(n) {
@@ -651,10 +650,6 @@ function setVariant(n) {
   CONFIG.v2.on = v >= 2;
   applyVariant();
 }
-try {
-  const stored = Number(localStorage.getItem(VKEY));
-  CONFIG.variant = stored >= 1 && stored <= 4 ? Math.round(stored) : 1;
-} catch { /* private mode */ }
 CONFIG.v2.on = CONFIG.variant >= 2;
 applyVariant();
 
@@ -764,7 +759,11 @@ bowl.setPoseHook((pose, ctx) => {
 // C — the clean frame: both panels, the markers and the legend, gone. It is a
 // single body class, so nothing can be left behind by a panel that happened to
 // be open when it was pressed.
-let clean = false;
+// Shipped default is CLEAN (his ask, 2026-09-18 — "lascami la possibilità di
+// vedere tutti i control panel solo se schiaccio 'c'"): every load boots with
+// every panel hidden, and `c` is the only way to bring any of them back. The
+// per-panel keys (`v`/`b`/`t`) only answer once `c` has already opened the door.
+let clean = true;
 function setClean(v) {
   clean = v;
   document.body.classList.toggle("is-clean", clean);
@@ -773,6 +772,7 @@ function setClean(v) {
     titlesPanel.hide();
   }
 }
+setClean(true);
 
 addEventListener("keydown", (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -780,9 +780,9 @@ addEventListener("keydown", (e) => {
   if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
   const k = e.key.toLowerCase();
   if (k === "1" || k === "2" || k === "3" || k === "4") { setVariant(k); return; }
-  if (k === "v") { v3Panel.toggle(); return; }
   if (k === "c") { setClean(!clean); return; }
-  if (clean) return;              // nothing else answers while it is clean
+  if (clean) return;              // nothing else answers while it is clean — panels included
+  if (k === "v") v3Panel.toggle();
   if (k === "b") bowlPanel.toggle();
   if (k === "t") titlesPanel.toggle();
   if (k === "m") debug.toggle();

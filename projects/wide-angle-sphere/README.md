@@ -2449,3 +2449,31 @@ dropped `bloomStrength`/`bloomHiRes`/`bloomW` accordingly, and the two
 behaviour, which are unchanged. The Atlas scene's own (unused, off-by-default)
 post-processing code in `src/atlas/atlas.js` / `src/panel.js` still has its
 own bloom — untouched, since it is a different, inactive scene.
+
+## Shipped default: V4, panels hidden behind `c` (his ask, 2026-09-18)
+
+`src/config.js`'s `variant` default is `4`, not `1` — a page that has never
+been touched lands on the globe. The old `localStorage` restore (`was-variant`)
+is gone entirely: it would have let a stale value from earlier testing
+override the new default in the one browser it mattered least (his own), so
+every load now starts deterministically at V4 with no memory of the last
+session.
+
+The three Tweakpane panels (Titles, Bowl, V3/V4) are still fully there — his
+correction, mid-request: *"lascami la possibilità di vedere tutti i control
+panel per favore solo se schiaccio 'c'"* — nothing was deleted. What changed
+is the boot state: `clean` now starts `true` instead of `false`, so
+`body.is-clean` (which already hid `.was-panel` via CSS) is on from the first
+frame. `c` still just flips it, same as always — the only difference is which
+side of the flip is home. The per-panel keys (`v`/`b`/`t`) were moved below
+the `if (clean) return` guard in the keydown handler, so they no longer punch
+through the clean state on their own — `c` is the one door, exactly as asked.
+The `1`–`4` quick-switch keys stay live regardless of `clean`, for fast
+peeking without opening any panel.
+
+`repro.mjs` still runs its whole existing suite against a V1 baseline —
+authored that way, and reset to it with one `setVariant(1)` call right after
+boot — then adds two checks of its own at the very end, off a real
+`page.reload()` with nothing touched afterward: the fresh boot is on V4
+(`cfg.variant === 4`, `body.is-v4`), and every `.was-panel` computes
+`display: none` until `c` is simulated. 210 checks now, up from 208.

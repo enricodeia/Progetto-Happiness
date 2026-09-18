@@ -23,6 +23,11 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms))
 
 await page.goto(URL, { waitUntil: 'networkidle2', timeout: 45000 })
 await page.waitForFunction('window.__was && window.__was.state.sphereCards > 0', { timeout: 20000 })
+// The shipped default is V4 now (his ask, 2026-09-18) — the rest of this
+// suite was authored against the V1 baseline, so it is set explicitly here;
+// the real, untouched boot default is asserted separately, near the end,
+// off a `page.reload()`.
+await page.evaluate(() => window.__was.setVariant(1))
 await page.evaluate(() => { window.__was.bowlPanel.hide(); window.__was.titlesPanel.hide() })
 // C — the clean frame. The cards sit under the panel, so nothing can be
 // hovered until it is gone.
@@ -1681,7 +1686,6 @@ const v3 = await page.evaluate(async () => {
     disc: n.disc,
     field: n.field.count,
     teamFilter: getComputedStyle(card).filter,
-    stored: localStorage.getItem('was-variant'),
   }
   // ...and back to 2, then 1, to prove the three states really are reversible
   W.setVariant(2)
@@ -1803,6 +1807,22 @@ const evTop = await page.evaluate(async () => {
   return out
 })
 console.log('il paragrafo dei tre step:', evTop)
+
+// il boot vero, senza toccare nulla (sua richiesta, 2026-09-18): V4 di
+// default, pannelli nascosti finché non premo "c"
+await page.reload({ waitUntil: 'networkidle2', timeout: 45000 })
+await page.waitForFunction('window.__was && window.__was.state.sphereCards > 0', { timeout: 20000 })
+const freshBoot = await page.evaluate(() => {
+  const W = window.__was
+  return {
+    variant: W.cfg.variant,
+    v2on: W.cfg.v2.on,
+    isV4: document.body.classList.contains('is-v4'),
+    clean: W.state.clean,
+    panelsHidden: [...document.querySelectorAll('.was-panel')].every((e) => getComputedStyle(e).display === 'none'),
+  }
+})
+console.log('freshBoot:', freshBoot)
 
 const drift = HERO_CFG.drift
 const checks = [
@@ -2543,7 +2563,7 @@ const checks = [
   ['il tasto 3 porta alla V3, che è la V2 PIÙ quattro differenze — quindi ' +
    '`v2.on` resta vero e il body porta tutte e due le classi',
     v3.variant === 3 && v3.v2on === true && v3.body.v2 && v3.body.v3 &&
-    v3.stored === '3' && v3.panels === 3],
+    v3.panels === 3],
   ['i tre step diventano un DISCO a sezione aurea: niente puntini di riempimento, ' +
    'il centro resta vuoto, e ci sono i tre anelli dei dischi',
     v3.disc.on === true && v3.field === 0 && v3.disc.rings.length === 3 &&
@@ -2623,6 +2643,13 @@ const checks = [
   ['...e ogni tecnica è in fondo a una CATENA che salta di vertice in vertice sulla ' +
    'superficie per arrivarci ("punti con punti che si collegano con le techniques")',
     v4.globe.chains >= v4.globe.orbit && v4.globe.arcs > v4.globe.chains],
+
+  // ── shipped default: V4, panels hidden until "c" (his ask, 2026-09-18) ──
+  ['una pagina APPENA CARICATA, senza toccare nulla, è già in V4 — non più V1, ' +
+   'niente localStorage a decidere per lei',
+    freshBoot.variant === 4 && freshBoot.v2on === true && freshBoot.isV4 === true],
+  ['...e tutti i control panel sono nascosti di default: si vedono SOLO premendo "c"',
+    freshBoot.clean === true && freshBoot.panelsHidden === true],
 ]
 console.log('\n— checks —')
 for (const [label, ok] of checks) console.log(`${ok ? 'OK ' : 'KO '} ${label}`)

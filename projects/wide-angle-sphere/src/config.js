@@ -122,13 +122,14 @@ export const CONFIG = {
   // As the page scrolls the two halves slide apart by `drift`, and sliding
   // back up closes them again — a pure function of the scroll, so it can never
   // end up out of place.
-  // ── which version of the piece is on screen: 1, 2 or 3 ─────────────────
+  // ── which version of the piece is on screen: 1, 2, 3 or 4 ──────────────
   // `v2.on` is kept as the DERIVED "is this at least V2", because twenty-odd
   // places already read it and every one of them wants V2's behaviour in V3
-  // too — V3 is V2 plus four deltas (the disc, the hero's titles, the team's
-  // desaturation and the footer), not a third page. main.js keeps the two in
-  // step; nothing should ever write `v2.on` directly.
-  variant: 1,
+  // (and V4) too — V3/V4 are V2 plus deltas, not separate pages. main.js
+  // keeps the two in step; nothing should ever write `v2.on` directly.
+  // Shipped default is 4 (his ask, 2026-09-18) — no localStorage override any
+  // more, every load starts here; the panels can still switch live, behind `c`.
+  variant: 4,
 
   // ── the footer's own two knobs ─────────────────────────────────────────
   // Everything else about it is layout that measures itself (see
