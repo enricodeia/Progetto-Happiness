@@ -40,6 +40,7 @@ const SPLIT_NO_FADE = { "lines (in place)": "lines", "words (in place)": "words"
 
 export function createTitlesPanel({
   cfg,
+  onNav,                          // the nav bar's copy (2026-09-21)
   onHeroRebuild, onHeroStyle,     // hero.title/titleB/para
   onV2Rebuild, onV2Style,         // until.left/right, v2.top/bottom/until, v2.act copy
   onEvidenceBuild, onEvidenceStyle,
@@ -86,9 +87,15 @@ export function createTitlesPanel({
     f.addBinding(cfg.hero, "paraBottom", { min: 0, max: 30, step: 0.5, label: "y — from bottom (vh)" }).on("change", onHeroStyle);
   }
 
-  // ── the nav's search field — light glass (his ask, 2026-09-17) ───────────
+  // ── the nav's copy, and its search field — light glass (2026-09-17) ──────
   {
-    const f = pane.addFolder({ title: "Nav — search glass", expanded: false });
+    const f = pane.addFolder({ title: "Nav — copy & search glass", expanded: false });
+    const n = cfg.nav;
+    f.addBinding(n, "logo").on("change", onNav);
+    f.addBinding(n, "search", { label: "search placeholder" }).on("change", onNav);
+    f.addBinding(n.one, "cta", { label: "1 · button" }).on("change", onNav);
+    f.addBinding(n.two, "cta", { label: "2 · button" }).on("change", onNav);
+    f.addBinding(n.two, "pill", { label: "2 · outlined pill" }).on("change", onNav);
     const sg = cfg.hero.nav.searchGlass;
     f.addBinding(sg, "alpha", { min: 0, max: 1, step: 0.01, label: "white" }).on("change", onHeroStyle);
     f.addBinding(sg, "blur", { min: 0, max: 40, step: 1, label: "blur (px)" }).on("change", onHeroStyle);

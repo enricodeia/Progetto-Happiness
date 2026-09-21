@@ -280,6 +280,7 @@ const CONFIG_COUNT = await page.evaluate(() => window.__was.cfg.pills3d.count)
 const CFG_PILL_START = await page.evaluate(() => window.__was.cfg.pills3d.startFrac)
 const CONFIG_EXPO_REST = await page.evaluate(() => window.__was.cfg.text.expoRest)
 const HERO_CFG = await page.evaluate(() => window.__was.cfg.hero)
+const NAV_CFG = await page.evaluate(() => window.__was.cfg.nav)
 const FOOT_CFG = await page.evaluate(() => window.__was.cfg.footer)
 const NET_CFG = await page.evaluate(() => {
   const n = window.__was.cfg.v2.network
@@ -336,7 +337,10 @@ const bowlModel = await page.evaluate(() => {
       tiling: b.shells.A.mat.normalMap ? +b.shells.A.mat.normalMap.repeat.x.toFixed(2) : 0,
       procedural: b.shells.A.mat.userData.u.uReliefOn.value,
     },
-    innerRamp: M.material.B.colorNoise.enabled && M.material.B.ramp.mix > 0 &&
+    // his own preset (2026-09-21) switches the inner COLOUR noise off and
+    // leans on the ramp instead (mix 0.34) — the ramp is the inner surface's
+    // treatment, the colour noise was never the point of this check
+    innerRamp: M.material.B.colorNoise.enabled === false && M.material.B.ramp.mix > 0 &&
                M.material.B.rampNoise.type === 'Gaseous' && M.material.B.relief.enabled === false,
     reliefOn: M.material.A.relief.enabled,
     hdr: b.hdr.state,
@@ -369,7 +373,10 @@ console.log('boot:', {
 // ── the opening act: one line with the bowl in the middle of it ─────────
 await page.evaluate(() => scrollTo(0, 0))
 await page.evaluate(() => window.__was.playHero())
-await wait(3200)
+// 3.8s, not 3.2: the opening is ~3.1s of GSAP wall-clock (the bowl's delay
+// and rise, then "to / practice"), and under load a frame or two short of
+// it read the right half at 0.9 — a flake, not a finding
+await wait(3800)
 const heroState = await page.evaluate(() => window.__was.state)
 const introDom = await page.evaluate(() => {
   const el = document.querySelector('.was-hero-half.is-a')
@@ -893,10 +900,14 @@ const layout = await page.evaluate(() => {
   return {
     navFixed: getComputedStyle(nav).position,
     navChips: document.querySelectorAll('.was-nav .was-chip').length,
-    // the SEARCH sits on the viewport's own centre line
-    navSearchCentred: (() => {
-      const r = document.querySelector('.was-search').getBoundingClientRect()
-      return Math.abs(r.left + r.width / 2 - innerWidth / 2) < 3
+    // the links follow the logo (2026-09-21 — two bars, hover dropdowns);
+    // the search and the button are the right-hand cluster
+    navLinks: [...document.querelectorAll?.('.was-nav-link') || document.querySelectorAll('.was-nav-link')].map((a) => a.textContent),
+    navLinksAfterLogo: (() => {
+      const logo = document.querySelector('.was-logo').getBoundingClientRect()
+      const first = document.querySelector('.was-nav-link').getBoundingClientRect()
+      const search = document.querySelector('.was-search').getBoundingClientRect()
+      return first.left > logo.right + 40 && search.left > first.right && search.left > innerWidth * 0.55
     })(),
     navCta: document.querySelector('.was-cta')?.textContent || '',
     navSearchBowl: !!document.querySelector('.was-search .was-search-bowl'),
@@ -1091,8 +1102,10 @@ const v1Act = await page.evaluate(() => {
     canvases: document.querySelectorAll('.was-bowl-canvas').length,
   }
 })
-// a REAL keypress: the switch has to work from the keyboard
-await page.keyboard.press('2')
+// version TWO, by hand — the 1/2 keys are the two EXPERIENCES now (2026-09-21,
+// asserted in their own block near the end); the legacy versions are the
+// panel's dropdown, which is what `setVariant` is
+await page.evaluate(() => window.__was.setVariant(2))
 await wait(900)
 const v2On = await page.evaluate(() => {
   const s = window.__was.state
@@ -1322,7 +1335,8 @@ const netStruct = await page.evaluate(() => {
 })
 
 // V1: the network must not exist there at all, and the sphere box is back
-await page.keyboard.press('1')
+// (by hand — the 1/2 keys are the two experiences now, 2026-09-21)
+await page.evaluate(() => window.__was.setVariant(1))
 await wait(700)
 const netV1 = await page.evaluate(() => {
   const el = document.getElementById('networkBox')
@@ -1331,7 +1345,7 @@ const netV1 = await page.evaluate(() => {
     canvasHidden: document.getElementById('canvasLayer').hidden,
   }
 })
-await page.keyboard.press('2')
+await page.evaluate(() => window.__was.setVariant(2))
 await wait(700)
 
 // the sphere fallback still works — flip `network.show` off WITHOUT touching
@@ -1360,7 +1374,7 @@ await page.evaluate(() => { window.__was.cfg.v2.network.show = true; window.__wa
 await wait(300)
 
 // ...and 1 puts V1 back, exactly as it was
-await page.keyboard.press('1')
+await page.evaluate(() => window.__was.setVariant(1))
 await wait(900)
 const v1Back = await page.evaluate(() => {
   const s = window.__was.state
@@ -1897,6 +1911,135 @@ const v5 = await page.evaluate(async () => {
 })
 console.log('V5:', JSON.stringify(v5, null, 1))
 
+// ── le due ESPERIENZE (sua richiesta, 2026-09-21 — la task finale) ─────────
+// 1 = la pagina della V4 su BIANCO, senza shader, inchiostro nero; 2 = lo
+// shader, l'outro della V5, poi i TRE cerchi (alto-destra, basso, alto-
+// sinistra) con gli archi, e l'Atlas che si disegna sopra. Tasti 1 e 2.
+const exp = await page.evaluate(async () => {
+  const pause = (ms) => new Promise((r) => setTimeout(r, ms))
+  const W = window.__was
+  const cs = (el) => getComputedStyle(el)
+  const body = () => document.body.classList
+  const out = {}
+  // ── 1 ──
+  W.setExperience(1); await pause(700)
+  out.e1 = {
+    experience: W.experience, variant: W.cfg.variant, paper: W.paperOn(), trio: W.trioOn(),
+    isPaper: body().contains('is-paper'), isExp1: body().contains('is-exp1'), isV4: body().contains('is-v4'),
+    pageBg: cs(document.body).backgroundColor, bar: W.scrollBar.probe().color,
+    nav: W.nav.probe(), atlasHost: W.atlasHost, pinCHidden: document.getElementById('pinC').hidden,
+    trioHidden: document.getElementById('trioBox').hidden, networkHidden: document.getElementById('networkBox').hidden,
+  }
+  // the ground would open at 0.4 of act two — on the white page it never does
+  W.scrollToUntil(0.9); await pause(1400)
+  out.e1until = { ground: W.ground.probe(), isGround: body().contains('is-ground'), groundDisplay: cs(document.querySelector('.was-ground')).display,
+    ink: cs(document.querySelector('.was-nav-link')).color, blockInk: cs(document.querySelector('.was-v2-block')).color }
+  W.scrollToStep(1, 0.5); await pause(1200)
+  out.e1ring = { isGround: body().contains('is-ground'), bar: W.scrollBar.probe(), copyInk: cs(document.querySelector('.was-copy-box.is-act .was-copy') || document.body).color,
+    stageABg: cs(document.getElementById('stageA')).backgroundColor, bodyBg: cs(document.body).backgroundColor, groundOn: W.ground.probe().on }
+  W.scrollToStep(4, 0.5); await pause(900)
+  out.e1globe = { networkHidden: document.getElementById('networkBox').hidden, networkOn: W.state.v2.network.on }
+  W.scrollTo(0); window.scrollTo(0, 0); await pause(600)
+  // ── 2 ──
+  W.setExperience(2); await pause(900)
+  out.e2 = {
+    experience: W.experience, variant: W.cfg.variant, trio: W.trioOn(), paper: W.paperOn(),
+    isTrio: body().contains('is-trio'), isV5: body().contains('is-v5'), isExp2: body().contains('is-exp2'), isPaper: body().contains('is-paper'),
+    nav: W.nav.probe(), atlasHost: W.atlasHost, atlas: W.atlas.probe(), pinCHidden: document.getElementById('pinC').hidden,
+    trioHidden: document.getElementById('trioBox').hidden, circlesHidden: document.getElementById('circlesBox').hidden,
+    stageBg: cs(document.getElementById('stageB')).backgroundColor,
+    blockVh: W.cfg.steps.slice(3).reduce((a, s) => a + s.vh, 0), pageBg: cs(document.body).backgroundColor,
+    cardsHidden: cs(document.getElementById('atlasCards')).display === 'none',
+    cardT: W.atlasState.cards.items.map((i) => ({ title: i.title, t: +i.t.toFixed(4) })),
+  }
+  // the shader is back: act two opens it, the ring act stands on it, the nav goes light
+  W.scrollToStep(1, 0.5); await pause(1400)
+  out.e2ring = { isGround: body().contains('is-ground'), groundOn: W.ground.probe().on, link: cs(document.querySelector('.was-nav-link')).color, pill: cs(document.querySelector('.was-nav-pill')).color }
+  // the block's own 0→1
+  const go = async (f) => { const tl = W.tl; W.scrollTo(tl.canvasS0 + f * (tl.canvasS1 - tl.canvasS0)); await pause(900) }
+  const snap = () => ({ ...W.trio.probe(), wire: W.bowl.wireframe, bowlHidden: W.bowl.hidden, sheet: W.bowl.sheet, sheetColor: W.bowl.sheetColor, atlas: W.atlas.probe(), cardsDisplay: cs(document.getElementById('atlasCards')).display,
+    titleAlpha: +cs(document.querySelector('.was-atlas-h')).opacity })
+  { const tl = W.tl; W.scrollTo(tl.actS1 + 0.5 * (tl.canvasS0 - tl.actS1)); await pause(900); out.outro = { ground: W.ground.probe(), sheet: W.bowl.sheet, drawn: W.trio.probe().draw } }
+  const M = W.cfg.v2.trio.marks
+  await go(M.wire * 0.7);                 out.b1 = snap()   // the lattice, alone
+  await go((M.wire + M.c1) / 2 + 0.03);   out.b2 = snap()   // top-right drawing
+  await go(M.c1 + 0.005);                 out.b2end = snap()
+  await go((M.c1 + M.c2) / 2 + 0.03);     out.b3 = snap()   // the bottom one
+  await go((M.c2 + M.c3) / 2 + 0.03);     out.b4 = snap()   // top-left
+  await go(M.arcs - 0.002);               out.b5 = snap()   // the arcs, the side labels
+  await go(M.knot + 0.02);                out.b6 = snap()   // the knot begins
+  await go((M.knot + 1) / 2);             out.b7 = snap()
+  await go(0.995);                        out.b8 = snap()   // the Atlas, complete, over the circles
+  await go(M.wire * 0.7);                 out.back = snap()  // ...and back: un-drawn, the Atlas asleep
+  // ── the keys ──
+  const key = (k) => window.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }))
+  W.scrollTo(0); window.scrollTo(0, 0); await pause(400)
+  key('1'); await pause(600); out.key1 = { experience: W.experience, variant: W.cfg.variant, mode: W.nav.probe().mode, paper: body().contains('is-paper') }
+  key('2'); await pause(600); out.key2 = { experience: W.experience, variant: W.cfg.variant, mode: W.nav.probe().mode, trio: body().contains('is-trio') }
+  key('5'); await pause(300); out.key5 = { experience: W.experience, variant: W.cfg.variant }
+  // a legacy version by hand stands both down
+  W.setVariant(5); await pause(600)
+  out.legacy5 = { experience: W.experience, trio: W.trioOn(), circlesHidden: document.getElementById('circlesBox').hidden, trioHidden: document.getElementById('trioBox').hidden, atlasHost: W.atlasHost, cardT: W.atlasState.cards.items.map((i) => +i.t.toFixed(4)), transparent: W.atlas.probe().transparent }
+  W.setVariant(1); await pause(600)
+  return out
+})
+console.log('EXPERIENCES:', JSON.stringify({ e1: exp.e1, e1until: exp.e1until, e1ring: exp.e1ring, e2: { ...exp.e2, nav: undefined, atlas: undefined }, e2ring: exp.e2ring, key1: exp.key1, key2: exp.key2, key5: exp.key5, legacy5: exp.legacy5 }, null, 1))
+console.log('TRIO frames:', JSON.stringify({ b1: exp.b1.draw, b2: exp.b2.draw, b3: exp.b3.draw, b4: exp.b4.draw, b5: exp.b5.draw,
+  b6: { knot: exp.b6.knotQ, atlas: exp.b6.atlas.progress, active: exp.b6.atlas.active, paper: exp.b6.paper, sheet: exp.b6.sheetColor, bowlOut: exp.b6.bowlOut, bowlHidden: exp.b6.bowlHidden, gone: exp.b6.text.gone, title: exp.b6.titleAlpha },
+  b7: { atlas: exp.b7.atlas.progress, cards: exp.b7.atlas.cards }, b8: { knot: exp.b8.knotQ, atlas: exp.b8.atlas.progress, seal: exp.b8.atlas.seal, cards: exp.b8.atlas.cards, paper: exp.b8.paper, under: exp.b8.under, cardsDisplay: exp.b8.cardsDisplay },
+  back: { draw: exp.back.draw, active: exp.back.atlas.active, paper: exp.back.paper, bowlHidden: exp.back.bowlHidden, knot: exp.back.knotQ }, outro: exp.outro }))
+
+// ── the nav's hover dropdowns (2026-09-21) — a real pointer, on the real bar ──
+// CLEAN first: the Titles panel docks at 12px and the V panel beside it, both
+// at z 40 over the bar — a pointer aimed at "Discover" would land on a panel
+await page.evaluate(() => { window.__was.setClean(true); window.__was.setExperience(1); window.scrollTo(0, 0) })
+await wait(700)
+const navAt = (sel) => page.evaluate((s) => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 } }, sel)
+const navProbe = () => page.evaluate(() => window.__was.nav.probe())
+const navHover = {}
+navHover.before = await navProbe()
+await page.mouse.move(...Object.values(await navAt('.was-nav-item[data-key="discover"] .was-nav-link')))
+await wait(160)
+navHover.opening = await navProbe()          // just past `openDelay`: open, still arriving
+await wait(900)
+navHover.open = await navProbe()             // the card, fully open, its rows lit
+const rowPos = await navAt('.was-menu-row[data-sub="techniques"]')
+navHover.rowUnder = await page.evaluate(({ x, y }) => { const el = document.elementFromPoint(x, y); const m = document.querySelector('.was-nav-item[data-key="discover"] .was-menu'); return { tag: el?.tagName, cls: el?.className, vis: getComputedStyle(m).visibility, op: getComputedStyle(m).opacity, active: document.activeElement?.tagName } }, rowPos)
+await page.mouse.move(rowPos.x, rowPos.y, { steps: 4 })
+await wait(1200)
+navHover.techniques = await navProbe()       // the wide panel beside it, the directory listed
+await page.mouse.move(...Object.values(await navAt('.was-menu-row[data-sub="benefits"]')))
+await wait(900)
+navHover.benefits = await navProbe()         // the same panel, re-listed
+await page.mouse.move(700, 600)
+await wait(900)
+navHover.left = await navProbe()             // gone
+await page.mouse.move(...Object.values(await navAt('.was-nav-item[data-key="about"] .was-nav-link')))
+await wait(900)
+navHover.about = await navProbe()
+await page.mouse.move(700, 600)
+await wait(700)
+// bar 2, the same on navHover, over the shader
+await page.evaluate(() => { window.__was.setExperience(2); window.__was.scrollToStep(1, 0.5) })
+await wait(1400)
+await page.mouse.move(...Object.values(await navAt('.was-nav-item[data-key="discover"] .was-nav-link')))
+await wait(900)
+navHover.bar2 = await navProbe()
+navHover.bar2Card = await page.evaluate(() => { const cs = getComputedStyle(document.querySelector('.was-nav-item[data-key="discover"] .was-menu')); return { bg: cs.backgroundColor, ink: getComputedStyle(document.querySelector('.was-nav-item[data-key="discover"] .was-menu-row')).color } })
+await page.mouse.move(700, 600)
+await wait(700)
+await page.evaluate(() => { window.__was.setVariant(1); window.scrollTo(0, 0) })
+await wait(600)
+console.log('NAV navHover:', JSON.stringify({
+  rowUnder: navHover.rowUnder,
+  opening: { open: navHover.opening.items.discover.open, fully: navHover.opening.items.discover.fullyOpen },
+  open: { fully: navHover.open.items.discover.fullyOpen, rows: navHover.open.items.discover.rowAlphas },
+  techniques: navHover.techniques.items.discover.mega, benefits: { sub: navHover.benefits.items.discover.mega.sub, title: navHover.benefits.items.discover.mega.title, count: navHover.benefits.items.discover.mega.count },
+  left: { open: navHover.left.items.discover.open, visible: navHover.left.items.discover.visible, mega: navHover.left.items.discover.mega.visible },
+  about: { fully: navHover.about.items.about.fullyOpen, rows: navHover.about.items.about.rows, icon: navHover.about.items.about.hasIcon },
+  bar2: { mode: navHover.bar2.mode, fully: navHover.bar2.items.discover.fullyOpen, icon: navHover.bar2.items.discover.hasIcon, card: navHover.bar2Card },
+}))
+
 // il boot vero, senza toccare nulla (sua richiesta, 2026-09-18): V4 di
 // default, pannelli nascosti finché non premo "c"
 await page.reload({ waitUntil: 'networkidle2', timeout: 45000 })
@@ -1909,6 +2052,15 @@ const freshBoot = await page.evaluate(() => {
     isV4: document.body.classList.contains('is-v4'),
     clean: W.state.clean,
     panelsHidden: [...document.querySelectorAll('.was-panel')].every((e) => getComputedStyle(e).display === 'none'),
+    // ...and it is EXPERIENCE 1 (2026-09-21): the white page, bar 1, no shader
+    experience: W.experience,
+    isPaper: document.body.classList.contains('is-paper'),
+    navMode: W.nav.probe().mode,
+    navCta: W.nav.probe().cta,
+    pageBg: getComputedStyle(document.body).backgroundColor,
+    groundDisplay: getComputedStyle(document.querySelector('.was-ground')).display,
+    // his bowl JSON, merged over the defaults (2026-09-21)
+    bowl: { aRough: W.cfg.bowl.material.A.roughness, aRelief: W.cfg.bowl.material.A.relief.strength, bMetal: W.cfg.bowl.material.B.metalness, bSide: W.cfg.bowl.material.B.side, bRampMix: W.cfg.bowl.material.B.ramp.mix, preset: W.cfg.bowl.studio.preset },
   }
 })
 console.log('freshBoot:', freshBoot)
@@ -1994,9 +2146,11 @@ const checks = [
     introDom.isIntro && introDom.inPlace && introDom.rise === 0],
   ['il paragrafo hero c’è appena atterri, e non sparisce nel nulla',
     heroState.hero.para > 0.95 && heroScrolled.hero.para > 0.95],
-  ['nav: niente pills, la ricerca al CENTRO e un solo bottone a destra',
+  ['nav: niente pills; il logo, poi i cinque link della barra 1, poi la ricerca e UN bottone nero a destra ' +
+   '(2026-09-21 — la barra segue l\'esperienza)',
     layout.navFixed === 'fixed' && layout.navSearchBowl && layout.navChips === 0 &&
-    layout.navSearchCentred && layout.navCta === HERO_CFG.nav.cta && layout.navOnRight],
+    layout.navLinks.length === 5 && layout.navLinksAfterLogo &&
+    layout.navCta === NAV_CFG.one.cta && layout.navOnRight],
   // ── act two ──────────────────────────────────────────────────────────
   ['atto 2: il titolo a sinistra e "Until now" a destra, ALLA STESSA ALTEZZA',
     beatBox.sticky === 'sticky' && beatBox.leftSide && beatBox.rightSide &&
@@ -2024,7 +2178,8 @@ const checks = [
   // ── V2 — the ring act (keyboard 2) ───────────────────────────────────
   ['niente più banda sotto la navbar: lo sfondo è trasparente',
     v2Z.navBand === 0 && HERO_CFG.nav.fade === 0],
-  ['2 e 1 cambiano versione dalla tastiera, e V1 torna identica',
+  ['2 e 1 cambiano versione LEGACY (setVariant — il dropdown del pannello; la tastiera è delle due ' +
+   'esperienze ora), e V1 torna identica',
     v2On.on && v2On.body && v2On.act === 'v2' &&
     v1Back.act === 'until' && v1Back.canvasFrom === 0 && !v1Back.canvasInB &&
     !v1Back.boxed && !v1Back.leftAHidden && v1Back.untilVh === 200 &&
@@ -2845,6 +3000,116 @@ const checks = [
   ['...e "c" li RIAPRE TUTTI e tre — Titles, Bowl e V — non solo il V (suo report, 2026-09-21: ' +
    '"il control panel della bowl che ancora non vedo"), e premuto di nuovo li nasconde tutti',
     panelsOpen.total === 3 && panelsOpen.shown === 3 && panelsOpen.hiddenAgain === true],
+
+  // ── le due ESPERIENZE (sua richiesta, 2026-09-21 — la task finale) ─────────
+  ['ESPERIENZA 1 = la struttura della V4 (variant 4, is-v4) su una pagina BIANCA — body bianco, ' +
+   'classe is-paper/is-exp1, la rete in scena, l\'Atlas spento e nessun trio',
+    exp.e1.experience === 1 && exp.e1.variant === 4 && exp.e1.isV4 && exp.e1.paper && exp.e1.isPaper && exp.e1.isExp1 &&
+    exp.e1.pageBg === 'rgb(255, 255, 255)' && exp.e1.trio === false && exp.e1.trioHidden && exp.e1.pinCHidden && exp.e1.atlasHost === 'stageC'],
+  ['...SENZA lo shader: a 0.9 dell\'atto due — ben oltre il suo mark a 0.4 — il ground non si è aperto ' +
+   '(open 0, on false, canvas nascosto), la pagina non è mai `is-ground`, e i testi restano NERI',
+    exp.e1until.ground.open === 0 && exp.e1until.ground.on === false && exp.e1until.groundDisplay === 'none' &&
+    exp.e1until.isGround === false && exp.e1until.ink === 'rgb(10, 10, 10)' && exp.e1until.blockInk === 'rgb(10, 10, 10)'],
+  ['...il ring act sta sul bianco: stage A trasparente sul body bianco, copy in inchiostro, ground spento, ' +
+   'e la scroll bar è NERA (una barra bianca su una pagina bianca non è una barra)',
+    exp.e1ring.isGround === false && exp.e1ring.groundOn === false && exp.e1ring.bodyBg === 'rgb(255, 255, 255)' &&
+    exp.e1ring.copyInk === 'rgb(10, 10, 10)' && exp.e1ring.bar.color === 'rgb(10, 10, 10)' && exp.e1ring.bar.alpha > 0.9 &&
+    exp.e1.bar === 'rgb(10, 10, 10)' && exp.e1globe.networkOn === true && exp.e1globe.networkHidden === false],
+  ['...e la barra 1: Discover · Become a teacher · Clinical Resources · Research · About, la ricerca, "Log In"; ' +
+   'Discover e About hanno la tendina (con icona e puntino), le altre no',
+    exp.e1.nav.mode === 1 && exp.e1.nav.links.join('|') === 'Discover|Become a teacher|Clinical Resources|Research|About' &&
+    exp.e1.nav.cta === 'Log In' && exp.e1.nav.pill === '' && exp.e1.nav.searchBowl &&
+    Object.keys(exp.e1.nav.items).join('|') === 'discover|about' && exp.e1.nav.items.discover.hasIcon && exp.e1.nav.items.about.hasIcon &&
+    exp.e1.nav.items.discover.rows.join('|') === 'Techniques|Teachers|Benefits' && exp.e1.nav.items.about.rows.join('|') === 'Mission|Research|Newsroom|Blog'],
+  ['ESPERIENZA 2 = la V5 (variant 5, is-v5) con il TRIO al posto dei due cerchi: is-trio/is-exp2, niente ' +
+   'pagina bianca, stage B trasparente, il box dei cerchi di V5 nascosto e quello del trio in scena',
+    exp.e2.experience === 2 && exp.e2.variant === 5 && exp.e2.trio && exp.e2.isTrio && exp.e2.isV5 && exp.e2.isExp2 &&
+    exp.e2.paper === false && exp.e2.isPaper === false && exp.e2.stageBg === 'rgba(0, 0, 0, 0)' &&
+    exp.e2.trioHidden === false && exp.e2.circlesHidden === true && exp.e2.pageBg !== 'rgb(255, 255, 255)'],
+  ['...lo shader c\'è: sul ring act il ground è aperto, la pagina è `is-ground` e la barra 2 va in chiaro ' +
+   '(link e pill color avorio)',
+    exp.e2ring.isGround === true && exp.e2ring.groundOn === true && exp.e2ring.link !== 'rgb(10, 10, 10)' && exp.e2ring.pill === exp.e2ring.link],
+  ['...la barra 2: Discover · About · Become a teacher, "For therapists" a contorno, la ricerca, "Get the app" — ' +
+   'stesse tendine, senza icone',
+    exp.e2.nav.mode === 2 && exp.e2.nav.links.join('|') === 'Discover|About|Become a teacher' &&
+    exp.e2.nav.pill === 'For therapists' && exp.e2.nav.cta === 'Get the app' &&
+    exp.e2.nav.items.discover.hasIcon === false && exp.e2.nav.items.discover.rows.length === 3],
+  ['...l\'Atlas si è TRASFERITO nella stage B, trasparente, con #pinC nascosto; il blocco dura `blockVh` (720) ' +
+   'e le card sono RISEDUTE sui lobi sotto i propri cerchi (Members alto-dx t=1/6, Therapists basso t=1/2, ' +
+   'la library alto-sx t=5/6) — prima del knot le card non si vedono',
+    exp.e2.atlasHost === 'stageB' && exp.e2.atlas.transparent === true && exp.e2.pinCHidden === true && exp.e2.blockVh === 720 &&
+    exp.e2.cardsHidden === true &&
+    exp.e2.cardT.find((c) => /member/i.test(c.title)).t === 0.1667 && exp.e2.cardT.find((c) => /therap/i.test(c.title)).t === 0.5 &&
+    exp.e2.cardT.find((c) => /librar/i.test(c.title)).t === 0.8333],
+  ['...l\'outro è quello della V5: a metà handover lo shader è a metà raggio (ancora acceso), il bianco a metà, ' +
+   'e nessun cerchio è ancora disegnato',
+    exp.outro.ground.on === true && Math.abs(exp.outro.ground.close - 0.5) < 0.05 && Math.abs(exp.outro.sheet - 0.5) < 0.05 &&
+    exp.outro.drawn.tr === 0 && exp.outro.drawn.b === 0 && exp.outro.drawn.tl === 0],
+  ['il trio, beat 1: la bowl (a 0.6, la sua posa per questo blocco) diventa reticolo da sola — mix > 0, ' +
+   'nessun cerchio, i cerchi sono FITTATI sui lobi del knot (source knot), due in alto allo stesso livello ' +
+   'e uno in basso, alto-destra a destra di alto-sinistra, senza sovrapporsi',
+    exp.b1.stage === 1 && exp.b1.wire.mix > 0.3 && exp.b1.draw.tr === 0 && exp.b1.draw.b === 0 && exp.b1.draw.tl === 0 &&
+    exp.b1.source === 'knot' && exp.b1.shape.topPairLevel && exp.b1.shape.trRightOfTl && exp.b1.shape.bottomLowest && exp.b1.shape.noOverlap &&
+    exp.b1.circles.tr.r > 60 && exp.b1.atlas.active === false && exp.b1.cardsDisplay === 'none'],
+  ['...beat 2: il cerchio in ALTO A DESTRA si disegna per primo (path reveal: drive e dashoffset del DOM ' +
+   'concordano, gli altri due a 0), e a fine finestra è intero con la sua didascalia',
+    exp.b2.stage === 2 && exp.b2.draw.tr > 0.3 && exp.b2.draw.tr < 1 && Math.abs(exp.b2.dom.tr - exp.b2.draw.tr) < 0.01 &&
+    exp.b2.draw.b === 0 && exp.b2.draw.tl === 0 && exp.b2end.draw.tr === 1 && exp.b2end.text.tr === 1],
+  ['...beat 3: quello in BASSO; beat 4: quello in ALTO A SINISTRA — nell\'ordine che ha chiesto, ognuno ' +
+   'mentre i precedenti restano interi',
+    exp.b3.stage === 3 && exp.b3.draw.tr === 1 && exp.b3.draw.b > 0.3 && exp.b3.draw.b < 1 && exp.b3.draw.tl === 0 &&
+    exp.b4.stage === 4 && exp.b4.draw.tr === 1 && exp.b4.draw.b === 1 && exp.b4.draw.tl > 0.3 && exp.b4.draw.tl < 1],
+  ['...beat 5: i tre ARCHI grandi (centrati su un cerchio, per gli altri due) sono disegnati e "in the field" / ' +
+   '"on platform" sono arrivati; la carta comincia a scaldarsi verso quella dell\'Atlas',
+    exp.b5.draw.arcs.every((a) => a > 0.98) && exp.b5.dom.arc0 > 0.98 && exp.b5.text.side > 0.95 && exp.b5.arcR > exp.b5.circles.tr.r * 1.5 &&
+    exp.b5.paper > 0.3 && exp.b5.sheetColor !== ''],
+  ['...beat 6: il knot COMINCIA sopra i cerchi — l\'Atlas attivo e trasparente, progress > 0, la carta è la sua ' +
+   '(#EEE9E2), il reticolo della bowl se n\'è andato e la bowl è ferma, le didascalie stanno uscendo',
+    exp.b6.atlas.active === true && exp.b6.atlas.transparent === true && exp.b6.atlas.progress > 0 && exp.b6.atlas.progress < 0.2 &&
+    exp.b6.paper === 1 && exp.b6.sheetColor === 'rgb(238, 233, 226)' && exp.b6.bowlOut === 1 && exp.b6.bowlHidden === true &&
+    exp.b6.text.gone > 0 && exp.b6.titleAlpha > 0.5],
+  ['...beat 7-8: il knot si disegna (progress a metà, poi ~1 con seal), le TRE card arrivano nell\'ordine del ' +
+   'fronte (prima Members e Therapists, poi la library), e i cerchi restano sotto a `circlesUnder`',
+    exp.b7.atlas.progress > 0.4 && exp.b7.atlas.progress < 0.6 && exp.b7.atlas.cards[1] === 1 && exp.b7.atlas.cards[2] > 0.9 && exp.b7.atlas.cards[0] < 0.5 &&
+    exp.b8.atlas.progress > 0.97 && exp.b8.atlas.seal > 0.5 && exp.b8.atlas.cards.every((c) => c === 1) &&
+    Math.abs(exp.b8.under - 0.55) < 0.02 && exp.b8.cardsDisplay !== 'none'],
+  ['...e tornando su tutto si RI-DISEGNA al contrario: nessun cerchio, l\'Atlas dorme, la carta è bianca, ' +
+   'la bowl è di nuovo lì — pura funzione dello scroll',
+    exp.back.draw.tr === 0 && exp.back.draw.b === 0 && exp.back.draw.tl === 0 && exp.back.atlas.active === false &&
+    exp.back.paper === 0 && exp.back.bowlHidden === false && exp.back.knotQ === 0],
+  ['i tasti: "1" → esperienza 1 (V4, bianco, barra 1), "2" → esperienza 2 (V5, trio, barra 2), "5" non fa più ' +
+   'nulla; una versione LEGACY scelta a mano (setVariant 5) fa stare giù sia il trio che il bianco: i due ' +
+   'cerchi di V5 tornano, l\'Atlas torna in #pinC opaco con le card del preset (1/6, 1/2, 5/6)',
+    exp.key1.experience === 1 && exp.key1.variant === 4 && exp.key1.mode === 1 && exp.key1.paper === true &&
+    exp.key2.experience === 2 && exp.key2.variant === 5 && exp.key2.mode === 2 && exp.key2.trio === true &&
+    exp.key5.experience === 2 && exp.key5.variant === 5 &&
+    exp.legacy5.experience === 0 && exp.legacy5.trio === false && exp.legacy5.circlesHidden === false && exp.legacy5.trioHidden === true &&
+    exp.legacy5.atlasHost === 'stageC' && exp.legacy5.transparent === false && exp.legacy5.cardT.join(',') === '0.1667,0.5,0.8333'],
+  // ── the nav's hover dropdowns (2026-09-21) ──────────────────────────────
+  ['nav ON HOVER: fermo su Discover la tendina si apre — dopo il delay è aperta ma ancora in arrivo, poi è ' +
+   'INTERA (clip-path aperto, opacità 1) con le tre righe tutte a 1',
+    navHover.before.items.discover.open === false && navHover.opening.items.discover.open === true && navHover.opening.items.discover.fullyOpen === false &&
+    navHover.open.items.discover.fullyOpen === true && navHover.open.items.discover.rowAlphas.every((a) => a === 1)],
+  ['...su "Techniques" si apre la SECONDA tendina, molto più larga, di fianco alla card (a destra, a `gap` px), ' +
+   'con il titolo e 24 categorie del direttorio vero tutte arrivate; su "Benefits" la stessa tendina si RI-ELENCA',
+    navHover.techniques.items.discover.mega.fullyOpen === true && navHover.techniques.items.discover.mega.sub === 'techniques' &&
+    navHover.techniques.items.discover.mega.title === 'Techniques' && navHover.techniques.items.discover.mega.count === 24 &&
+    navHover.techniques.items.discover.mega.alphas.every((a) => a === 1) && navHover.techniques.items.discover.mega.width >= 600 &&
+    Math.abs(navHover.techniques.items.discover.mega.left - NAV_CFG.gap) <= 2 &&
+    navHover.benefits.items.discover.mega.sub === 'benefits' && navHover.benefits.items.discover.mega.title === 'Benefits' && navHover.benefits.items.discover.mega.count === 20],
+  ['...lasciando la barra tutto si richiude (card e tendina larga invisibili); su About la sua card: Mission · ' +
+   'Research · Newsroom · Blog, con l\'icona; nella barra 2, sullo shader, la card resta BIANCA con inchiostro nero',
+    navHover.left.items.discover.open === false && navHover.left.items.discover.visible === false && navHover.left.items.discover.mega.visible === false &&
+    navHover.about.items.about.fullyOpen === true && navHover.about.items.about.rows.join('|') === 'Mission|Research|Newsroom|Blog' && navHover.about.items.about.hasIcon &&
+    navHover.bar2.mode === 2 && navHover.bar2.items.discover.fullyOpen === true && navHover.bar2.items.discover.hasIcon === false &&
+    navHover.bar2Card.bg === 'rgb(255, 255, 255)' && navHover.bar2Card.ink === 'rgb(10, 10, 10)'],
+  ['il boot vero è l\'ESPERIENZA 1: pagina bianca, barra 1 con "Log In", ground spento — e la bowl ha i SUOI ' +
+   'valori (il JSON, 2026-09-21): shell esterna roughness 0.555 con rilievo 0.0065, interno metalness 0.97, ' +
+   'single-sided, ramp 0.34, studio "Studio warm"',
+    freshBoot.experience === 1 && freshBoot.isPaper === true && freshBoot.navMode === 1 && freshBoot.navCta === 'Log In' &&
+    freshBoot.pageBg === 'rgb(255, 255, 255)' && freshBoot.groundDisplay === 'none' &&
+    freshBoot.bowl.aRough === 0.555 && freshBoot.bowl.aRelief === 0.0065 && freshBoot.bowl.bMetal === 0.97 &&
+    freshBoot.bowl.bSide === 'front' && freshBoot.bowl.bRampMix === 0.34 && freshBoot.bowl.preset === 'Studio warm'],
 ]
 console.log('\n— checks —')
 for (const [label, ok] of checks) console.log(`${ok ? 'OK ' : 'KO '} ${label}`)

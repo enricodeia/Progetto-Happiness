@@ -5,6 +5,9 @@ import {
   Box3,
   Color,
   DirectionalLight,
+  Euler,
+  Matrix4,
+  Quaternion,
   NeutralToneMapping,
   NoToneMapping,
   PCFSoftShadowMap,
@@ -56,8 +59,12 @@ export const ATLAS_STATE = mergeState(cloneState(DEFAULTS), PRESET);
 export function createAtlas({ mount, cardsMount, state = ATLAS_STATE }) {
   const st = state;
 
-  const renderer = new WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
-  renderer.setClearAlpha(1);
+  // `alpha: true` (2026-09-21): Experience 2 draws the knot OVER the three
+  // circles, so the canvas has to be see-through there. It costs nothing when
+  // the section paints its own paper — the clear colour is opaque then.
+  const renderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+  renderer.setClearColor(new Color(st.scene.background), 1);
+  let transparent = false;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = PCFSoftShadowMap;
   renderer.domElement.className = "was-atlas-canvas";
@@ -161,7 +168,57 @@ export function createAtlas({ mount, cardsMount, state = ATLAS_STATE }) {
       const { w, h } = api.size;
       return { x: ((p.x + 1) / 2) * w, y: ((1 - p.y) / 2) * h };
     },
+    /**
+     * The three lobes as circles on screen (Experience 2, 2026-09-21): for
+     * each lobe, the outer stretch of the curve around its vertex — `span` of
+     * the parameter either side of it — projected through this camera at the
+     * knot's REST pose (the pointer lean left out, or the circles would
+     * wobble with the mouse), then the least-squares circle through those
+     * points (Kåsa's fit: linear in the circle's own equation). In mount
+     * pixels, with the vertex parameter so a card can be seated on it.
+     */
+    lobeCircles(span = 0.11) {
+      if (!knot.curve || !knot.stats) return null;
+      const o = st.object;
+      const rest = new Matrix4().compose(
+        knot.group.position,
+        new Quaternion().setFromEuler(new Euler(o.rotX * DEG, o.rotY * DEG, o.rotZ * DEG)),
+        new Vector3(o.scale, o.scale, o.scale)
+      );
+      camera.updateMatrixWorld(true);
+      const [cx0, cy0, cz0] = knot.stats.centre;
+      const { w, h } = api.size;
+      const v = new Vector3();
+      const out = [];
+      const N = 40;
+      for (let k = 0; k < 3; k++) {
+        const tk = (2 * k + 1) / 6;
+        let sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0, sxz = 0, syz = 0, sz = 0;
+        for (let i = 0; i <= N; i++) {
+          const t = tk - span + (2 * span * i) / N;
+          const p = knot.curve.getPoint(((t % 1) + 1) % 1);
+          v.set(p.x - cx0, p.y - cy0, p.z - cz0).applyMatrix4(rest).project(camera);
+          const x = ((v.x + 1) / 2) * w, y = ((1 - v.y) / 2) * h;
+          const z = x * x + y * y;
+          sx += x; sy += y; sxx += x * x; syy += y * y; sxy += x * y; sxz += x * z; syz += y * z; sz += z;
+        }
+        const n = N + 1;
+        // normal equations for x² + y² + A·x + B·y + C = 0
+        const a11 = sxx, a12 = sxy, a13 = sx, a22 = syy, a23 = sy, a33 = n;
+        const b1 = -sxz, b2 = -syz, b3 = -sz;
+        const det = a11 * (a22 * a33 - a23 * a23) - a12 * (a12 * a33 - a23 * a13) + a13 * (a12 * a23 - a22 * a13);
+        if (Math.abs(det) < 1e-9) return null;
+        const A = (b1 * (a22 * a33 - a23 * a23) - a12 * (b2 * a33 - a23 * b3) + a13 * (b2 * a23 - a22 * b3)) / det;
+        const B = (a11 * (b2 * a33 - a23 * b3) - b1 * (a12 * a33 - a23 * a13) + a13 * (a12 * b3 - b2 * a13)) / det;
+        const C = (a11 * (a22 * b3 - b2 * a23) - a12 * (a12 * b3 - b2 * a13) + b1 * (a12 * a23 - a22 * a13)) / det;
+        const cx = -A / 2, cy = -B / 2;
+        const r = Math.sqrt(Math.max(0, cx * cx + cy * cy - C));
+        out.push({ k, t: tk, cx, cy, r });
+      }
+      return out;
+    },
   };
+  const DEG = Math.PI / 180;
 
   const syncCards = createCards(cardsMount, st, api);
 
@@ -193,7 +250,14 @@ export function createAtlas({ mount, cardsMount, state = ATLAS_STATE }) {
   function applySceneSettings() {
     const s = st.scene;
     const l = st.light;
-    scene.background = new Color(s.background);
+    // see-through (Experience 2): no background, a fully transparent clear
+    if (transparent) {
+      if (scene.background) scene.background = null;
+      renderer.setClearColor(0x000000, 0);
+    } else {
+      scene.background = new Color(s.background);
+      renderer.setClearColor(scene.background, 1);
+    }
     renderer.toneMapping = TONE[s.toneMapping] ?? NoToneMapping;
     renderer.toneMappingExposure = s.exposure;
     scene.environmentIntensity = s.envIntensity;
@@ -246,7 +310,9 @@ export function createAtlas({ mount, cardsMount, state = ATLAS_STATE }) {
     }
     knot.sync(pointer.update(dt), dt);
     applySceneSettings();
-    if (st.post.enabled) {
+    // the composer's passes write an opaque frame, so over the circles the
+    // knot is rendered straight — the bloom and the vignette are the paper's
+    if (st.post.enabled && !transparent) {
       applyPostSettings();
       composer.render();
     } else {
@@ -275,9 +341,21 @@ export function createAtlas({ mount, cardsMount, state = ATLAS_STATE }) {
     scene,
     fitView: () => api.fitView(),
     rebuild: () => { dirtyGeometry = true; },
+    /** the three lobes as fitted circles on screen — see `api.lobeCircles` */
+    lobeCircles: (span) => api.lobeCircles(span),
+    /** the mount's own rect — the pixel space `lobeCircles` reports in */
+    rect: () => mount.getBoundingClientRect(),
+    /** Experience 2: draw over whatever is under the canvas */
+    setTransparent(v) { transparent = !!v; },
+    get transparent() { return transparent; },
     setActive(v) {
       active = !!v;
       renderer.domElement.style.display = active ? "" : "none";
+      // ...and the cards with it: `syncCards` only runs while active, so an
+      // inactive Atlas hosted in a VISIBLE stage (Experience 2, before the
+      // knot's window) would otherwise show three unplaced white cards
+      // stacked in the corner. `syncCards` sets the host's display back.
+      if (!active) cardsMount.style.display = "none";
     },
     /** the live numbers, for the assertions */
     probe() {
@@ -295,6 +373,8 @@ export function createAtlas({ mount, cardsMount, state = ATLAS_STATE }) {
         cards,
         titles: st.cards.items.map((i) => i.title),
         bg: st.scene.background,
+        transparent,
+        active,
         post: {
           enabled: !!st.post.enabled,
           bloomStrength: bloomPass.strength,

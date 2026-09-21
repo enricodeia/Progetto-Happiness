@@ -28,7 +28,14 @@ const ALIGN = opts(["left", "center", "right"]);
 
 export function createV3Panel({
   cfg,
-  onVariant,      // 1 | 2 | 3 — rebuilds the whole page for that version
+  onVariant,      // 1 … 5 — a LEGACY version, by hand: rebuilds the whole page for it
+  onExperience,   // 1 | 2 — the two experiences (2026-09-21)
+  onPaper,        // Experience 1's white page: on/off, its colours
+  onNav,          // the nav bar's copy or mode changed: rebuild it
+  onNavStyle,     // ...only its numbers: repaint
+  onTrio,         // Experience 2's circles: restyle and re-lay them out
+  onTrioBlock,    // ...the block's own length changed: re-lay the page out
+  onTrioAtlas,    // ...the Atlas's seat in it changed: re-fit, re-seat the cards
   onNetwork,      // the disc's geometry changed: re-lay it out
   onCircles,      // V5's circles changed: restyle and re-lay them out
   onBowlWire,     // V5's bowl lattice: re-fit its density, re-ink it
@@ -44,22 +51,157 @@ export function createV3Panel({
   host.addEventListener("wheel", (e) => e.stopPropagation(), { passive: true });
   (dock || document.body).appendChild(host);
 
-  const pane = new Pane({ container: host, title: "V3" });
+  const pane = new Pane({ container: host, title: "V" });
   let syncVariant = null;
+  // `pane.refresh()` re-reads a binding's target and — if the value moved —
+  // EMITS `change` exactly as a hand on the control would. The keyboard
+  // moves these two dropdowns from outside, so while they are being synced
+  // the handlers must stay quiet, or `1` would land in `onVariant` and undo
+  // the very experience it had just set.
+  let syncing = false;
 
-  // ── which version is on screen ────────────────────────────────────────────
+  // ── the two experiences (his ask, 2026-09-21), and the legacy versions ───
   {
-    const f = pane.addFolder({ title: "Version", expanded: true });
-    const state = { v: cfg.variant };
+    const f = pane.addFolder({ title: "Experience", expanded: true });
+    const state = { e: cfg.experience, v: cfg.variant };
+    f.addBinding(state, "e", {
+      label: "1 / 2",
+      options: {
+        "1 — white page · the globe": 1,
+        "2 — shader · trio + Atlas": 2,
+        "— a legacy version (below)": 0,
+      },
+    }).on("change", (e) => {
+      if (syncing) return;
+      if (e.value === 1 || e.value === 2) onExperience(e.value);
+      else onVariant(cfg.variant);
+    });
+    const P = cfg.exp.paper;
+    f.addBinding(P, "on", { label: "1 · white page" }).on("change", onPaper);
+    f.addBinding(P, "bg", { label: "1 · the page" }).on("change", onPaper);
+    f.addBinding(P, "ink", { label: "1 · scroll bar ink" }).on("change", onPaper);
     f.addBinding(state, "v", {
-      label: "version",
+      label: "legacy version",
       options: {
         "1 — the first cut": 1, "2 — the ring act": 2,
         "3 — the disc": 3, "4 — the globe": 4, "5 — the circles": 5,
       },
-    }).on("change", (e) => onVariant(e.value));
-    // the 1/2/3 keys do the same thing, so the dropdown has to follow them
-    syncVariant = () => { state.v = cfg.variant; pane.refresh(); };
+    }).on("change", (e) => { if (!syncing) onVariant(e.value); });
+    // the 1/2 keys move these from outside, so the dropdowns have to follow
+    syncVariant = () => {
+      syncing = true;
+      state.v = cfg.variant;
+      state.e = cfg.experience;
+      pane.refresh();
+      syncing = false;
+    };
+  }
+
+  // ── the nav bar — two bars, hover dropdowns (2026-09-21) ────────────────
+  {
+    const n = cfg.nav;
+    const f = pane.addFolder({ title: "Nav — the two bars", expanded: false });
+    f.addBinding(n, "mode", {
+      label: "bar",
+      options: { "auto — follows the experience": "auto", "1 — Log In": 1, "2 — Get the app": 2 },
+    }).on("change", onNav);
+    f.addBinding(n, "dot", { label: "the dot in the head" }).on("change", onNav);
+    const l = f.addFolder({ title: "Layout", expanded: false });
+    l.addBinding(n, "linkSize", { min: 12, max: 20, step: 0.5, label: "links (px)" }).on("change", onNavStyle);
+    l.addBinding(n, "itemGap", { min: 16, max: 90, step: 1, label: "between links (px)" }).on("change", onNavStyle);
+    l.addBinding(n, "linksX", { min: 0, max: 240, step: 2, label: "from the logo (px)" }).on("change", onNavStyle);
+    l.addBinding(n, "menuWidth", { min: 150, max: 360, step: 2, label: "card (px)" }).on("change", onNavStyle);
+    l.addBinding(n, "megaWidth", { min: 300, max: 1000, step: 10, label: "wide panel (px)" }).on("change", onNavStyle);
+    l.addBinding(n, "megaCols", { min: 1, max: 5, step: 1, label: "...its columns" }).on("change", onNavStyle);
+    l.addBinding(n, "megaCount", { min: 6, max: 45, step: 1, label: "...techniques listed" }).on("change", onNav);
+    l.addBinding(n, "pad", { min: 8, max: 28, step: 1, label: "card padding (px)" }).on("change", onNavStyle);
+    l.addBinding(n, "gap", { min: 0, max: 30, step: 1, label: "card ↔ panel (px)" }).on("change", onNavStyle);
+    l.addBinding(n, "radius", { min: 0, max: 32, step: 1, label: "corners (px)" }).on("change", onNavStyle);
+    l.addBinding(n, "rowSize", { min: 12, max: 20, step: 0.5, label: "rows (px)" }).on("change", onNavStyle);
+    l.addBinding(n, "rowHeight", { min: 30, max: 64, step: 1, label: "row height (px)" }).on("change", onNavStyle);
+    l.addBinding(n, "shadow", { min: 0, max: 0.5, step: 0.01, label: "shadow" }).on("change", onNavStyle);
+    const m = f.addFolder({ title: "Motion — the card opens, then the rows", expanded: false });
+    m.addBinding(n, "openDelay", { min: 0, max: 400, step: 10, label: "opens after (ms)" });
+    m.addBinding(n, "closeDelay", { min: 0, max: 600, step: 10, label: "closes after (ms)" });
+    m.addBinding(n, "subDelay", { min: 0, max: 400, step: 10, label: "wide panel after (ms)" });
+    m.addBinding(n, "dur", { min: 0.15, max: 1.2, step: 0.01, label: "card opens over (s)" });
+    m.addBinding(n, "megaDur", { min: 0.15, max: 1.2, step: 0.01, label: "wide panel over (s)" });
+    m.addBinding(n, "rowsAt", { min: 0, max: 1, step: 0.02, label: "rows start at (of card)" });
+    m.addBinding(n, "rowDur", { min: 0.1, max: 1, step: 0.01, label: "one row (s)" });
+    m.addBinding(n, "rowStagger", { min: 0, max: 0.2, step: 0.005, label: "row after row (s)" });
+    m.addBinding(n, "megaStagger", { min: 0, max: 0.08, step: 0.002, label: "item after item (s)" });
+    m.addBinding(n, "rowRise", { min: 0, max: 24, step: 1, label: "rise (px)" });
+    m.addBinding(n, "swapDur", { min: 0.05, max: 0.5, step: 0.01, label: "list swap (s)" });
+    m.addBinding(n, "closeSpeed", { min: 0.5, max: 3, step: 0.1, label: "closing, × faster" });
+    m.addBinding(n, "ease", {
+      options: opts(["power1.out", "power2.out", "power3.out", "power4.out", "expo.out", "back.out(1.2)", "sine.out"]),
+    });
+  }
+
+  // ── Experience 2: the three circles, and the Atlas over them (2026-09-21) ─
+  {
+    const t = cfg.v2.trio;
+    const f = pane.addFolder({ title: "Experience 2 — the trio, then the Atlas", expanded: false });
+    f.addBinding(t, "show").on("change", onTrio);
+    f.addBinding(t, "fit", { options: { "the knot's own lobes": "knot", "by hand (below)": "manual" }, label: "circles from" }).on("change", onTrio);
+    f.addBinding(t, "radiusScale", { min: 0.6, max: 1.4, step: 0.01, label: "× lobe radius" }).on("change", onTrio);
+    f.addBinding(t, "fitSpan", { min: 0.04, max: 0.16, step: 0.005, label: "fit reads ± (of curve)" }).on("change", onTrioAtlas);
+    f.addBinding(t, "blockVh", { min: 300, max: 1400, step: 20, label: "the block's scroll (vh)" }).on("change", onTrioBlock);
+    const bw = f.addFolder({ title: "The bowl behind (this block)", expanded: false });
+    bw.addBinding(t.bowl, "x", { min: -0.5, max: 0.5, step: 0.005, label: "x (of width)" });
+    bw.addBinding(t.bowl, "y", { min: -0.5, max: 0.5, step: 0.005, label: "y (of height)" });
+    bw.addBinding(t.bowl, "size", { min: 0.2, max: 1.6, step: 0.01, label: "size (vh)" });
+    bw.addBinding(t.bowl, "tilt", { min: -40, max: 80, step: 1, label: "lean (°)" });
+    bw.addBinding(t.bowl, "tiltZ", { min: -45, max: 45, step: 1, label: "roll (°)" });
+    bw.addBinding(t.bowl, "spin", { min: 0, max: 3, step: 0.05, label: "idle turn (× normal)" });
+    const h = f.addFolder({ title: "By hand (fit: manual)", expanded: false });
+    h.addBinding(t.manual, "cx", { min: 0.2, max: 0.8, step: 0.005, label: "centre x" }).on("change", onTrio);
+    h.addBinding(t.manual, "cy", { min: 0.2, max: 0.8, step: 0.005, label: "centre y" }).on("change", onTrio);
+    h.addBinding(t.manual, "D", { min: 0.1, max: 0.45, step: 0.005, label: "spread (× short side)" }).on("change", onTrio);
+    h.addBinding(t.manual, "rFrac", { min: 0.3, max: 1.2, step: 0.01, label: "radius (× spread)" }).on("change", onTrio);
+    const s = f.addFolder({ title: "Where each beat ends (of the block)", expanded: false });
+    s.addBinding(t.marks, "wire", { min: 0.02, max: 0.3, step: 0.01, label: "1 · lattice" });
+    s.addBinding(t.marks, "c1", { min: 0.05, max: 0.5, step: 0.01, label: "2 · top-right" });
+    s.addBinding(t.marks, "c2", { min: 0.1, max: 0.6, step: 0.01, label: "3 · bottom" });
+    s.addBinding(t.marks, "c3", { min: 0.15, max: 0.7, step: 0.01, label: "4 · top-left" });
+    s.addBinding(t.marks, "arcs", { min: 0.2, max: 0.8, step: 0.01, label: "5 · the arcs" });
+    s.addBinding(t.marks, "knot", { min: 0.25, max: 0.9, step: 0.01, label: "6 · the Atlas from" });
+    s.addBinding(t.bowlOut, "at", { min: 0.2, max: 0.9, step: 0.01, label: "lattice goes at" });
+    s.addBinding(t.bowlOut, "dur", { min: 0.02, max: 0.3, step: 0.01, label: "...over" });
+    s.addBinding(t, "textReveal", { min: 0.1, max: 1, step: 0.01, label: "captions, last share of" });
+    s.addBinding(t, "captionsOut", { label: "captions go as the knot draws" });
+    s.addBinding(t, "captionsOutDur", { min: 0.02, max: 0.3, step: 0.01, label: "...over" });
+    const l = f.addFolder({ title: "The line and the arcs", expanded: false });
+    l.addBinding(t, "strokeWidth", { min: 0.5, max: 3, step: 0.25, label: "circles (px)" }).on("change", onTrio);
+    l.addBinding(t, "ink", { label: "ink" }).on("change", onTrio);
+    l.addBinding(t, "arcFrac", { min: 0.8, max: 1.8, step: 0.01, label: "arc radius (× spacing)" });
+    l.addBinding(t, "arcOver", { min: 0, max: 40, step: 1, label: "arcs run past by (°)" });
+    l.addBinding(t, "arcWidth", { min: 0.25, max: 3, step: 0.25, label: "arcs (px)" }).on("change", onTrio);
+    l.addBinding(t, "arcAlpha", { min: 0.05, max: 1, step: 0.01, label: "arcs opacity" }).on("change", onTrio);
+    l.addBinding(t, "arcStagger", { min: 0, max: 1, step: 0.05, label: "one arc after the next" });
+    const ty = f.addFolder({ title: "Type (× circle radius)", expanded: false });
+    ty.addBinding(t, "nameSize", { min: 0.04, max: 0.2, step: 0.002, label: "name" });
+    ty.addBinding(t, "descSize", { min: 0.03, max: 0.12, step: 0.002, label: "description" });
+    ty.addBinding(t, "descLh", { min: 1, max: 1.8, step: 0.02, label: "...line height" });
+    ty.addBinding(t, "nameY", { min: 0, max: 0.4, step: 0.01, label: "name above centre" });
+    ty.addBinding(t, "descY", { min: 0, max: 0.5, step: 0.01, label: "description below" });
+    ty.addBinding(t, "sideSize", { min: 0.04, max: 0.2, step: 0.002, label: "side labels" });
+    ty.addBinding(t, "sideOut", { min: 0, max: 1, step: 0.01, label: "...outside by" });
+    ty.addBinding(t, "sideDown", { min: -0.5, max: 1, step: 0.01, label: "...below the middle by" });
+    const a = f.addFolder({ title: "The Atlas over the circles", expanded: false });
+    a.addBinding(t.atlas, "paper", { label: "its paper" }).on("change", onTrio);
+    a.addBinding(t.atlas, "paperAt", { min: 0.2, max: 0.9, step: 0.01, label: "paper from" });
+    a.addBinding(t.atlas, "paperDur", { min: 0.02, max: 0.3, step: 0.01, label: "...over" });
+    a.addBinding(t.atlas, "circlesUnder", { min: 0, max: 1, step: 0.01, label: "circles' ink under it" });
+    a.addBinding(t.atlas, "offsetY", { min: -2, max: 2, step: 0.05, label: "camera pan" }).on("change", onTrioAtlas);
+    a.addBinding(t.atlas, "padding", { min: 0.9, max: 2.2, step: 0.02, label: "camera fit" }).on("change", onTrioAtlas);
+    a.addBinding(t.atlas, "cardsPadTop", { min: 0, max: 400, step: 4, label: "cards clear the top (px)" }).on("change", onTrioAtlas);
+    a.addBinding(t.atlas, "pointer", { label: "leans to the pointer" }).on("change", onTrioAtlas);
+    const c = a.addFolder({ title: "Which card on which circle", expanded: false });
+    const ROLE = { "top-left": "tl", "top-right": "tr", "bottom": "b" };
+    c.addBinding(t.atlas.cards, "library", { options: ROLE, label: "the library" }).on("change", onTrioAtlas);
+    c.addBinding(t.atlas.cards, "members", { options: ROLE, label: "members" }).on("change", onTrioAtlas);
+    c.addBinding(t.atlas.cards, "therapists", { options: ROLE, label: "therapists" }).on("change", onTrioAtlas);
   }
 
   // ── the three steps, as a golden-angle disc ───────────────────────────────
@@ -149,7 +291,7 @@ export function createV3Panel({
   //    the bowl's own on-screen radius, so the fourth circle always lands on it.
   {
     const K = cfg.v2.circles;
-    const f = pane.addFolder({ title: "V5 — the circles (four beats)", expanded: false });
+    const f = pane.addFolder({ title: "V5 (legacy) — the two circles", expanded: false });
     f.addBinding(K, "show").on("change", onCircles);
     f.addBinding(K, "radiusFrac", { min: 0.2, max: 0.7, step: 0.01, label: "circle (× bowl r)" }).on("change", onCircles);
     f.addBinding(K, "spreadFrac", { min: 0, max: 1.5, step: 0.01, label: "pull apart (× r)" }).on("change", onCircles);

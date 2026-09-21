@@ -23,6 +23,8 @@
 // P — scroll panel · B — bowl panel · M — markers · C — clean frame.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { BOWL_PRESET } from "./data/bowlPreset.js";
+
 export const CONFIG = {
   scroll: {
     // "pin"   the stage sticks for the whole clock, then releases
@@ -131,6 +133,66 @@ export const CONFIG = {
   // more, every load starts here; the panels can still switch live, behind `c`.
   variant: 4,
 
+  // ── the two EXPERIENCES (his ask, 2026-09-21 — the final task, "due tipi
+  //    distinti di esperienze") ─────────────────────────────────────────────
+  // `1` (keyboard 1, the DEFAULT): version four's page — the pill, the dots
+  //     and the rings, the globe — on a WHITE page with no shader at all, its
+  //     type in ink ("solo sfondo bianco con la bowl che scende giù, il ring...
+  //     testi che saranno neri e non bianchi").
+  // `2` (keyboard 2): the shader kept; after the bowl's V5 outro, the THREE
+  //     circles of his frame drawn top-right → bottom → top-left, the big
+  //     arcs, and the Atlas knot built over them (`v2.trio`).
+  // `0`: a legacy version picked by hand from the panel (1-5), untouched.
+  experience: 1,
+  exp: {
+    paper: {
+      on: true,            // Experience 1's white page (off = V4 exactly as it was)
+      bg: "#ffffff",       // "solo sfondo bianco"
+      ink: "#0a0a0a",      // ...and the scroll bar's ink on it
+    },
+  },
+
+  // ── the nav bar — two bars, hover dropdowns (2026-09-21) ────────────────
+  // `src/nav.js`; what each bar lists is in `src/data/nav.js`.
+  nav: {
+    mode: "auto",          // auto (1 in Experience 1, 2 in Experience 2) | 1 | 2
+    logo: "Insight Timer",
+    search: "Search",
+    // his first three frames: five links, the search, one black "Log In"
+    one: { links: ["discover", "teach", "clinical", "research", "about"], cta: "Log In", icons: true },
+    // frames four to six: three links, "For therapists" outlined, the search, "Get the app"
+    two: { links: ["discover", "about", "teach"], cta: "Get the app", pill: "For therapists", icons: false },
+    dot: true,             // the small black dot at the head's right, as in his frames
+    // ── layout ───────────────────────────────────────────────────────────
+    linkSize: 15,          // px — the bar's links
+    itemGap: 44,           // px between them
+    linksX: 96,            // px from the logo to the first link
+    menuWidth: 214,        // px — the card
+    megaWidth: 640,        // px — the wide second panel ("molto più larga")
+    megaCols: 3,           // ...its columns
+    megaCount: 24,         // how many of the directory's categories it lists
+    pad: 16,               // px — the card's inner padding
+    gap: 8,                // px between the card and the wide panel
+    radius: 20,            // px — both panels' corners
+    rowSize: 15,           // px — a row
+    rowHeight: 44,         // px — a row's height
+    shadow: 0.3,           // the panels' drop shadow, 0-1
+    // ── motion: the card opens, THEN the rows arrive ─────────────────────
+    openDelay: 70,         // ms of hover before it opens
+    closeDelay: 180,       // ms of grace after the pointer leaves
+    subDelay: 90,          // ms of hover on a row before its wide panel opens
+    dur: 0.46,             // s — the card's own curtain
+    megaDur: 0.5,          // s — the wide panel's
+    ease: "power3.out",
+    rowsAt: 0.3,           // the rows start this far into the card's opening
+    rowDur: 0.38,          // s — one row's arrival
+    rowStagger: 0.05,      // s between one row and the next
+    megaStagger: 0.016,    // s between one wide-panel item and the next
+    rowRise: 8,            // px an item rises into place
+    swapDur: 0.14,         // s — the wide panel's list going, before the next arrives
+    closeSpeed: 1.5,       // closing runs the same timeline backwards, this much faster
+  },
+
   // ── the footer's own two knobs ─────────────────────────────────────────
   // Everything else about it is layout that measures itself (see
   // `footer.measure()`); these are the two numbers that are a judgement.
@@ -174,11 +236,8 @@ export const CONFIG = {
       // under it, but it also cuts a rectangle of the wrong paper across
       // everything the page opens into. Raise it and it comes back.
       fade: 0,
-      logo: "Insight Timer",
-      // the search sits in the MIDDLE of the bar, on the viewport's own centre
-      // line — not in a row that the logo and the button can push around
-      search: "Search",
-      cta: "Join for Free",
+      // the bar's copy — logo, links, search, buttons — lives in `nav` now
+      // (2026-09-21), one object for both bars
       // the search field is LIGHT glass (his ask, 2026-09-17: "così che si
       // veda la ui che passa sotto") — white at `alpha` over a backdrop blur
       searchGlass: { alpha: 0.55, blur: 14 },
@@ -787,6 +846,11 @@ export const CONFIG = {
     //            around all three, with the closing title above it
     circles: {
       show: true,
+      // which diagram the block draws (2026-09-21): `flank` — V5's two
+      // circles beside the bowl, below; `trio` — Experience 2's three circles
+      // and the Atlas over them (`v2.trio`). Written by main.js from the
+      // experience; never by hand.
+      layout: "flank",
       // Every length is a share of the BOWL'S OWN on-screen radius R, read
       // off the bowl each frame — so the diagram is always the bowl's size,
       // whatever the viewport. Measured off his fourth frame: the two base
@@ -841,6 +905,75 @@ export const CONFIG = {
         outerLeft: "User driven feedback",
         outerRight: "Clinical Validation",
         title: "Better Practice\nEffective Discovery\nInsight Timer",
+      },
+    },
+
+    // ── Experience 2: the three circles, and the Atlas built over them ───
+    // (his ask, 2026-09-21, the final task.) In V5's block, after the shader
+    // has closed and the white has risen: the bowl's lattice, then the circle
+    // top-right, the one at the bottom, the one top-left — each drawn on as a
+    // path — the big arcs and "in the field" / "on platform", then the paper
+    // warms to the Atlas's own and the knot draws itself OVER the circles,
+    // its cards arriving as its front passes each lobe. `src/trio.js`.
+    trio: {
+      show: true,
+      // where the circles are. `knot`: each IS the knot's own lobe — the
+      // least-squares circle through the outer stretch of the curve around a
+      // vertex, projected through the Atlas's camera — so the band lands on
+      // the line that announced it. `manual`: the triangle below, by hand.
+      fit: "knot",           // knot | manual
+      radiusScale: 1.0,      // × the fitted lobe radius
+      fitSpan: 0.11,         // how much of the curve either side of a vertex the fit reads
+      manual: { cx: 0.5, cy: 0.52, D: 0.27, rFrac: 0.78 },   // centre, spread and radius, × min(W,H)
+      strokeWidth: 1, ink: "#0a0a0a",
+      // the big arcs, as in his frame: each centred on one circle, running
+      // from the direction of one neighbour's centre to the other's
+      arcFrac: 1.16,         // radius, × the circles' own centre-to-centre distance
+      arcOver: 0,            // ° each arc runs past the two centres
+      arcWidth: 0.75, arcAlpha: 0.5,
+      arcStagger: 0.5,       // 0 = all three at once, 1 = strictly one after the next
+      // where each beat ENDS, as a fraction of the block's own 0→1 — abutting,
+      // so the whole thing reads as one continuous draw (the shader's outro
+      // and the white come BEFORE 0, in the handover)
+      marks: { wire: 0.07, c1: 0.19, c2: 0.31, c3: 0.43, arcs: 0.52, knot: 0.58 },
+      // the lattice fades out once the arcs are in — the knot has the centre
+      bowlOut: { at: 0.5, dur: 0.07 },
+      textReveal: 0.45,      // the LAST share of a beat over which its caption arrives
+      captionsOut: true,     // the captions go as the knot begins (the cards take over)
+      captionsOutDur: 0.08,
+      // type, × the circle radius — measured off his frame
+      nameSize: 0.1, descSize: 0.058, descLh: 1.4, sideSize: 0.095,
+      nameY: 0.1,            // the name sits this far ABOVE the centre (× r)
+      descY: 0.14,           // ...the description this far below
+      sideOut: 0.42,         // "in the field" / "on platform": outside the top circles by
+      sideDown: 0.42,        // ...and below the midpoint between them and the bottom one
+      labels: {
+        tr: { name: "Member feedback", desc: "Feedback from users\npracticing daily" },
+        b: { name: "Therapist reports", desc: "Therapist input on how to best\nimplement each practice" },
+        tl: { name: "Clinical research", desc: "Linking our knowledge\nto 350k+ practices" },
+        left: "in the field",
+        right: "on platform",
+      },
+      blockVh: 720,          // the block's whole scroll, split evenly over its three steps
+      // the bowl for THIS block — V5's flanking pair fills the frame with it
+      // (the fourth circle IS the bowl); here it is the object the three
+      // circles are drawn around before the knot takes the centre, so it
+      // sits smaller. Same units as `v2.circles.bowl*`.
+      bowl: { x: 0, y: 0, size: 0.6, tilt: 14, tiltZ: 0, spin: 1 },
+      // the Atlas, as this stage wants it — put back as the preset had it
+      // whenever the trio is off
+      atlas: {
+        paper: "#EEE9E2",    // the knot's own paper, faded in under the circles...
+        paperAt: 0.46, paperDur: 0.1,   // ...over this window of the block
+        circlesUnder: 0.55,  // the circles' ink once the knot is over them
+        offsetY: 0.9,        // the camera's pan — the mark sits under the title (the preset's 1.3)
+        padding: 1.12,       // ...and its fit: closer than the preset's 1.2, so the lobes read
+        cardsPadTop: 96,     // px the cards keep clear of the top
+        // each card seated on the lobe under ITS circle — Members on "Member
+        // feedback", Therapists on "Therapist reports", the library on
+        // "Clinical research" — by which circle, not by a number
+        cards: { library: "tl", members: "tr", therapists: "b" },
+        pointer: true,       // the knot still leans to the pointer here
       },
     },
 
@@ -1684,3 +1817,28 @@ export const CONFIG = {
     opacity: 1,
   },
 };
+
+// ── the bowl, as HE dialled it (his JSON, 2026-09-21) ──────────────────────
+// "Utilizzassi questi valori per il materiale della bowl per entrambe le due
+// esperienze": the Bowl panel's own export, kept verbatim in
+// `src/data/bowlPreset.js` and merged over the annotated defaults above —
+// the same way the Atlas takes its studio preset over its own defaults. Both
+// experiences share the one bowl, so both get it. Arrays (the studio lights,
+// a noise's scale/offset) are replaced whole, objects are merged key by key.
+// Against the defaults above it moves 14 values, all in `material`: the outer
+// shell rougher (0.365 → 0.555) with a much finer relief (0.04 → 0.0065 at
+// 5.7× scale), the inner surface more metallic (0.74 → 0.97), lightly
+// clearcoated (0.09 / 0.11), single-sided, its colour noise off and its ramp
+// stronger and lower (mix 0.34, pos 0.32, soft 0.51).
+function mergeInto(target, src) {
+  for (const k of Object.keys(src)) {
+    const v = src[k];
+    if (v && typeof v === "object" && !Array.isArray(v) && target[k] && typeof target[k] === "object" && !Array.isArray(target[k])) {
+      mergeInto(target[k], v);
+    } else {
+      target[k] = Array.isArray(v) ? v.slice() : v;
+    }
+  }
+  return target;
+}
+mergeInto(CONFIG.bowl, BOWL_PRESET);

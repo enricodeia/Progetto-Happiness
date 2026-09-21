@@ -33,29 +33,10 @@ import { createReveal } from "./reveal.js";
 // scrubbed: the scroll only says WHEN, and each beat then plays itself out.
 // Neither leaves, so the first is still standing when the second arrives.
 
-const ICON_SEARCH = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.6-4.6"/></svg>`;
-const ICON_SLIDERS = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 4v6M8 14v6M16 4v3M16 11v9"/><path d="M5.5 12h5M13.5 9h5"/></svg>`;
-
 export function createHero({ nav, heroEl, untilEl, underEl, cfg, bowl }) {
   // ── nav ────────────────────────────────────────────────────────────────
-  // Logo on the left, one black pill on the right, and the search field DEAD
-  // CENTRE — on the viewport's own centre line, not in a row where the width
-  // of the logo and the button would push it around.
-  function buildNav() {
-    const n = cfg.hero.nav;
-    nav.hidden = !n.show;
-    nav.innerHTML = `
-      <a class="was-logo" href="#">${n.logo}</a>
-      <div class="was-nav-mid">
-        <button class="was-nav-icon" type="button" aria-label="Filters">${ICON_SLIDERS}</button>
-        <label class="was-search">
-          ${ICON_SEARCH}
-          <input type="text" placeholder="${n.search}" aria-label="${n.search}" />
-          <img class="was-search-bowl" src="/images/bowl.png" alt="" />
-        </label>
-      </div>
-      <button class="was-cta" type="button">${n.cta}</button>`;
-  }
+  // Built by `src/nav.js` now (2026-09-21 — two bars with hover dropdowns);
+  // this only keeps the search glass vars on it, see `style()` below.
 
   // ── hero + until ───────────────────────────────────────────────────────
   heroEl.innerHTML = `
@@ -360,7 +341,6 @@ export function createHero({ nav, heroEl, untilEl, underEl, cfg, bowl }) {
   }
 
   function rebuild() {
-    buildNav();
     title.rebuild(cfg.hero.title, cfg.hero.titleMode);
     titleB.rebuild(cfg.hero.titleB, cfg.hero.titleMode);
     para.rebuild(cfg.hero.para, cfg.hero.paraMode);
@@ -432,7 +412,6 @@ export function createHero({ nav, heroEl, untilEl, underEl, cfg, bowl }) {
     style();
   }
 
-  buildNav();
   style();
   buildIntro();
 

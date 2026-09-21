@@ -2687,3 +2687,112 @@ and the wordmark's vertical budget subtracts the same variable), and
 `text-align: left` made explicit on the footer. All in the Footer folder of
 the `V` panel. One check reads every one of those off the computed styles.
 224 checks now.
+
+## The two experiences, the two nav bars, his bowl (his ask, 2026-09-21 — the final task)
+
+*"Vorrei avere due tipi distinti di esperienze: una V1 e una V2."* Keyboard
+`1` and `2` are the two EXPERIENCES now (`config.experience`, 1 shipped); the
+five legacy versions are still there, in the `V` panel's "legacy version"
+dropdown, and picking one puts the experience to "—". Choosing anything by
+hand from that dropdown stands the experience down; the two keys bring it
+back.
+
+**Experience 1** — *"la struttura della versione V4... ma solo sfondo bianco
+con la bowl che scende giù, il ring, eccetera... testi neri."* Version four
+(the pill, the dots and rings, the globe) on a WHITE page: `exp.paper`
+(`on`, `bg` #ffffff, `ink`) → `body.is-paper`, `--page-bg` white, and the
+ground layer is never fired — `ground.drive()` is handed a clock that is
+always before its mark, so it never opens (and closes the way it opened if
+the experience switches while it is up), which means `body.is-ground` never
+comes and every piece of type that turned light over the shader stays ink.
+The scroll bar swaps to ink too (`createProgress({ ink })`, the white-on-white
+hairline dropped): a white bar over a white page is no bar.
+
+**Experience 2** — *"terremo lo shader, e dopo la parte della ball con lo
+scroll della V5... quella struttura che vedi nella foto 7: prima il cerchio in
+alto a destra, quello in basso, quello in alto a sinistra... e sopra questi
+cerchi si creerà The Atlas."* Version five's page — the shader, the ring act,
+the outro closing the shader back into the bowl, the white rising — and then,
+in V5's block, `src/trio.js` in place of the flanking pair
+(`v2.circles.layout: "trio"`, `v2.trio`):
+
+- Seven abutting windows on the block's 0→1 (`trio.marks`): the bowl's
+  lattice alone → the TOP-RIGHT circle draws on → the BOTTOM one → the
+  TOP-LEFT one → the three big ARCS and "in the field" / "on platform" → the
+  paper warms to the Atlas's own (#EEE9E2) and the lattice fades → the Atlas
+  knot DRAWS ITSELF over the circles, its cards arriving as the front passes
+  each lobe. Pure scrub, no tween; `pathLength=1` + `stroke-dashoffset` as
+  in V5, each circle turned so it starts drawing toward the one that draws
+  next, so the three read as one line.
+- The circles are not placed by hand: each is the least-squares circle
+  (Kåsa's fit) through the outer stretch of ONE LOBE of the knot, projected
+  through the Atlas's own camera at its REST pose (the pointer lean left out)
+  — `atlas.lobeCircles(span)` — so the porcelain band lands exactly on the
+  line that announced it, at any viewport. `trio.fit: "manual"` is the
+  fallback triangle, by hand.
+- The Atlas MOVES: its view, cards and title are re-parented from `#pinC`
+  (hidden meanwhile, `atlasSectionOn()`) into `#stageB`, its renderer goes
+  see-through (`alpha: true`, `setTransparent` — no background, clear alpha
+  0, the composer bypassed because its passes write an opaque frame), and it
+  is re-fitted to the stage (`trio.atlas.offsetY` / `padding`). The cards are
+  RE-SEATED on the lobe under their own circle — Members on "Member feedback"
+  (t = 1/6), Therapists on "Therapist reports" (1/2), the library on
+  "Clinical research" (5/6) — by which circle, read off the same fits, not by
+  a number; the preset's `t`s come back the moment the trio is off. An
+  inactive Atlas hides its cards host, or three unplaced white cards would sit
+  in the corner of a visible stage before the knot's window. The knot's front
+  travels TR → B → TL — the order he asked the circles for.
+- The block's own scroll is `trio.blockVh` (720), split over its three steps;
+  the bowl has a pose of its own here (`trio.bowl`, 0.6 — the circles are
+  drawn around it, the knot takes the centre after); leaving the trio hands
+  back everything it wrote onto the bowl (`trio.reset()`: the sheet's colour,
+  the lattice).
+
+**The nav bar** — *"nella versione V1 voglio avere la prima navigation... on
+hover si apra una tendina... nella V2 le altre tre immagini."* `src/nav.js`
+builds one of two bars from `src/data/nav.js` (`nav.mode: auto` follows the
+experience): bar 1 — Discover · Become a teacher · Clinical Resources ·
+Research · About, the search, one black "Log In"; bar 2 — Discover · About ·
+Become a teacher, an outlined "For therapists", a hairline, the search, "Get
+the app". Discover and About carry a dropdown — a white card whose head row
+sits exactly where the link was (icon + label + the small dot of his frames;
+no icons in bar 2), then the rows in a vertical list. Discover's rows each
+open a SECOND, much wider panel beside the card (`megaWidth` 640, three
+columns): Techniques lists the real directory's categories (the same
+`techniques.js` the pills use, `megaCount` 24), Teachers and Benefits their
+own lists. The opening is two movements, as he asked — the card itself first
+(a clip-path curtain, top → down; the wide panel left → right), THEN the
+items, staggered, each rising 8px into place — and closing is the same GSAP
+timeline run backwards (`closeSpeed`), so a pointer that changes its mind
+mid-way is continuous. Hover is debounced both ways (`openDelay` 70ms,
+`closeDelay` 180ms, `subDelay` 90ms), a `pointermove` fallback catches a
+pointer merely found inside, the wide panel bridges the gap to the card with
+a transparent strip, keyboard focus opens what hover does, Escape closes.
+Over the shader the bar's links go light with everything else (`is-ground`),
+the cards stay white with ink in them. Icons are Font Awesome Pro (classic
+regular: globe, book-open, chevron-down, magnifying-glass), inlined as SVG.
+Every number is in `cfg.nav` (the `V` panel's "Nav — the two bars" folder);
+the copy is in the Titles panel.
+
+**His bowl** — *"utilizzassi questi valori per il materiale della bowl per
+entrambe le due esperienze"*: his JSON, verbatim, in `src/data/bowlPreset.js`,
+merged over the annotated defaults at the end of `config.js` (the same way the
+Atlas takes its studio preset). Fourteen values move, all in `material`: the
+outer shell rougher (0.365 → 0.555) with a much finer relief (0.04 → 0.0065 at
+5.7×), the inner surface more metallic (0.74 → 0.97), lightly clearcoated,
+single-sided, its colour noise off and its ramp stronger and lower.
+
+Verified: twenty-one new checks — E1 (white page, no ground at 0.9 of act two,
+ink everywhere, ink scroll bar, bar 1 with its two dropdowns), E2 (V5 with
+the trio, stage see-through, the shader back and the bar in light, the Atlas
+in `#stageB` transparent with `#pinC` hidden, the block 720vh, the cards
+re-seated 1/6 · 1/2 · 5/6, the outro at half, then eight frames of the block
+— lattice, TR, B, TL, arcs, knot start, knot mid, knot end — and the un-draw
+on the way back), the keys (1/2 the experiences, 5 nothing, a legacy pick
+standing both down and restoring the Atlas), the nav ON HOVER with a real
+pointer (open → fully open → the wide panel with 24 → re-listed with 20 →
+closed → About → bar 2 over the shader), and the fresh boot: Experience 1,
+bar 1, his bowl values. Three legacy checks were re-pointed from the keyboard
+to `setVariant` (the keys mean something else now), the inner-ramp check reads
+his preset (colour noise off, ramp on), the nav layout check reads the new
+bar. 245 checks.

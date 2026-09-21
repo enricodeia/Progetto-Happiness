@@ -61,6 +61,11 @@ body {
   pointer-events: none;
 }
 
+/* ── the nav bar — two bars, hover dropdowns (his ask, 2026-09-21) ────────
+   Logo, then the links a fixed distance after it, then everything else
+   pushed to the right edge: the search and the black button (bar 1), or the
+   outlined "For therapists", a hairline, the search and the button (bar 2).
+   Built by src/nav.js; every number is a `--nav-*` variable it writes. */
 .was-nav {
   position: absolute;
   top: 0;
@@ -69,26 +74,183 @@ body {
   z-index: 7;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 14px;
   padding: 22px 2.2vw;
 }
+.was-nav[hidden] { display: none; }
 
-/* the search rides the viewport's own centre line, so nothing either side of
-   it can push it off centre */
-.was-nav-mid {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+.was-nav-links {
+  display: flex;
+  align-items: center;
+  gap: var(--nav-item-gap, 44px);
+  margin-left: var(--nav-links-x, 96px);
 }
-/* the icon hangs off the search's left edge instead of sharing a row with it,
-   so it is the SEARCH that sits on the centre line, not the pair of them */
-.was-nav-mid .was-nav-icon {
-  position: absolute;
-  right: calc(100% + 14px);
-  top: 50%;
-  margin-top: -20px;
+.was-nav-item { position: relative; }
+.was-nav-link {
+  display: inline-block;
+  padding: 8px 0;
+  font-family: var(--ui);
+  font-size: var(--nav-link-size, 15px);
+  font-weight: 500;
+  letter-spacing: -0.004em;
+  color: var(--left-ink);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity 0.2s ease, color 0.5s ease;
 }
+.was-nav-link:hover { opacity: 0.72; }
+
+/* the right-hand cluster */
+.was-nav-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+/* bar 2's outlined pill, and the hairline that separates it from the search */
+.was-nav-pill {
+  appearance: none;
+  flex: 0 0 auto;
+  background: none;
+  border: 1px solid var(--left-ink);
+  color: var(--left-ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 13px 24px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.5s ease, border-color 0.5s ease;
+}
+.was-nav-sep {
+  display: block;
+  width: 1px;
+  height: 30px;
+  background: rgba(0, 0, 0, 0.14);
+  margin: 0 4px;
+}
+
+/* ── the dropdown card. Its HEAD sits exactly where the link is — the card
+   grows down out of the bar's own label — then the rows, in a vertical list.
+   Closed: hidden and clipped; nav.js opens it as a top → down curtain and
+   closes it by running the same timeline backwards. */
+.was-menu {
+  position: absolute;
+  top: calc(-1 * var(--nav-pad, 16px));
+  left: calc(-1 * var(--nav-pad, 16px));
+  width: var(--nav-menu-w, 214px);
+  padding: 0 0 8px;
+  background: #fff;
+  border-radius: var(--nav-r, 20px);
+  box-shadow:
+    0 2px 6px rgba(20, 18, 12, calc(var(--nav-shadow, 0.16) * 0.4)),
+    0 22px 56px -18px rgba(20, 18, 12, calc(var(--nav-shadow, 0.16) * 2));
+  visibility: hidden;
+  opacity: 0;
+  z-index: 3;
+  will-change: clip-path, opacity, transform;
+}
+.was-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(var(--nav-pad, 16px) + 8px) var(--nav-pad, 16px) 12px;
+  font-size: var(--nav-link-size, 15px);
+  font-weight: 500;
+  color: var(--left-ink);
+}
+.was-menu-ico { width: 18px; height: 18px; flex: 0 0 auto; }
+.was-menu-dot {
+  margin-left: auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--left-ink);
+}
+.was-menu-rows { display: flex; flex-direction: column; }
+.was-menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: var(--nav-row-h, 44px);
+  padding: 0 var(--nav-pad, 16px);
+  font-size: var(--nav-row-size, 15px);
+  color: var(--left-ink);
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: 12px;
+  transition: background-color 0.2s ease;
+}
+.was-menu-row:hover,
+.was-menu-row:focus-visible,
+.was-menu-row.is-active { background: rgba(0, 0, 0, 0.045); outline: 0; }
+.was-menu-chev {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  opacity: 0.7;
+  transition: transform 0.3s ease;
+}
+/* the active row's chevron turns up, as in his fifth frame */
+.was-menu-row.is-active .was-menu-chev { transform: rotate(180deg); }
+
+/* ── the wide second panel, beside the card ("una tendina molto più larga"):
+   it opens as a left → right curtain, then its list arrives item by item.
+   `top` is written by nav.js: the panel's top edge sits on the row that
+   opened it. The ::before strip bridges the gap to the card so the pointer
+   can cross without the whole thing closing. */
+.was-mega {
+  position: absolute;
+  top: 0;
+  left: calc(var(--nav-menu-w, 214px) - var(--nav-pad, 16px) + var(--nav-gap, 8px));
+  width: var(--nav-mega-w, 600px);
+  background: #fff;
+  border-radius: var(--nav-r, 20px);
+  box-shadow:
+    0 2px 6px rgba(20, 18, 12, calc(var(--nav-shadow, 0.16) * 0.4)),
+    0 22px 56px -18px rgba(20, 18, 12, calc(var(--nav-shadow, 0.16) * 2));
+  visibility: hidden;
+  opacity: 0;
+  z-index: 2;
+  will-change: clip-path, opacity;
+}
+.was-mega::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 100%;
+  width: calc(var(--nav-gap, 8px) + 2px);
+}
+.was-mega-in { padding: calc(var(--nav-pad, 16px) + 6px) calc(var(--nav-pad, 16px) + 6px) calc(var(--nav-pad, 16px) + 2px); }
+.was-mega-title {
+  margin: 0 0 14px 10px;
+  font-size: var(--nav-link-size, 15px);
+  font-weight: 500;
+  color: var(--left-ink);
+}
+.was-mega-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--nav-mega-cols, 3), minmax(0, 1fr));
+  gap: 2px 10px;
+}
+.was-mega-item {
+  display: block;
+  padding: 9px 10px;
+  font-size: var(--nav-row-size, 15px);
+  color: var(--left-ink);
+  text-decoration: none;
+  border-radius: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background-color 0.2s ease;
+}
+.was-mega-item:hover,
+.was-mega-item:focus-visible { background: rgba(0, 0, 0, 0.045); outline: 0; }
 
 .was-logo {
   font-family: "Exposure", Georgia, serif;
@@ -99,23 +261,6 @@ body {
   text-decoration: none;
   white-space: nowrap;
 }
-
-/* the round icon button that opens the filters */
-.was-nav-icon {
-  appearance: none;
-  flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  border-radius: 50%;
-  background: none;
-  color: var(--left-ink);
-  cursor: pointer;
-}
-.was-nav-icon svg { width: 18px; height: 18px; }
 
 .was-cta {
   appearance: none;
@@ -169,7 +314,7 @@ body.is-nav-sticky .was-nav::before {
   -webkit-backdrop-filter: blur(var(--search-blur, 14px)) saturate(1.2);
   backdrop-filter: blur(var(--search-blur, 14px)) saturate(1.2);
 }
-.was-search svg { width: 16px; height: 16px; opacity: 0.55; flex: 0 0 auto; }
+.was-search svg { width: 15px; height: 15px; opacity: 0.55; flex: 0 0 auto; }
 .was-search input {
   flex: 1 1 auto;
   min-width: 0;
@@ -376,6 +521,25 @@ body:not(.is-v2) #copyboxB { display: none; }
 body.is-v5 #stageB.is-solid { background: transparent; }
 body.is-v5 #leftB,
 body.is-v5 #copyboxB { display: none; }
+/* Experience 2 (his ask, 2026-09-21): the three circles, full-bleed like V5's
+   pair, and the Atlas's own view, cards and title re-parented over them —
+   the view above the circles by DOM order, the cards (3) and title (4) by
+   their own z-indices. */
+.was-trio-box {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.was-trio-svg { display: block; width: 100%; height: 100%; }
+.was-trio-circ,
+.was-trio-arc { vector-effect: non-scaling-stroke; }
+.was-trio-text { letter-spacing: -0.01em; }
+.was-trio-name { font-weight: 500; }
+/* `fill-opacity`, not `opacity`: the reveal writes the `opacity` ATTRIBUTE */
+.was-trio-desc { font-weight: 400; fill-opacity: 0.72; }
+.was-trio-side { font-weight: 400; letter-spacing: -0.005em; }
+body.is-trio #stageB .was-atlas-view { position: absolute; inset: 0; z-index: 2; }
+body.is-trio #stageB .was-atlas-canvas { background: transparent; }
 .was-network-svg {
   display: block;
   width: 100%;
@@ -390,11 +554,24 @@ body.is-v5 #copyboxB { display: none; }
 body.is-v2.is-ground .was-v2-block,
 body.is-v2.is-ground .was-copy-box.is-act .was-copy,
 body.is-v2.is-ground .was-nav .was-logo,
-body.is-v2.is-ground .was-nav .was-nav-icon {
+body.is-v2.is-ground .was-nav .was-nav-link,
+body.is-v2.is-ground .was-nav .was-nav-pill {
   color: var(--v2-ink, #f4ece1);
   transition: color 0.5s ease;
 }
-body.is-v2.is-ground .was-nav-icon { border-color: rgba(255, 255, 255, 0.28); }
+body.is-v2.is-ground .was-nav-pill { border-color: rgba(255, 255, 255, 0.34); }
+body.is-v2.is-ground .was-nav-sep { background: rgba(255, 255, 255, 0.28); }
+/* the dropdowns stay white cards with ink in them, whatever is under the bar */
+body.is-v2.is-ground .was-menu,
+body.is-v2.is-ground .was-mega { color: var(--left-ink); }
+body.is-v2.is-ground .was-menu-head,
+body.is-v2.is-ground .was-menu-row,
+body.is-v2.is-ground .was-mega-title,
+body.is-v2.is-ground .was-mega-item { color: var(--left-ink); }
+
+/* Experience 1 (his ask, 2026-09-21): a white page, no shader at all — the
+   ground layer is never fired (main.js), and this is the belt to that brace */
+body.is-paper .was-ground { display: none; }
 
 /* ── V2 — act two, rebuilt (keyboard 2) ─────────────────────────────────── */
 
@@ -1860,7 +2037,7 @@ body.is-v2.is-ground .was-player-wave i { background: #fff; }
 }
 
 @media (max-width: 860px) {
-  .was-panel, .was-track, .was-nav-icon { display: none; }
+  .was-panel, .was-track, .was-nav-links { display: none; }
   .was-hero-line { font-size: 9vw; }
   .was-hero-half.is-a { right: auto; left: 6vw; top: 26%; }
   .was-hero-half.is-b { left: auto; right: 6vw; top: 74%; }

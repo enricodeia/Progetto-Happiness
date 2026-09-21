@@ -16,6 +16,8 @@ import { createTeam } from "./team.js";
 import { createFooter } from "./footer.js";
 import { createV3Panel } from "./v3Panel.js";
 import { createCircles } from "./circles.js";
+import { createTrio } from "./trio.js";
+import { createNav } from "./nav.js";
 import { createAtlasSketch } from "./atlasSketch.js";
 import { createRing } from "./ring.js";
 import { createGround } from "./ground.js";
@@ -77,6 +79,7 @@ const copyBoxEl = document.getElementById("copybox");
 const copyBoxBEl = document.getElementById("copyboxB");
 const networkBoxEl = document.getElementById("networkBox");
 const circlesBoxEl = document.getElementById("circlesBox");
+const trioBoxEl = document.getElementById("trioBox");
 const bowlLayerEl = document.getElementById("bowlLayer");
 const atlasViewEl = document.getElementById("atlasView");
 const atlasTitleEl = document.getElementById("atlasTitle");
@@ -100,6 +103,26 @@ let left = null;
 let debug = null;
 let io = null;
 
+// ── the two experiences (his ask, 2026-09-21, the final task) ─────────────
+// Read from everywhere below — the columns, the stages, the raf — so they are
+// decided up here, off `CONFIG` alone.
+/** Experience 1's white page: no shader, ink on white */
+const paperOn = () => CONFIG.experience === 1 && CONFIG.exp.paper.on !== false;
+/** Experience 2's diagram — V5's block, drawing the three circles and the Atlas */
+const trioOn = () =>
+  CONFIG.variant === 5 && !!CONFIG.v2.circles.show && CONFIG.v2.circles.layout === "trio";
+/** ...or V5's own two flanking circles */
+const flankOn = () =>
+  CONFIG.variant === 5 && !!CONFIG.v2.circles.show && CONFIG.v2.circles.layout !== "trio";
+/** the Atlas as its OWN section (#pinC) — never while the trio hosts it */
+const atlasSectionOn = () => !!CONFIG.atlas.show && !trioOn();
+/** which nav bar: the experience decides, unless the panel says otherwise */
+const navMode = () => {
+  const m = Number(CONFIG.nav.mode);
+  if (m === 1 || m === 2) return m;
+  return CONFIG.experience === 2 || CONFIG.variant === 5 ? 2 : 1;
+};
+
 // The split never moves: the canvas holds the right half from the first step
 // to the last, so the frustum skew is set once and stays.
 function applyColumns() {
@@ -117,7 +140,9 @@ function applyColumns() {
   rootStyle.setProperty("--left-ink", c.leftInk);
   rootStyle.setProperty("--right-bg", c.rightBg);
   rootStyle.setProperty("--pad", `${c.pad}vw`);
-  rootStyle.setProperty("--page-bg", k.pageBg);
+  // Experience 1 is a WHITE page (his ask, 2026-09-21): the paper's own
+  // warm tone goes with the shader
+  rootStyle.setProperty("--page-bg", paperOn() ? CONFIG.exp.paper.bg : k.pageBg);
   // the last stage is the Atlas's own ground, so the DOM behind the canvas
   // and the canvas itself can never disagree on the colour of the paper
   rootStyle.setProperty("--atlas-bg", ATLAS_STATE.scene.background);
@@ -171,7 +196,7 @@ const gapVh = () => Math.max(0, CONFIG.scroll.handoverVh);
 // Zero when the Atlas is off: with nothing to rise over `#pinB`, keeping this
 // allowance would leave it holding its pin for `overlapVh` extra vh of empty
 // scroll after its own three steps are already done.
-const overlapVh = () => (CONFIG.atlas.show ? Math.max(0, CONFIG.atlas.overlapVh) : 0);
+const overlapVh = () => (atlasSectionOn() ? Math.max(0, CONFIG.atlas.overlapVh) : 0);
 const atlasVh = () => Math.max(100, CONFIG.atlas.vh);
 // how far through the whole clock the canvas experience runs
 const canvasFrac = () => vhA() / Math.max(1, pinVh(CONFIG));
@@ -187,7 +212,7 @@ function applyPinHeight() {
   pinBEl.style.marginTop = `${-earlyRiseVh()}vh`;
   pinCEl.style.height = `${100 + atlasVh()}vh`;
   pinCEl.style.marginTop = `${-overlapVh()}vh`;
-  pinCEl.hidden = !CONFIG.atlas.show;
+  pinCEl.hidden = !atlasSectionOn();
   document.body.classList.toggle("is-atlas-shadow", !!CONFIG.atlas.shadow);
   debug?.build();
 }
@@ -345,7 +370,13 @@ function applyLive() {
   // fraction of the pinned clock
   pinBTopPx = b.top;
   const c = pinCEl.getBoundingClientRect();
-  const cOn = CONFIG.atlas.show && c.bottom > -vh && c.top < vh * 2;
+  const sb = stageBEl.getBoundingClientRect();
+  // Experience 2 (2026-09-21): the Atlas lives INSIDE pinB's stage, over the
+  // three circles, and has something to draw only once the trio's knot
+  // window has opened — a pure function of the scroll, like the rest
+  const cOn = trioOn()
+    ? sb.bottom > 0 && sb.top < vh && trio.knotQ > 0.0005
+    : atlasSectionOn() && c.bottom > -vh && c.top < vh * 2;
 
   // ── the hard cutoff: the bowl and the ground stop entirely ─────────────
   // Not "covers(b)" — that is true for pinB's whole tall wrapper, most of
@@ -354,14 +385,15 @@ function applyLive() {
   // fully covering), nothing behind it can possibly be seen, so both layers
   // stop posing/spinning/rendering — not just drawing — the instant that
   // happens, and come back the instant it stops being true on the way up.
-  const sb = stageBEl.getBoundingClientRect();
   const stageBCovers = sb.top <= 1 && sb.bottom >= vh - 1;
   // ...except in V5 (his ask, 2026-09-21), whose stage is see-through by
   // design: the bowl IS what is behind it, as the wireframe. And the ground
   // must not be cut here either — pinB's stage pins the very frame the
   // handover begins, so this gate would kill the shader BEFORE its outro
   // could run; in V5 it stops only once that outro has closed it entirely.
-  bowl.setHidden(stageBCovers && !circlesOn());
+  // ...and in Experience 2 the bowl leaves for good once its lattice has
+  // faded under the knot: nothing left to pose or draw
+  bowl.setHidden((stageBCovers && !circlesOn()) || (trioOn() && trio.bowlGone));
   ground.setHidden(circlesOn() ? outroNow() >= 0.999 : stageBCovers);
 
   // ── the footer's reveal (his ask, 2026-09-16) ───────────────────────────
@@ -397,7 +429,7 @@ function applyLive() {
   document.body.classList.toggle("is-ground", onGround);
   const navBg = onGround
     ? CONFIG.v2.ground.color2
-    : CONFIG.atlas.show && covers(c)
+    : atlasSectionOn() && covers(c)
       ? ATLAS_STATE.scene.background
       : covers(b) || covers(a)
         ? CONFIG.columns.rightBg
@@ -410,12 +442,20 @@ left = createLeft({ mount: leftAEl, mountB: leftBEl, cfg: CONFIG });
 // exist before that timeline is built
 const bowl = createBowl({ mount: bowlLayerEl, cfg: CONFIG });
 const hero = createHero({ nav: navEl, heroEl, untilEl, underEl, cfg: CONFIG, bowl });
+// The nav bar (2026-09-21, the final task): two bars — one per experience —
+// with hover dropdowns, built here rather than in the hero
+const nav = createNav({ mount: navEl, cfg: CONFIG, mode: navMode });
 // The fanned deck of video cards is gone from the hero (his ask, 2026-09-17
 // — `cardswap.js` stays on disk, just not mounted). In its place: the player,
 // fixed bottom-left, and the scroll bar along the bottom — both live on the
 // body, not in any section, because both ride the viewport.
 const player = createPlayer({ mount: document.body, cfg: CONFIG });
-const scrollBar = createProgress({ mount: document.body, cfg: CONFIG });
+// ...its ink swaps to black on Experience 1's white page — a white bar over
+// a white page is no bar at all
+const scrollBar = createProgress({
+  mount: document.body, cfg: CONFIG,
+  ink: () => (paperOn() ? CONFIG.exp.paper.ink : null),
+});
 // V2 — the ring is built into the BOWL's scene (it has to share the depth
 // buffer to pass behind the object), and the quiet section is the page the
 // bowl descends into.
@@ -436,6 +476,9 @@ const network = createNetwork({ mount: networkBoxEl, cfg: CONFIG });
 const circles = createCircles({ mount: circlesBoxEl, cfg: CONFIG, bowl });
 const quiet = createQuiet({ el: quietEl, images: left.images, cfg: CONFIG });
 const atlas = createAtlas({ mount: atlasViewEl, cardsMount: atlasCardsEl });
+// Experience 2's three circles and the Atlas over them (his ask, 2026-09-21):
+// it fits its circles to the knot's own lobes, so it is handed the Atlas too
+const trio = createTrio({ mount: trioBoxEl, cfg: CONFIG, bowl, atlas });
 const team = createTeam({ mount: belowEl, cfg: CONFIG });
 const footer = createFooter({ mount: footerEl, cfg: CONFIG });
 
@@ -533,6 +576,14 @@ const bowlPanel = createBowlPanel({
 const v3Panel = createV3Panel({
   cfg: CONFIG,
   onVariant: (v) => setVariant(v),
+  // the two experiences and their own knobs (2026-09-21)
+  onExperience: (e) => setExperience(e),
+  onPaper: () => applyVariant(),
+  onNav: () => nav.build(),
+  onNavStyle: () => nav.style(),
+  onTrio: () => { trio.style(); trio.resize(); },
+  onTrioBlock: () => applyVariant(),
+  onTrioAtlas: () => { applyTrioAtlas(); trio.resize(); },
   onNetwork: () => network.resize(),
   onCircles: () => { circles.style(); circles.resize(); },
   // the bowl's lattice re-fitted to a new density / re-inked (his ask,
@@ -565,6 +616,7 @@ const v3Panel = createV3Panel({
 // sinistra"), its own `.was-panel-titles` rule in style.css.
 const titlesPanel = createTitlesPanel({
   cfg: CONFIG,
+  onNav: () => nav.build(),
   onHeroRebuild: () => { hero.rebuild(); hero.replayAll(); },
   onHeroStyle: () => hero.style(),
   onV2Rebuild: () => hero.rebuildV2(),
@@ -629,10 +681,28 @@ function placeStages() {
   // ...and V5's circles take the whole stage instead of either (his ask,
   // 2026-09-21): sphere box and network box both hidden, the diagram shown.
   const circOn = circlesOn();
+  const trOn = trioOn();
   canvasLayerEl.hidden = netOn || circOn;
-  circlesBoxEl.hidden = !circOn;
+  // ...one diagram or the other: V5's flanking pair, or Experience 2's trio
+  circlesBoxEl.hidden = !(circOn && !trOn);
+  trioBoxEl.hidden = !trOn;
   if (netOn || circOn) sphere?.setActive(false);
-  if (circOn) circles.resize();
+  if (circOn && !trOn) circles.resize();
+  // ── Experience 2: the Atlas moves INTO this stage, over the circles ──
+  // Its view, cards and title are re-parented from #pinC (which is hidden
+  // meanwhile — `atlasSectionOn()`), its canvas goes see-through, and it is
+  // re-fitted to the stage. Put back exactly where it was when the trio is
+  // off, so the legacy Atlas section is untouched.
+  const atlasHost = trOn ? stageBEl : stageCEl;
+  if (atlasViewEl.parentNode !== atlasHost) {
+    atlasHost.appendChild(atlasViewEl);
+    atlasHost.appendChild(atlasTitleEl);
+    atlasHost.appendChild(atlasCardsEl);
+  }
+  atlas.setTransparent(trOn);
+  applyTrioAtlas();
+  if (trOn) trio.resize();
+  else trio.reset();
   // V3 and V4 draw in a bigger frame than V2's sphere was composed for
   const b = (CONFIG.variant >= 3 && CONFIG.v2.canvasBoxBig) || CONFIG.v2.canvasBox;
   canvasLayerEl.style.setProperty("--cb-x", `${b.x}%`);
@@ -647,6 +717,62 @@ function placeStages() {
   network.style();
 }
 
+// The Atlas, as Experience 2 wants it — the camera panned and fitted for this
+// stage, the cards kept clear of the top, and each card RE-SEATED on the lobe
+// under its own circle (Members on "Member feedback", Therapists on
+// "Therapist reports", the library on "Clinical research") — and put back
+// exactly as the preset had it whenever the trio is off.
+const ATLAS_REST = {
+  t: ATLAS_STATE.cards.items.map((i) => i.t),
+  offsetY: ATLAS_STATE.camera.offsetY,
+  padding: ATLAS_STATE.camera.padding,
+  padTop: ATLAS_STATE.cards.padTop,
+  pointer: ATLAS_STATE.pointer.enabled,
+};
+function applyTrioAtlas() {
+  const S = ATLAS_STATE;
+  if (!trioOn()) {
+    S.cards.items.forEach((it, i) => { it.t = ATLAS_REST.t[i]; });
+    S.camera.offsetY = ATLAS_REST.offsetY;
+    S.camera.padding = ATLAS_REST.padding;
+    S.cards.padTop = ATLAS_REST.padTop;
+    S.pointer.enabled = ATLAS_REST.pointer;
+    atlas.resize();
+    return;
+  }
+  const A = CONFIG.v2.trio.atlas;
+  S.camera.offsetY = A.offsetY;
+  S.camera.padding = A.padding;
+  S.cards.padTop = A.cardsPadTop;
+  S.pointer.enabled = !!A.pointer;
+  atlas.resize();   // the fit, in THIS stage's own size
+  // which lobe is where is a fact about the projection — read off the same
+  // fits the circles themselves are drawn from
+  const fits = atlas.lobeCircles(CONFIG.v2.trio.fitSpan);
+  if (fits && fits.length === 3) {
+    const byY = [...fits].sort((a, b) => b.cy - a.cy);
+    const top = byY.slice(1).sort((a, b) => a.cx - b.cx);
+    const role = { b: byY[0], tl: top[0], tr: top[1] };
+    const which = (title) =>
+      /librar|science/i.test(title) ? A.cards.library
+        : /member/i.test(title) ? A.cards.members
+          : /therap/i.test(title) ? A.cards.therapists : null;
+    S.cards.items.forEach((it, i) => {
+      const r = which(it.title);
+      it.t = r && role[r] ? role[r].t : ATLAS_REST.t[i];
+    });
+  }
+}
+
+/** Experience 2's steps: V2's first three (the ring act), then the block the
+ *  trio and the Atlas draw through — `trio.blockVh`, split over its steps */
+const stepsTrio = () => {
+  const from = split();
+  const n = Math.max(1, STEPS_V2.length - from);
+  const each = Math.max(100, CONFIG.v2.trio.blockVh) / n;
+  return STEPS_V2.map((s, i) => (i >= from ? { ...s, vh: each } : s));
+};
+
 function applyVariant() {
   const on = !!CONFIG.v2.on;
   document.body.classList.toggle("is-v2", on);
@@ -657,6 +783,11 @@ function applyVariant() {
   // V5: the two circles around the bowl (his ask, 2026-09-21) — its stage
   // goes see-through so the bowl shows behind, and its own text goes
   document.body.classList.toggle("is-v5", CONFIG.variant === 5);
+  // the two experiences (2026-09-21): the white page, and the trio + Atlas
+  document.body.classList.toggle("is-exp1", CONFIG.experience === 1);
+  document.body.classList.toggle("is-exp2", CONFIG.experience === 2);
+  document.body.classList.toggle("is-paper", paperOn());
+  document.body.classList.toggle("is-trio", trioOn());
   // the team's black and white: V3's treatment, and liftable from the panel
   document.body.classList.toggle(
     "is-team-bw", CONFIG.variant >= 3 && CONFIG.team.grayscale !== false
@@ -665,7 +796,7 @@ function applyVariant() {
   document.body.classList.toggle(
     "is-team-caps", CONFIG.variant === 4 && CONFIG.team.captions !== false
   );
-  CONFIG.steps = on ? STEPS_V2 : STEPS_V1;
+  CONFIG.steps = on ? (trioOn() ? stepsTrio() : STEPS_V2) : STEPS_V1;
   CONFIG.sections.canvasFrom = on ? split() : 0;
   // The evidence panel is in BOTH: it always rides the second sticky. In V2 it
   // simply shares that section with the canvas, which has a corner of it.
@@ -689,22 +820,45 @@ function applyVariant() {
   debug?.build();
   // the team's black and white is pure CSS off `body.is-v3`, and the footer's
   // new shape is not variant-dependent at all — neither needs rebuilding here
+  // the scroll bar's ink and the nav bar follow the experience
+  scrollBar.style();
+  nav.sync();
   // the panel may not exist yet on the very first applyVariant()
   v3Panel?.refresh();
 }
 
+/** a version picked BY HAND (the panel's legacy dropdown, or the verify) — no
+ *  experience owns it: the white page and the trio both stand down */
 function setVariant(n) {
   const raw = Number(n);
   const v = raw >= 1 && raw <= 5 ? Math.round(raw) : 1;
-  if (v === CONFIG.variant) return;
+  const owned = CONFIG.experience !== 0;
+  CONFIG.experience = 0;
+  CONFIG.v2.circles.layout = "flank";
+  if (v === CONFIG.variant && !owned) return;
   CONFIG.variant = v;
   // the derived flag, written in ONE place: every `v2.on` read means
   // "at least V2", and V3 wants V2's behaviour for all of them
   CONFIG.v2.on = v >= 2;
   applyVariant();
 }
-CONFIG.v2.on = CONFIG.variant >= 2;
-applyVariant();
+/** 1 | 2 — the two experiences (his ask, 2026-09-21): keyboard 1 and 2, and
+ *  the panel. 1 is version four on the white page, 2 is version five with the
+ *  trio and the Atlas drawn over it. */
+function setExperience(n) {
+  const e = Number(n) === 2 ? 2 : 1;
+  CONFIG.experience = e;
+  CONFIG.v2.circles.layout = e === 2 ? "trio" : "flank";
+  CONFIG.variant = e === 2 ? 5 : 4;
+  CONFIG.v2.on = true;
+  applyVariant();
+}
+if (CONFIG.experience === 1 || CONFIG.experience === 2) {
+  setExperience(CONFIG.experience);
+} else {
+  CONFIG.v2.on = CONFIG.variant >= 2;
+  applyVariant();
+}
 
 // ── V2: the bowl's own arc ────────────────────────────────────────────────
 // In V1 the bowl grows into `until`, shrinks back into `hand`, and is simply
@@ -815,14 +969,20 @@ bowl.setPoseHook((pose, ctx) => {
   //     is already home when the first beat begins.
   if (circlesOn()) {
     const K = CONFIG.v2.circles;
+    // Experience 2's trio has a bowl pose of its own (smaller: the circles
+    // are drawn around it, the knot takes the centre after) — V5's pair
+    // keeps the frame-filling one the fourth circle is measured from
+    const TB = trioOn() ? CONFIG.v2.trio.bowl : null;
     const s0 = tl.actS1 ?? 1;
     const s1 = Math.max(s0 + 0.01, tl.canvasS0 ?? 1);
     const home = smooth(clamp01((tl.p - s0) / (s1 - s0)));
     if (home > 0) {
-      const centre = {
-        ...P.until, x: K.bowlX ?? 0, y: K.bowlY ?? 0, size: K.bowlSize,
-        tilt: K.bowlTilt, tiltZ: K.bowlTiltZ ?? 0, opacity: 1,
-      };
+      const centre = TB
+        ? { ...P.until, x: TB.x ?? 0, y: TB.y ?? 0, size: TB.size, tilt: TB.tilt, tiltZ: TB.tiltZ ?? 0, opacity: 1 }
+        : {
+          ...P.until, x: K.bowlX ?? 0, y: K.bowlY ?? 0, size: K.bowlSize,
+          tilt: K.bowlTilt, tiltZ: K.bowlTiltZ ?? 0, opacity: 1,
+        };
       out = mix(out, centre, home);
     }
     poseDebug = { home: +home.toFixed(3), s0: +s0.toFixed(3), s1: +s1.toFixed(3), p: +tl.p.toFixed(3), size: +out.size.toFixed(3), opacity: +out.opacity.toFixed(3) };
@@ -864,7 +1024,9 @@ addEventListener("keydown", (e) => {
   const t = e.target;
   if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
   const k = e.key.toLowerCase();
-  if (k === "1" || k === "2" || k === "3" || k === "4" || k === "5") { setVariant(k); return; }
+  // 1 / 2 are the two EXPERIENCES now (his ask, 2026-09-21); the legacy
+  // versions are in the V panel's own dropdown, behind `c`
+  if (k === "1" || k === "2") { setExperience(k); return; }
   if (k === "c") { setClean(!clean); return; }
   if (clean) return;              // nothing else answers while it is clean — panels included
   if (k === "v") v3Panel.toggle();
@@ -884,6 +1046,8 @@ addEventListener("resize", () => {
   quiet.style();
   network.resize();
   circles.resize();
+  trio.resize();
+  applyTrioAtlas();
   syncFooterSpacer();
 });
 
@@ -933,7 +1097,10 @@ function raf(now) {
   // V2 — the two rings are fired by the PINNED clock (one per step), and the
   // ground is fired by act two's, where it opens out from behind the bowl.
   for (const r of rings) r.drive(tl);
-  ground.drive(untilQ);
+  // Experience 1 has NO shader (his ask, 2026-09-21): the ground is never
+  // fired — handed a clock that is always before its mark, so if it is open
+  // when the experience switches it closes the way it opened
+  ground.drive(paperOn() ? -1 : untilQ);
   // ...and what the ground is showing is one of his three images per step,
   // crossfaded across the BOUNDARY rather than all the way through the step,
   // so each one is itself for most of the time it is up.
@@ -1011,7 +1178,9 @@ function raf(now) {
   ground.setClose(outro);
   bowl.setSheet(outro);
   // ...and the idle turn eases to V5's own rate over the same handover
-  bowl.setSpinMul(circlesOn() ? 1 + ((CONFIG.v2.circles.bowlSpin ?? 1) - 1) * outro : 1);
+  bowl.setSpinMul(circlesOn()
+    ? 1 + (((trioOn() ? CONFIG.v2.trio.bowl.spin : CONFIG.v2.circles.bowlSpin) ?? 1) - 1) * outro
+    : 1);
   let bowlGain = 1;
   if (CONFIG.bowl.fadeAfter > 0 && !circlesOn()) {
     const vh = window.innerHeight;
@@ -1081,6 +1250,7 @@ function raf(now) {
   // with the reads, ahead of the frame's transform and opacity writes
   network.update(tl);
   circles.update(tl);
+  trio.update(tl);
   ground.frame(dt, bowl.projected(), actBg);
   // the scroll bar rides pinA's own UNCLAMPED clock (his ask, 2026-09-18),
   // so it can fade in and out across THAT module, not the combined one
@@ -1101,10 +1271,13 @@ function raf(now) {
   const lead = CONFIG.text.lead / Math.max(1, tl.pinVh);
   copyA.update(rawProgress, tl.ranges, lead);
   copyB.update(rawProgress, tl.ranges, lead);
-  atlas.setProgress(atlasQ);
+  // the Atlas's clock: its own section's scroll — or, in Experience 2, the
+  // trio's knot window inside pinB's block
+  const atlasP = trioOn() ? trio.knotQ : atlasQ;
+  atlas.setProgress(atlasP);
   atlas.frame(dt);
   if (CONFIG.atlas.title.show) {
-    const a = clamp01(atlasQ / Math.max(0.001, CONFIG.atlas.title.dur));
+    const a = clamp01(atlasP / Math.max(0.001, CONFIG.atlas.title.dur));
     atlasHEl.style.opacity = a.toFixed(3);
     atlasSubEl.style.opacity = a.toFixed(3);
     atlasSketch.set(a);
@@ -1294,6 +1467,15 @@ window.__was = {
   get sphereScene() { return sphere.scene; },
   hero,
   setVariant,
+  /** the two experiences (2026-09-21): 1 the white page, 2 the trio + Atlas */
+  setExperience,
+  get experience() { return CONFIG.experience; },
+  paperOn,
+  trioOn,
+  trio,
+  nav,
+  /** which stage the Atlas's view is in right now — `stageB` in Experience 2 */
+  get atlasHost() { return atlasViewEl.parentElement?.id || null; },
   v3Panel,
   /** re-decide which of the sphere box / trust network occupies the corner —
       exposed so the verify can flip `cfg.v2.network.show` and confirm the

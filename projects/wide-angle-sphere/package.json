@@ -13,6 +13,7 @@
     "library:shots": "node scripts/shoot-library.mjs"
   },
   "dependencies": {
+    "@fortawesome/pro-regular-svg-icons": "^7.3.1",
     "gsap": "^3.13.0",
     "lenis": "^1.3.11",
     "three": "^0.184.0",

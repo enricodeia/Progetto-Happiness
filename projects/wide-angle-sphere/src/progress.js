@@ -11,7 +11,9 @@
 
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-export function createProgress({ mount, cfg }) {
+/** `ink()` — an override for the bar's colour (Experience 1's white page,
+ *  2026-09-21: a white bar over a white page is no bar), null for `cfg` */
+export function createProgress({ mount, cfg, ink = () => null }) {
   const root = document.createElement("div");
   root.className = "was-progress";
   root.innerHTML = `<div class="was-progress-fill"></div>`;
@@ -28,9 +30,12 @@ export function createProgress({ mount, cfg }) {
     root.style.setProperty("--pg-r", `${P.radius}px`);
     root.style.setProperty("--pg-bottom", `${P.bottom}px`);
     root.style.setProperty("--pg-inset", `${P.inset}vw`);
-    root.style.setProperty("--pg-color", P.color);
+    const over = ink();
+    root.style.setProperty("--pg-color", over || P.color);
     root.style.setProperty("--pg-track", String(P.trackAlpha));
-    root.style.setProperty("--pg-edge", String(P.edge ?? 0));
+    // the hairline exists to keep a WHITE fill readable over white — an ink
+    // bar has no such problem, and the line would only muddy it
+    root.style.setProperty("--pg-edge", String(over ? 0 : (P.edge ?? 0)));
     root.classList.toggle("is-wavy", !!P.wavy);
   }
 

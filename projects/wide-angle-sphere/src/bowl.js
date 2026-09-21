@@ -131,6 +131,16 @@ export function createBowl({ mount, cfg }) {
     sheetA = v;
     sheet.style.opacity = v.toFixed(3);
   }
+  // ...and its colour (Experience 2, 2026-09-21): the trio warms the white to
+  // the Atlas's own paper before the knot draws. "" gives the stylesheet's
+  // `var(--right-bg)` back.
+  let sheetColor = "";
+  function setSheetColor(css) {
+    const v = css || "";
+    if (v === sheetColor) return;
+    sheetColor = v;
+    sheet.style.backgroundColor = v;
+  }
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(B.cam.fov, 1, 0.05, 200);
@@ -636,6 +646,8 @@ export function createBowl({ mount, cfg }) {
     replay,
     setWireframe,
     setSheet,
+    setSheetColor,
+    get sheetColor() { return sheetColor; },
     setSpinMul,
     rebuildWire,
     setWireInk,
