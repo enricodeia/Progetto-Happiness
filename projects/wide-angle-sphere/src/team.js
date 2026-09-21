@@ -140,11 +140,17 @@ export function createTeam({ mount, cfg }) {
     root.style.setProperty("--tc-gap", `${T.captionGap ?? 10}px`);
   }
 
-  function build() {
+  /** the head alone — the title, the paragraph, the second grid's label. The
+   *  two experiences word it differently (2026-09-21), and swapping words must
+   *  not rebuild the grids or re-arm the row reveal. */
+  function retitle() {
     const T = cfg.team;
     setLines(titleEl, T.title);
     descEl.textContent = T.desc;
     sublabelEl.textContent = T.partnersTitle;
+  }
+  function build() {
+    retitle();
     buildGrid("team");
     buildGrid("partners");
   }
@@ -308,6 +314,7 @@ export function createTeam({ mount, cfg }) {
 
   return {
     style,
+    retitle,
     build: () => { build(); wireCards(); armReveal(); style(); },
     /** rows found / rows already played, across both grids */
     get reveal() { return { ...revealState }; },
@@ -326,7 +333,14 @@ export function createTeam({ mount, cfg }) {
         team: of("team"),
         partners: of("partners"),
         title: [...titleEl.querySelectorAll("span")].map((s) => s.textContent).join("\n"),
+        desc: descEl.textContent,
         sublabel: sublabelEl.textContent,
+        // how the section is treated right now, off the body classes
+        bw: document.body.classList.contains("is-team-bw"),
+        caps: document.body.classList.contains("is-team-caps"),
+        capShown: getComputedStyle(root.querySelector(".was-team-cap")).display !== "none",
+        tooltipDisplay: getComputedStyle(tooltip).display,
+        firstFilter: (() => { const c = root.querySelector(".was-team-card:not(.is-placeholder)"); return c ? getComputedStyle(c).filter : ""; })(),
         tooltipVisible: visible,
         tooltipName: nameSpans[0].dataset.on === "1" ? nameSpans[0].textContent : nameSpans[1].textContent,
         tooltipRole: roleSpans[0].dataset.on === "1" ? roleSpans[0].textContent : roleSpans[1].textContent,

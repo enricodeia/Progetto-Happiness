@@ -823,9 +823,11 @@ console.log('le tre card:', atlasCards)
 // the header above the mark: a plain fade, already in place, and the cards
 // never land on top of it
 const atlasTitle = await page.evaluate(() => {
-  const box = document.querySelector('.was-atlas-title')
-  const h = document.querySelector('.was-atlas-h')
-  const sub = document.querySelector('.was-atlas-sub')
+  // scoped to the Atlas's own header: the trio's header over the circles
+  // (Experience 2) is set in the same classes, and sits earlier in the DOM
+  const box = document.querySelector('#atlasTitle')
+  const h = box.querySelector('.was-atlas-h')
+  const sub = box.querySelector('.was-atlas-sub')
   const r = box.getBoundingClientRect()
   const cards = [...document.querySelectorAll('.was-atl-card')]
   return {
@@ -833,6 +835,8 @@ const atlasTitle = await page.evaluate(() => {
     hOpacity: +getComputedStyle(h).opacity, subOpacity: +getComputedStyle(sub).opacity,
     rect: { top: Math.round(r.top), bottom: Math.round(r.bottom) },
     cardsClearTitle: cards.every((c) => c.getBoundingClientRect().top >= r.bottom - 4),
+    // the small sketch above the heading is OFF (his ask, 2026-09-21)
+    sketchHidden: getComputedStyle(document.querySelector('.was-atlas-sketch-mount')).display === 'none',
   }
 })
 console.log('il titolo dell’Atlas:', atlasTitle)
@@ -1923,14 +1927,37 @@ const exp = await page.evaluate(async () => {
   const out = {}
   // ── 1 ──
   W.setExperience(1); await pause(700)
+  const rect = (sel) => { const b = document.querySelector(sel).getBoundingClientRect(); return { l: Math.round(b.left), t: Math.round(b.top), r: Math.round(b.right), b: Math.round(b.bottom) } }
+  const copyNow = () => ({
+    hero: { title: W.cfg.hero.title, titleB: W.cfg.hero.titleB, para: W.cfg.hero.para, leftShift: W.cfg.hero.leftShift, rightShift: W.cfg.hero.rightShift },
+    heroA: document.querySelector('.was-hero-half.is-a').textContent, heroB: document.querySelector('.was-hero-half.is-b').textContent,
+    // the second line of the left half, stepped toward the bowl (his frame 1)
+    line2Shift: (() => { const a = document.querySelector('.was-hero-half.is-a'); const l = a.querySelectorAll('.was-line'); if (l.length < 2) return 0; return Math.round(l[1].getBoundingClientRect().right - l[0].getBoundingClientRect().right) })(),
+    top: W.cfg.v2.top.text, bottom: { text: W.cfg.v2.bottom.text, align: W.cfg.v2.bottom.align },
+    act: W.cfg.steps.slice(0, 3).map((s) => s.text), actOut: W.cfg.steps.slice(0, 3).map((s) => s.textOut), actAlign: [...W.cfg.v2.act.copyAlign],
+    evidence: {
+      title: W.cfg.evidence.title, summary: W.cfg.evidence.summary, titleWidth: W.cfg.evidence.titleWidth,
+      labels: [...document.querySelectorAll('.was-ev-label')].map((e) => e.textContent), paras: W.cfg.evidence.rows.map((r) => r.para),
+      titleLines: document.querySelectorAll('.was-ev-title .was-line').length,
+      // no line of the statement wraps onto a second row (his three lines, unbroken)
+      titleWrapFree: (() => { const t = document.querySelector('.was-ev-title'); const fs = parseFloat(getComputedStyle(t).fontSize); return [...t.querySelectorAll('.was-line')].every((l) => l.getBoundingClientRect().height < fs * 1.6) })(),
+    },
+    atlas: { heading: W.cfg.atlas.title.heading, sub: W.cfg.atlas.title.sub, sketchHidden: cs(document.querySelector('.was-atlas-sketch-mount')).display === 'none' },
+    head: W.trio.probe().headText, headSub: W.trio.probe().headSub,
+    team: W.team.probe(), teamStyle: W.teamStyle,
+  })
   out.e1 = {
     experience: W.experience, variant: W.cfg.variant, paper: W.paperOn(), trio: W.trioOn(),
     isPaper: body().contains('is-paper'), isExp1: body().contains('is-exp1'), isV4: body().contains('is-v4'),
     pageBg: cs(document.body).backgroundColor, bar: W.scrollBar.probe().color,
+    stageBBg: cs(document.getElementById('stageB')).backgroundColor, teamBg: cs(document.querySelector('.was-team')).backgroundColor,
     nav: W.nav.probe(), atlasHost: W.atlasHost, pinCHidden: document.getElementById('pinC').hidden,
     trioHidden: document.getElementById('trioBox').hidden, networkHidden: document.getElementById('networkBox').hidden,
+    copy: copyNow(),
   }
-  // the ground would open at 0.4 of act two — on the white page it never does
+  // the team in Experience 1: colour, and the cursor tooltip (his ask, "invertiamo le due")
+  W.team.hover(2); await pause(700); out.e1team = W.team.probe(); W.team.unhover(2); await pause(300)
+  // the ground would open at 0.4 of act two — on the paper page it never does
   W.scrollToUntil(0.9); await pause(1400)
   out.e1until = { ground: W.ground.probe(), isGround: body().contains('is-ground'), groundDisplay: cs(document.querySelector('.was-ground')).display,
     ink: cs(document.querySelector('.was-nav-link')).color, blockInk: cs(document.querySelector('.was-v2-block')).color }
@@ -1951,43 +1978,69 @@ const exp = await page.evaluate(async () => {
     blockVh: W.cfg.steps.slice(3).reduce((a, s) => a + s.vh, 0), pageBg: cs(document.body).backgroundColor,
     cardsHidden: cs(document.getElementById('atlasCards')).display === 'none',
     cardT: W.atlasState.cards.items.map((i) => ({ title: i.title, t: +i.t.toFixed(4) })),
+    copy: copyNow(),
   }
   // the shader is back: act two opens it, the ring act stands on it, the nav goes light
   W.scrollToStep(1, 0.5); await pause(1400)
   out.e2ring = { isGround: body().contains('is-ground'), groundOn: W.ground.probe().on, link: cs(document.querySelector('.was-nav-link')).color, pill: cs(document.querySelector('.was-nav-pill')).color }
+  // the act's THIRD step (his frame 7): the rings gone into the bowl, the added
+  // statement centred at the top of the open field, the white stage rising under it
+  { const r = W.tl.ranges[2]; W.scrollTo(r.s0 + 0.55 * r.len); await pause(1600) }
+  out.e2step3 = (() => {
+    const el = document.querySelector('.was-copy-box.is-act .was-copy[data-step="3"]')
+    const b = el ? el.getBoundingClientRect() : null
+    return { vis: el ? cs(el).visibility : 'none', opacity: el ? +cs(el).opacity : 0, text: el ? el.textContent : '',
+      centred: b ? Math.abs((b.left + b.right) / 2 - window.innerWidth / 2) < 40 : false, top: b ? Math.round(b.top) : 0,
+      align: cs(document.querySelector('.was-copy-box.is-act .was-copy')).textAlign,
+      stageTop: Math.round(document.getElementById('stageB').getBoundingClientRect().top), vh: window.innerHeight,
+      isGround: body().contains('is-ground'), groundOn: W.ground.probe().on, bowlHidden: W.bowl.hidden, close: W.ground.probe().close, sheet: W.bowl.sheet }
+  })()
   // the block's own 0→1
   const go = async (f) => { const tl = W.tl; W.scrollTo(tl.canvasS0 + f * (tl.canvasS1 - tl.canvasS0)); await pause(900) }
   const snap = () => ({ ...W.trio.probe(), wire: W.bowl.wireframe, bowlHidden: W.bowl.hidden, sheet: W.bowl.sheet, sheetColor: W.bowl.sheetColor, atlas: W.atlas.probe(), cardsDisplay: cs(document.getElementById('atlasCards')).display,
-    titleAlpha: +cs(document.querySelector('.was-atlas-h')).opacity })
-  { const tl = W.tl; W.scrollTo(tl.actS1 + 0.5 * (tl.canvasS0 - tl.actS1)); await pause(900); out.outro = { ground: W.ground.probe(), sheet: W.bowl.sheet, drawn: W.trio.probe().draw } }
+    titleAlpha: +cs(document.querySelector('#atlasTitle .was-atlas-h')).opacity, subPx: parseFloat(cs(document.querySelector('.was-trio-head .was-atlas-sub')).fontSize),
+    stageTop: Math.round(document.getElementById('stageB').getBoundingClientRect().top), groundOn: W.ground.probe().on, close: W.ground.probe().close })
+  // the handover into the block: NO outro any more — the stage has simply risen over the bowl
+  { const tl = W.tl; W.scrollTo(tl.actS1 + 0.5 * (tl.canvasS0 - tl.actS1)); await pause(900); out.rise = snap() }
   const M = W.cfg.v2.trio.marks
-  await go(M.wire * 0.7);                 out.b1 = snap()   // the lattice, alone
-  await go((M.wire + M.c1) / 2 + 0.03);   out.b2 = snap()   // top-right drawing
+  await go(0.02);                         out.b0 = snap()   // the header arriving, the first circle starting
+  await go(M.c1 / 2 + 0.03);              out.b2 = snap()   // top-right drawing
   await go(M.c1 + 0.005);                 out.b2end = snap()
   await go((M.c1 + M.c2) / 2 + 0.03);     out.b3 = snap()   // the bottom one
   await go((M.c2 + M.c3) / 2 + 0.03);     out.b4 = snap()   // top-left
-  await go(M.arcs - 0.002);               out.b5 = snap()   // the arcs, the side labels
-  await go(M.knot + 0.02);                out.b6 = snap()   // the knot begins
+  await go(M.c3 + 0.015);                 out.b5 = snap()   // all three, no arcs, the paper warming
+  await go(M.knot + 0.02);                out.b6 = snap()   // the knot begins, the header handed over
   await go((M.knot + 1) / 2);             out.b7 = snap()
   await go(0.995);                        out.b8 = snap()   // the Atlas, complete, over the circles
-  await go(M.wire * 0.7);                 out.back = snap()  // ...and back: un-drawn, the Atlas asleep
+  { const r = W.tl.ranges[2]; W.scrollTo(r.s0 + 0.5 * r.len); await pause(900); out.back = snap() }  // ...and back up: un-drawn, the Atlas asleep, the bowl there
   // ── the keys ──
   const key = (k) => window.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }))
   W.scrollTo(0); window.scrollTo(0, 0); await pause(400)
   key('1'); await pause(600); out.key1 = { experience: W.experience, variant: W.cfg.variant, mode: W.nav.probe().mode, paper: body().contains('is-paper') }
   key('2'); await pause(600); out.key2 = { experience: W.experience, variant: W.cfg.variant, mode: W.nav.probe().mode, trio: body().contains('is-trio') }
   key('5'); await pause(300); out.key5 = { experience: W.experience, variant: W.cfg.variant }
-  // a legacy version by hand stands both down
+  // an edit in the Titles panel belongs to the experience on screen (copyBack), and survives a switch away and back
+  W.setExperience(1); await pause(500)
+  const para0 = W.cfg.hero.para
+  W.cfg.hero.para = 'PROVA|persistenza'; W.copyBack()
+  W.setExperience(2); await pause(500); const inE2 = W.cfg.hero.para
+  W.setExperience(1); await pause(500); const backIn1 = W.cfg.hero.para
+  W.cfg.hero.para = para0; W.copyBack()
+  out.persist = { inE2, backIn1, restored: W.cfg.hero.para === para0 && W.copyTable.hero.para === para0 }
+  // a legacy version by hand stands both down — and gets the page's ORIGINAL words back
   W.setVariant(5); await pause(600)
-  out.legacy5 = { experience: W.experience, trio: W.trioOn(), circlesHidden: document.getElementById('circlesBox').hidden, trioHidden: document.getElementById('trioBox').hidden, atlasHost: W.atlasHost, cardT: W.atlasState.cards.items.map((i) => +i.t.toFixed(4)), transparent: W.atlas.probe().transparent }
+  out.legacy5 = { experience: W.experience, trio: W.trioOn(), circlesHidden: document.getElementById('circlesBox').hidden, trioHidden: document.getElementById('trioBox').hidden, atlasHost: W.atlasHost, cardT: W.atlasState.cards.items.map((i) => +i.t.toFixed(4)), transparent: W.atlas.probe().transparent,
+    heroTitle: W.cfg.hero.title, teamTitle: W.team.probe().title, teamStyle: W.teamStyle, stageBg: cs(document.getElementById('stageB')).backgroundColor }
   W.setVariant(1); await pause(600)
   return out
 })
-console.log('EXPERIENCES:', JSON.stringify({ e1: exp.e1, e1until: exp.e1until, e1ring: exp.e1ring, e2: { ...exp.e2, nav: undefined, atlas: undefined }, e2ring: exp.e2ring, key1: exp.key1, key2: exp.key2, key5: exp.key5, legacy5: exp.legacy5 }, null, 1))
-console.log('TRIO frames:', JSON.stringify({ b1: exp.b1.draw, b2: exp.b2.draw, b3: exp.b3.draw, b4: exp.b4.draw, b5: exp.b5.draw,
-  b6: { knot: exp.b6.knotQ, atlas: exp.b6.atlas.progress, active: exp.b6.atlas.active, paper: exp.b6.paper, sheet: exp.b6.sheetColor, bowlOut: exp.b6.bowlOut, bowlHidden: exp.b6.bowlHidden, gone: exp.b6.text.gone, title: exp.b6.titleAlpha },
+console.log('EXPERIENCES:', JSON.stringify({ e1: { ...exp.e1, nav: undefined, copy: undefined }, e1copy: exp.e1.copy, e1team: { style: exp.e1team.style, caps: exp.e1team.caps, bw: exp.e1team.bw, tooltip: exp.e1team.tooltipVisible, name: exp.e1team.tooltipName }, e1until: exp.e1until, e1ring: exp.e1ring, e2: { ...exp.e2, nav: undefined, atlas: undefined, copy: undefined }, e2copy: exp.e2.copy, e2ring: exp.e2ring, e2step3: exp.e2step3, key1: exp.key1, key2: exp.key2, key5: exp.key5, persist: exp.persist, legacy5: exp.legacy5 }, null, 1))
+console.log('TRIO frames:', JSON.stringify({ rise: { stageTop: exp.rise.stageTop, bowlHidden: exp.rise.bowlHidden, groundOn: exp.rise.groundOn, close: exp.rise.close, sheet: exp.rise.sheet, draw: exp.rise.draw },
+  b0: { stage: exp.b0.stage, draw: exp.b0.draw, head: exp.b0.head, stageBg: exp.b0.stageBg, wire: exp.b0.wire.mix, bowlHidden: exp.b0.bowlHidden, arcs: exp.b0.arcsDisplay, descPx: exp.b0.descPx, namePx: exp.b0.namePx, subPx: exp.b0.subPx, source: exp.b0.source, shape: exp.b0.shape },
+  b2: exp.b2.draw, b3: exp.b3.draw, b4: exp.b4.draw, b5: { draw: exp.b5.draw, side: exp.b5.text.side, paper: exp.b5.paper, head: exp.b5.head, stageBg: exp.b5.stageBg },
+  b6: { knot: exp.b6.knotQ, atlas: exp.b6.atlas.progress, active: exp.b6.atlas.active, paper: exp.b6.paper, stageBg: exp.b6.stageBg, head: exp.b6.head, bowlHidden: exp.b6.bowlHidden, gone: exp.b6.text.gone, title: exp.b6.titleAlpha },
   b7: { atlas: exp.b7.atlas.progress, cards: exp.b7.atlas.cards }, b8: { knot: exp.b8.knotQ, atlas: exp.b8.atlas.progress, seal: exp.b8.atlas.seal, cards: exp.b8.atlas.cards, paper: exp.b8.paper, under: exp.b8.under, cardsDisplay: exp.b8.cardsDisplay },
-  back: { draw: exp.back.draw, active: exp.back.atlas.active, paper: exp.back.paper, bowlHidden: exp.back.bowlHidden, knot: exp.back.knotQ }, outro: exp.outro }))
+  back: { draw: exp.back.draw, active: exp.back.atlas.active, paper: exp.back.paper, stageBg: exp.back.stageBg, head: exp.back.head, bowlHidden: exp.back.bowlHidden, knot: exp.back.knotQ, stageTop: exp.back.stageTop } }))
 
 // ── the nav's hover dropdowns (2026-09-21) — a real pointer, on the real bar ──
 // CLEAN first: the Titles panel docks at 12px and the V panel beside it, both
@@ -2059,6 +2112,8 @@ const freshBoot = await page.evaluate(() => {
     navCta: W.nav.probe().cta,
     pageBg: getComputedStyle(document.body).backgroundColor,
     groundDisplay: getComputedStyle(document.querySelector('.was-ground')).display,
+    // Experience 1's own words and team (2026-09-21, his frames)
+    heroTitle: W.cfg.hero.title, teamStyle: W.teamStyle,
     // his bowl JSON, merged over the defaults (2026-09-21)
     bowl: { aRough: W.cfg.bowl.material.A.roughness, aRelief: W.cfg.bowl.material.A.relief.strength, bMetal: W.cfg.bowl.material.B.metalness, bSide: W.cfg.bowl.material.B.side, bRampMix: W.cfg.bowl.material.B.ramp.mix, preset: W.cfg.bowl.studio.preset },
   }
@@ -2096,6 +2151,7 @@ const footerType = await page.evaluate(() => {
 console.log('footer type:', footerType)
 
 const drift = HERO_CFG.drift
+const W_TRIO_LABELS = await page.evaluate(() => window.__was.cfg.v2.trio.labels)
 const checks = [
   // ── the bowl ─────────────────────────────────────────────────────────
   ['la bowl è lì, con il suo rilievo',
@@ -2505,12 +2561,12 @@ const checks = [
     atlasTitle.sub.includes('map of how wellbeing') &&
     atlasTitle.hOpacity > 0.95 && atlasTitle.subOpacity > 0.95 &&
     atlasTitle.cardsClearTitle],
-  ['lo sketch 2D sopra il titolo MORFA da cerchio a curva a 3 lobi, una volta, ' +
-   'sulla stessa rampa del titolo — e rientrando nella sezione riprende ESATTAMENTE ' +
-   'dallo stato finale, non da capo',
+  ['lo sketch 2D sopra il titolo MORFA ancora da cerchio a curva a 3 lobi sulla rampa del titolo ' +
+   '(riprende dallo stato finale rientrando) — ma NON SI VEDE PIÙ: nascosto per sua richiesta ' +
+   '(2026-09-21, "non voglio nessun tipo di icona sopra il titolo")',
     sketchStart.t < 0.05 && sketchMid.t > 0.1 && sketchMid.t < 0.9 && sketchEnd.t > 0.95 &&
     sketchStart.d !== sketchMid.d && sketchMid.d !== sketchEnd.d &&
-    sketchEnd.d === sketchReplay.d && sketchEnd.opacity > 0.95],
+    sketchEnd.d === sketchReplay.d && sketchEnd.opacity > 0.95 && atlasTitle.sketchHidden === true],
   ['passandoci sopra, quel tratto di banda prende il colore della card',
     beforeHover < 0.02 && hover.index === 0 && hover.amount > 0.9 &&
     hover.colour.toLowerCase() === atlasCards.accents[0].trim().toLowerCase()],
@@ -3002,17 +3058,19 @@ const checks = [
     panelsOpen.total === 3 && panelsOpen.shown === 3 && panelsOpen.hiddenAgain === true],
 
   // ── le due ESPERIENZE (sua richiesta, 2026-09-21 — la task finale) ─────────
-  ['ESPERIENZA 1 = la struttura della V4 (variant 4, is-v4) su una pagina BIANCA — body bianco, ' +
-   'classe is-paper/is-exp1, la rete in scena, l\'Atlas spento e nessun trio',
+  ['ESPERIENZA 1 = la struttura della V4 (variant 4, is-v4) su CARTA #EBE9E5 — "non bianca candida" (sua ' +
+   'correzione, 2026-09-21) — fino ai tre step: body EBE9E5, la stage dei tre step e il team BIANCHI, così una ' +
+   'sezione che collassa sull\'altra si stacca; classe is-paper/is-exp1, la rete in scena, l\'Atlas spento e nessun trio',
     exp.e1.experience === 1 && exp.e1.variant === 4 && exp.e1.isV4 && exp.e1.paper && exp.e1.isPaper && exp.e1.isExp1 &&
-    exp.e1.pageBg === 'rgb(255, 255, 255)' && exp.e1.trio === false && exp.e1.trioHidden && exp.e1.pinCHidden && exp.e1.atlasHost === 'stageC'],
+    exp.e1.pageBg === 'rgb(235, 233, 229)' && exp.e1.stageBBg === 'rgb(255, 255, 255)' && exp.e1.teamBg === 'rgb(255, 255, 255)' &&
+    exp.e1.trio === false && exp.e1.trioHidden && exp.e1.pinCHidden && exp.e1.atlasHost === 'stageC'],
   ['...SENZA lo shader: a 0.9 dell\'atto due — ben oltre il suo mark a 0.4 — il ground non si è aperto ' +
    '(open 0, on false, canvas nascosto), la pagina non è mai `is-ground`, e i testi restano NERI',
     exp.e1until.ground.open === 0 && exp.e1until.ground.on === false && exp.e1until.groundDisplay === 'none' &&
     exp.e1until.isGround === false && exp.e1until.ink === 'rgb(10, 10, 10)' && exp.e1until.blockInk === 'rgb(10, 10, 10)'],
-  ['...il ring act sta sul bianco: stage A trasparente sul body bianco, copy in inchiostro, ground spento, ' +
-   'e la scroll bar è NERA (una barra bianca su una pagina bianca non è una barra)',
-    exp.e1ring.isGround === false && exp.e1ring.groundOn === false && exp.e1ring.bodyBg === 'rgb(255, 255, 255)' &&
+  ['...il ring act sta sulla carta: stage A trasparente sul body EBE9E5, copy in inchiostro, ground spento, ' +
+   'e la scroll bar è NERA (una barra bianca su una pagina chiara non è una barra)',
+    exp.e1ring.isGround === false && exp.e1ring.groundOn === false && exp.e1ring.bodyBg === 'rgb(235, 233, 229)' &&
     exp.e1ring.copyInk === 'rgb(10, 10, 10)' && exp.e1ring.bar.color === 'rgb(10, 10, 10)' && exp.e1ring.bar.alpha > 0.9 &&
     exp.e1.bar === 'rgb(10, 10, 10)' && exp.e1globe.networkOn === true && exp.e1globe.networkHidden === false],
   ['...e la barra 1: Discover · Become a teacher · Clinical Resources · Research · About, la ricerca, "Log In"; ' +
@@ -3021,10 +3079,41 @@ const checks = [
     exp.e1.nav.cta === 'Log In' && exp.e1.nav.pill === '' && exp.e1.nav.searchBowl &&
     Object.keys(exp.e1.nav.items).join('|') === 'discover|about' && exp.e1.nav.items.discover.hasIcon && exp.e1.nav.items.about.hasIcon &&
     exp.e1.nav.items.discover.rows.join('|') === 'Techniques|Teachers|Benefits' && exp.e1.nav.items.about.rows.join('|') === 'Mission|Research|Newsroom|Blog'],
-  ['ESPERIENZA 2 = la V5 (variant 5, is-v5) con il TRIO al posto dei due cerchi: is-trio/is-exp2, niente ' +
-   'pagina bianca, stage B trasparente, il box dei cerchi di V5 nascosto e quello del trio in scena',
+  // ── il COPY dell'esperienza 1 (i suoi frame 1–6, 2026-09-21) ─────────────
+  ['E1 · la hero legge "Where / practice" · la bowl · "makes / progress" (frame 1), la seconda riga di ' +
+   'ogni metà SFASATA verso la bowl (leftShift > 0, e nel DOM la riga 2 finisce più a destra della 1), ' +
+   'e il paragrafo in basso a sinistra è "As users find practices that help…"',
+    exp.e1.copy.hero.title === 'Where|practice' && exp.e1.copy.hero.titleB === 'makes|progress' &&
+    exp.e1.copy.heroA === 'Wherepractice' && exp.e1.copy.heroB === 'makesprogress' &&
+    exp.e1.copy.hero.leftShift > 0 && exp.e1.copy.line2Shift > 40 &&
+    exp.e1.copy.hero.para === 'As users find practices that help|them, we’re building the science|around what works and why.'],
+  ['E1 · atto due: "Across traditions and cultures, / people have found practices / that improve wellbeing." ' +
+   '(frame 2), poi in basso a destra, allineato a SINISTRA come nel frame 3, "It’s time we help this wisdom / ' +
+   'work for everybody."; il primo ring (Teachers) dice "We connect people / and trusted teachers", il secondo resta',
+    exp.e1.copy.top === 'Across traditions and cultures,|people have found practices|that improve wellbeing.' &&
+    exp.e1.copy.bottom.text === 'It’s time we help this wisdom|work for everybody.' && exp.e1.copy.bottom.align === 'left' &&
+    exp.e1.copy.act[0] === 'We connect people|and trusted teachers' && exp.e1.copy.act[1] === 'Practices that people|actually live by' &&
+    exp.e1.copy.act[2] === '' && exp.e1.copy.actAlign[0] === 'left'],
+  ['E1 · i tre step (frame 4/5): "By combining research and individual outcomes at scale…" su TRE righe senza ' +
+   'nessuna che spezzi (misura 46vw), le tre fonti "Validated practices · Member feedback · Therapist reporting" ' +
+   'con i loro paragrafi, e il sommario "Insight Timer connects three data sources…"',
+    exp.e1.copy.evidence.title === 'By combining research and individual|outcomes at scale, we can understand which|practice will help someone and when.' &&
+    exp.e1.copy.evidence.titleLines === 3 && exp.e1.copy.evidence.titleWrapFree === true && exp.e1.copy.evidence.titleWidth === 46 &&
+    exp.e1.copy.evidence.labels.join('|') === 'Validated practices|Member feedback|Therapist reporting' &&
+    exp.e1.copy.evidence.paras[0] === 'Data from peer-reviewed|research is mapped to every|technique in our library.' &&
+    exp.e1.copy.evidence.paras[1] === 'Self-reported data from users|shows impact over time.' &&
+    exp.e1.copy.evidence.paras[2] === 'Clinical observation tells us|what works in context.' &&
+    exp.e1.copy.evidence.summary === 'Insight Timer connects three data sources to|build a first-of-its-kind map: a model of helpful|practices and when to use them.'],
+  ['E1 · il team (frame 6): "The People / Leading Insight" con il suo a-capo, il paragrafo dei 70, e — INVERTITO ' +
+   'per sua richiesta — le foto a COLORI con il tooltip che segue il cursore: niente didascalie, niente B/N',
+    exp.e1.copy.team.title === 'The People\nLeading Insight' && exp.e1.copy.team.desc.startsWith('Our small but dedicated team of 70 people') &&
+    exp.e1.copy.teamStyle === 'hover' && exp.e1team.caps === false && exp.e1team.bw === false && exp.e1team.capShown === false &&
+    exp.e1team.tooltipDisplay !== 'none' && exp.e1team.tooltipVisible === true && exp.e1team.tooltipName === 'Cyrus Patel' && exp.e1team.firstFilter === 'none'],
+  ['ESPERIENZA 2 = la V5 (variant 5, is-v5) con il TRIO al posto dei due cerchi: is-trio/is-exp2, niente carta, ' +
+   'e la stage B SOLIDA e bianca — copre la bowl come in E1 (sua correzione: "scompare dietro, sopra passa la ' +
+   'nostra sezione"), niente stage trasparente; il box dei cerchi di V5 nascosto e quello del trio in scena',
     exp.e2.experience === 2 && exp.e2.variant === 5 && exp.e2.trio && exp.e2.isTrio && exp.e2.isV5 && exp.e2.isExp2 &&
-    exp.e2.paper === false && exp.e2.isPaper === false && exp.e2.stageBg === 'rgba(0, 0, 0, 0)' &&
+    exp.e2.paper === false && exp.e2.isPaper === false && exp.e2.stageBg === 'rgb(255, 255, 255)' &&
     exp.e2.trioHidden === false && exp.e2.circlesHidden === true && exp.e2.pageBg !== 'rgb(255, 255, 255)'],
   ['...lo shader c\'è: sul ring act il ground è aperto, la pagina è `is-ground` e la barra 2 va in chiaro ' +
    '(link e pill color avorio)',
@@ -3041,55 +3130,109 @@ const checks = [
     exp.e2.cardsHidden === true &&
     exp.e2.cardT.find((c) => /member/i.test(c.title)).t === 0.1667 && exp.e2.cardT.find((c) => /therap/i.test(c.title)).t === 0.5 &&
     exp.e2.cardT.find((c) => /librar/i.test(c.title)).t === 0.8333],
-  ['...l\'outro è quello della V5: a metà handover lo shader è a metà raggio (ancora acceso), il bianco a metà, ' +
-   'e nessun cerchio è ancora disegnato',
-    exp.outro.ground.on === true && Math.abs(exp.outro.ground.close - 0.5) < 0.05 && Math.abs(exp.outro.sheet - 0.5) < 0.05 &&
-    exp.outro.drawn.tr === 0 && exp.outro.drawn.b === 0 && exp.outro.drawn.tl === 0],
-  ['il trio, beat 1: la bowl (a 0.6, la sua posa per questo blocco) diventa reticolo da sola — mix > 0, ' +
-   'nessun cerchio, i cerchi sono FITTATI sui lobi del knot (source knot), due in alto allo stesso livello ' +
-   'e uno in basso, alto-destra a destra di alto-sinistra, senza sovrapporsi',
-    exp.b1.stage === 1 && exp.b1.wire.mix > 0.3 && exp.b1.draw.tr === 0 && exp.b1.draw.b === 0 && exp.b1.draw.tl === 0 &&
-    exp.b1.source === 'knot' && exp.b1.shape.topPairLevel && exp.b1.shape.trRightOfTl && exp.b1.shape.bottomLowest && exp.b1.shape.noOverlap &&
-    exp.b1.circles.tr.r > 60 && exp.b1.atlas.active === false && exp.b1.cardsDisplay === 'none'],
-  ['...beat 2: il cerchio in ALTO A DESTRA si disegna per primo (path reveal: drive e dashoffset del DOM ' +
+  // ── il COPY dell'esperienza 2 (i suoi frame 7–9) ─────────────────────────
+  ['E2 · la hero tiene "Building space / to practice" ma il paragrafo è "We’re forming a better understanding…"; ' +
+   'atto due "Across generations and cultures… feel grounded." e, mentre lo shader si apre, "But we’ve never had a ' +
+   'full picture…"; il ring act tiene i suoi due step e AGGIUNGE al terzo, CENTRATO, "Insight Timer is making the ' +
+   'impact of practice clear for everybody." che resta finché la sezione non lo copre (out 0)',
+    exp.e2.copy.hero.title === 'Building|space' && exp.e2.copy.hero.titleB === 'to|practice' && exp.e2.copy.hero.leftShift === 0 &&
+    exp.e2.copy.hero.para === 'We’re forming a better understanding|of what helps people thrive.' &&
+    exp.e2.copy.top === 'Across generations and cultures,|people have found practices|that help them feel grounded.' &&
+    exp.e2.copy.bottom.text.startsWith('But we’ve never had a full picture') && exp.e2.copy.bottom.align === 'right' &&
+    exp.e2.copy.act[0] === 'On a platform|guided by people' && exp.e2.copy.act[1] === 'Practices that people|actually live by' &&
+    exp.e2.copy.act[2] === 'Insight Timer is making the impact of|practice clear for everybody.' &&
+    exp.e2.copy.actAlign.join(',') === 'left,left,center' && exp.e2.copy.actOut[2] === 0],
+  ['E2 · frame 7 dal vivo: a metà del terzo step il titolo aggiunto è VISIBILE, centrato in alto sullo shader ' +
+   '(is-ground, ground acceso, bowl ancora lì) mentre la stage bianca sta salendo da sotto — e NESSUN outro: ' +
+   'il ground non si chiude (close 0), il bianco della V5 non sale (sheet 0)',
+    exp.e2step3.vis === 'visible' && exp.e2step3.opacity > 0.95 && exp.e2step3.text.startsWith('Insight Timer is making the impact of') &&
+    exp.e2step3.centred === true && exp.e2step3.align === 'center' && exp.e2step3.top < exp.e2step3.vh * 0.3 &&
+    exp.e2step3.stageTop > 100 && exp.e2step3.stageTop < exp.e2step3.vh - 100 &&
+    exp.e2step3.isGround === true && exp.e2step3.groundOn === true && exp.e2step3.bowlHidden === false &&
+    exp.e2step3.close === 0 && exp.e2step3.sheet === 0],
+  ['E2 · sopra i cerchi l\'header del frame 8 — "Three sources of evidence come together on Insight Timer." con ' +
+   'il suo sotto-paragrafo — e l\'header dell\'Atlas è la frase "We organize millions of context-rich data points…", ' +
+   'SENZA sub e SENZA lo sketch sopra ("nessun tipo di icona"); il team è "The People / Leading Insight" in B/N ' +
+   'con nome e ruolo sotto le card (invertito da E1), tooltip spento',
+    exp.e2.copy.head === 'Three sources of evidence cometogether on Insight Timer.' && exp.e2.copy.headSub.includes('Together, they show which practice') &&
+    exp.e2.copy.atlas.heading === 'We organize millions of context-rich\ndata points into a clearer\nunderstanding of what works.' &&
+    exp.e2.copy.atlas.sub === '' && exp.e2.copy.atlas.sketchHidden === true &&
+    exp.e2.copy.team.title === 'The People\nLeading Insight' && exp.e2.copy.teamStyle === 'captions' &&
+    exp.e2.copy.team.caps === true && exp.e2.copy.team.bw === true && exp.e2.copy.team.capShown === true &&
+    exp.e2.copy.team.tooltipDisplay === 'none' && exp.e2.copy.team.firstFilter === 'grayscale(1)'],
+  ['...il passaggio nel blocco: a metà handover la stage ha già coperto tutto (top 0), la bowl è NASCOSTA dalla ' +
+   'copertura (non da un reticolo), il ground è spento perché coperto, nessun outro (close 0, sheet 0), nessun cerchio',
+    exp.rise.stageTop <= 1 && exp.rise.bowlHidden === true && exp.rise.groundOn === false && exp.rise.close === 0 && exp.rise.sheet === 0 &&
+    exp.rise.draw.tr === 0 && exp.rise.draw.b === 0 && exp.rise.draw.tl === 0],
+  ['il trio, beat 0 (2% del blocco): NIENTE reticolo (wire mix 0, flag `lattice` off), la stage bianca, l\'header ' +
+   'sta arrivando (0 < head < 1), il cerchio in ALTO A DESTRA ha appena cominciato — i cerchi sono FITTATI sui ' +
+   'lobi del knot (source knot), due in alto allo stesso livello e uno in basso, senza sovrapporsi; gli archi ' +
+   'NON esistono (display none, flag `arcs` off); l\'Atlas dorme e le card non si vedono',
+    exp.b0.stage === 2 && exp.b0.wire.mix === 0 && exp.b0.lattice === false && exp.b0.arcs === false && exp.b0.arcsDisplay === 'none' &&
+    exp.b0.stageBg === 'rgb(255, 255, 255)' && exp.b0.head > 0.1 && exp.b0.head < 0.95 &&
+    exp.b0.draw.tr > 0 && exp.b0.draw.tr < 0.4 && exp.b0.draw.b === 0 && exp.b0.draw.tl === 0 &&
+    exp.b0.source === 'knot' && exp.b0.shape.topPairLevel && exp.b0.shape.trRightOfTl && exp.b0.shape.bottomLowest && exp.b0.shape.noOverlap &&
+    exp.b0.circles.tr.r > 60 && exp.b0.bowlHidden === true && exp.b0.atlas.active === false && exp.b0.cardsDisplay === 'none'],
+  ['...il testo NEI cerchi è in PX fissi, i suoi (sua richiesta, 2026-09-21, secondo giro: "titoli 16px e ' +
+   'paragrafi 14px"): il nome è disegnato a 16px, la didascalia a 14px su qualunque schermo, e la didascalia ' +
+   'centrale è su tre righe corte perché stia nel cerchio',
+    exp.b0.namePx === 16 && exp.b0.descPx === 14 && exp.b0.namePx > exp.b0.descPx &&
+    W_TRIO_LABELS.b.desc.split('\n').length === 3 && W_TRIO_LABELS.b.desc.split('\n').every((l) => l.length <= 24)],
+  ['...beat 1: il cerchio in ALTO A DESTRA si disegna per primo (path reveal: drive e dashoffset del DOM ' +
    'concordano, gli altri due a 0), e a fine finestra è intero con la sua didascalia',
     exp.b2.stage === 2 && exp.b2.draw.tr > 0.3 && exp.b2.draw.tr < 1 && Math.abs(exp.b2.dom.tr - exp.b2.draw.tr) < 0.01 &&
     exp.b2.draw.b === 0 && exp.b2.draw.tl === 0 && exp.b2end.draw.tr === 1 && exp.b2end.text.tr === 1],
-  ['...beat 3: quello in BASSO; beat 4: quello in ALTO A SINISTRA — nell\'ordine che ha chiesto, ognuno ' +
+  ['...beat 2: quello in BASSO; beat 3: quello in ALTO A SINISTRA — nell\'ordine che ha chiesto, ognuno ' +
    'mentre i precedenti restano interi',
     exp.b3.stage === 3 && exp.b3.draw.tr === 1 && exp.b3.draw.b > 0.3 && exp.b3.draw.b < 1 && exp.b3.draw.tl === 0 &&
     exp.b4.stage === 4 && exp.b4.draw.tr === 1 && exp.b4.draw.b === 1 && exp.b4.draw.tl > 0.3 && exp.b4.draw.tl < 1],
-  ['...beat 5: i tre ARCHI grandi (centrati su un cerchio, per gli altri due) sono disegnati e "in the field" / ' +
-   '"on platform" sono arrivati; la carta comincia a scaldarsi verso quella dell\'Atlas',
-    exp.b5.draw.arcs.every((a) => a > 0.98) && exp.b5.dom.arc0 > 0.98 && exp.b5.text.side > 0.95 && exp.b5.arcR > exp.b5.circles.tr.r * 1.5 &&
-    exp.b5.paper > 0.3 && exp.b5.sheetColor !== ''],
-  ['...beat 6: il knot COMINCIA sopra i cerchi — l\'Atlas attivo e trasparente, progress > 0, la carta è la sua ' +
-   '(#EEE9E2), il reticolo della bowl se n\'è andato e la bowl è ferma, le didascalie stanno uscendo',
+  ['...poi i tre sono interi e NIENTE archi, niente "in the field" / "on platform" ("quelle linee non le voglio"); ' +
+   'l\'header è ancora intero e la carta della stage comincia a scaldarsi verso quella dell\'Atlas',
+    exp.b5.draw.tr === 1 && exp.b5.draw.b === 1 && exp.b5.draw.tl === 1 && exp.b5.draw.arcs.every((a) => a === 0) &&
+    exp.b5.arcsDisplay === 'none' && exp.b5.text.side === 0 && exp.b5.head === 1 &&
+    exp.b5.paper > 0.3 && exp.b5.stageBg !== 'rgb(255, 255, 255)'],
+  ['...il knot COMINCIA sopra i cerchi — l\'Atlas attivo e trasparente, progress > 0, la carta della STAGE è la ' +
+   'sua (#EEE9E2), l\'header del trio è già USCITO (head 0) e quello dell\'Atlas sta entrando nello stesso posto: ' +
+   'un passaggio di consegne, non due titoli uno sull\'altro; la bowl resta coperta, le didascalie stanno uscendo',
     exp.b6.atlas.active === true && exp.b6.atlas.transparent === true && exp.b6.atlas.progress > 0 && exp.b6.atlas.progress < 0.2 &&
-    exp.b6.paper === 1 && exp.b6.sheetColor === 'rgb(238, 233, 226)' && exp.b6.bowlOut === 1 && exp.b6.bowlHidden === true &&
-    exp.b6.text.gone > 0 && exp.b6.titleAlpha > 0.5],
+    exp.b6.paper === 1 && exp.b6.stageBg === 'rgb(238, 233, 226)' && exp.b6.head === 0 && exp.b6.titleAlpha > 0.3 &&
+    exp.b6.bowlHidden === true && exp.b6.text.gone > 0],
   ['...beat 7-8: il knot si disegna (progress a metà, poi ~1 con seal), le TRE card arrivano nell\'ordine del ' +
    'fronte (prima Members e Therapists, poi la library), e i cerchi restano sotto a `circlesUnder`',
     exp.b7.atlas.progress > 0.4 && exp.b7.atlas.progress < 0.6 && exp.b7.atlas.cards[1] === 1 && exp.b7.atlas.cards[2] > 0.9 && exp.b7.atlas.cards[0] < 0.5 &&
     exp.b8.atlas.progress > 0.97 && exp.b8.atlas.seal > 0.5 && exp.b8.atlas.cards.every((c) => c === 1) &&
     Math.abs(exp.b8.under - 0.55) < 0.02 && exp.b8.cardsDisplay !== 'none'],
-  ['...e tornando su tutto si RI-DISEGNA al contrario: nessun cerchio, l\'Atlas dorme, la carta è bianca, ' +
-   'la bowl è di nuovo lì — pura funzione dello scroll',
+  ['...e tornando su (terzo step del ring act) tutto si RI-DISEGNA al contrario: nessun cerchio, l\'Atlas dorme, ' +
+   'la carta della stage è bianca, l\'header è a 0, la bowl è di nuovo lì — pura funzione dello scroll',
     exp.back.draw.tr === 0 && exp.back.draw.b === 0 && exp.back.draw.tl === 0 && exp.back.atlas.active === false &&
-    exp.back.paper === 0 && exp.back.bowlHidden === false && exp.back.knotQ === 0],
-  ['i tasti: "1" → esperienza 1 (V4, bianco, barra 1), "2" → esperienza 2 (V5, trio, barra 2), "5" non fa più ' +
-   'nulla; una versione LEGACY scelta a mano (setVariant 5) fa stare giù sia il trio che il bianco: i due ' +
-   'cerchi di V5 tornano, l\'Atlas torna in #pinC opaco con le card del preset (1/6, 1/2, 5/6)',
+    exp.back.paper === 0 && exp.back.stageBg === 'rgb(255, 255, 255)' && exp.back.head === 0 &&
+    exp.back.bowlHidden === false && exp.back.knotQ === 0],
+  ['un ritocco nel pannello Titles APPARTIENE all\'esperienza a schermo (copyBack): cambiato il paragrafo della ' +
+   'hero in E1, E2 tiene il suo, e tornando in E1 il ritocco c\'è ancora; rimesso a posto, la tabella lo segue',
+    exp.persist.inE2 === 'We’re forming a better understanding|of what helps people thrive.' &&
+    exp.persist.backIn1 === 'PROVA|persistenza' && exp.persist.restored === true],
+  ['i tasti: "1" → esperienza 1 (V4, carta, barra 1), "2" → esperienza 2 (V5, trio, barra 2), "5" non fa più ' +
+   'nulla; una versione LEGACY scelta a mano (setVariant 5) fa stare giù sia il trio che la carta: i due ' +
+   'cerchi di V5 tornano con la stage trasparente, l\'Atlas torna in #pinC opaco con le card del preset ' +
+   '(1/6, 1/2, 5/6) — e la pagina riprende le sue parole ORIGINALI ("Building space", "The Great Team Behind") ' +
+   'e il team B/N con tooltip della V5',
     exp.key1.experience === 1 && exp.key1.variant === 4 && exp.key1.mode === 1 && exp.key1.paper === true &&
     exp.key2.experience === 2 && exp.key2.variant === 5 && exp.key2.mode === 2 && exp.key2.trio === true &&
     exp.key5.experience === 2 && exp.key5.variant === 5 &&
     exp.legacy5.experience === 0 && exp.legacy5.trio === false && exp.legacy5.circlesHidden === false && exp.legacy5.trioHidden === true &&
-    exp.legacy5.atlasHost === 'stageC' && exp.legacy5.transparent === false && exp.legacy5.cardT.join(',') === '0.1667,0.5,0.8333'],
+    exp.legacy5.atlasHost === 'stageC' && exp.legacy5.transparent === false && exp.legacy5.cardT.join(',') === '0.1667,0.5,0.8333' &&
+    exp.legacy5.stageBg === 'rgba(0, 0, 0, 0)' &&
+    exp.legacy5.heroTitle === 'Building|space' && exp.legacy5.teamTitle === 'The Great\nTeam Behind' && exp.legacy5.teamStyle === 'bw'],
   // ── the nav's hover dropdowns (2026-09-21) ──────────────────────────────
   ['nav ON HOVER: fermo su Discover la tendina si apre — dopo il delay è aperta ma ancora in arrivo, poi è ' +
    'INTERA (clip-path aperto, opacità 1) con le tre righe tutte a 1',
     navHover.before.items.discover.open === false && navHover.opening.items.discover.open === true && navHover.opening.items.discover.fullyOpen === false &&
     navHover.open.items.discover.fullyOpen === true && navHover.open.items.discover.rowAlphas.every((a) => a === 1)],
+  ['...e la card ha la sua OMBRA leggera (sua richiesta, 2026-09-21: "bianco su bianco non si vede"): box-shadow ' +
+   'presente, e il clip-path aperto lascia spazio ATTORNO al pannello (inset negativi) invece di tagliarla via — ' +
+   'sulla card e sulla tendina larga',
+    navHover.open.items.discover.shadow !== 'none' && /rgba\(/.test(navHover.open.items.discover.shadow) &&
+    navHover.open.items.discover.shadowRoom === true && navHover.techniques.items.discover.mega.shadowRoom === true],
   ['...su "Techniques" si apre la SECONDA tendina, molto più larga, di fianco alla card (a destra, a `gap` px), ' +
    'con il titolo e 24 categorie del direttorio vero tutte arrivate; su "Benefits" la stessa tendina si RI-ELENCA',
     navHover.techniques.items.discover.mega.fullyOpen === true && navHover.techniques.items.discover.mega.sub === 'techniques' &&
@@ -3103,11 +3246,12 @@ const checks = [
     navHover.about.items.about.fullyOpen === true && navHover.about.items.about.rows.join('|') === 'Mission|Research|Newsroom|Blog' && navHover.about.items.about.hasIcon &&
     navHover.bar2.mode === 2 && navHover.bar2.items.discover.fullyOpen === true && navHover.bar2.items.discover.hasIcon === false &&
     navHover.bar2Card.bg === 'rgb(255, 255, 255)' && navHover.bar2Card.ink === 'rgb(10, 10, 10)'],
-  ['il boot vero è l\'ESPERIENZA 1: pagina bianca, barra 1 con "Log In", ground spento — e la bowl ha i SUOI ' +
-   'valori (il JSON, 2026-09-21): shell esterna roughness 0.555 con rilievo 0.0065, interno metalness 0.97, ' +
-   'single-sided, ramp 0.34, studio "Studio warm"',
+  ['il boot vero è l\'ESPERIENZA 1: carta EBE9E5, barra 1 con "Log In", ground spento, la hero "Where / practice", ' +
+   'il team a colori con il tooltip — e la bowl ha i SUOI valori (il JSON, 2026-09-21): shell esterna roughness ' +
+   '0.555 con rilievo 0.0065, interno metalness 0.97, single-sided, ramp 0.34, studio "Studio warm"',
     freshBoot.experience === 1 && freshBoot.isPaper === true && freshBoot.navMode === 1 && freshBoot.navCta === 'Log In' &&
-    freshBoot.pageBg === 'rgb(255, 255, 255)' && freshBoot.groundDisplay === 'none' &&
+    freshBoot.pageBg === 'rgb(235, 233, 229)' && freshBoot.groundDisplay === 'none' &&
+    freshBoot.heroTitle === 'Where|practice' && freshBoot.teamStyle === 'hover' &&
     freshBoot.bowl.aRough === 0.555 && freshBoot.bowl.aRelief === 0.0065 && freshBoot.bowl.bMetal === 0.97 &&
     freshBoot.bowl.bSide === 'front' && freshBoot.bowl.bRampMix === 0.34 && freshBoot.bowl.preset === 'Studio warm'],
 ]

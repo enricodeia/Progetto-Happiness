@@ -43,11 +43,32 @@ export function createTitlesPanel({
   onNav,                          // the nav bar's copy (2026-09-21)
   onHeroRebuild, onHeroStyle,     // hero.title/titleB/para
   onV2Rebuild, onV2Style,         // until.left/right, v2.top/bottom/until, v2.act copy
+  onActCopy,                      // the ring act's step copy — text, "stays" (2026-09-21)
   onEvidenceBuild, onEvidenceStyle,
   onAtlasTitle,
+  onTeam,                         // the team section's title and paragraph (2026-09-21)
+  onTrioHead,                     // Experience 2's header over the circles (2026-09-21)
   onReplayBeats,                  // "fires at" / "plays in" / stagger / "leaves at"
   dock,
 }) {
+  // Every field points at a LIVE slot, and main.js swaps the slots' contents
+  // when the experience changes (its `copy` tables, 2026-09-21) — then calls
+  // `refresh()` here so the fields show the new words. Tweakpane's refresh
+  // emits `change` for every value that moved, and a change here rebuilds a
+  // block and writes the value back into the copy table: harmless, but
+  // pointless work and a replayed hero on every switch. The guard mutes the
+  // callbacks while the refresh runs (same trap as the V panel's dropdowns).
+  let syncing = false;
+  const g = (fn) => (fn ? (ev) => { if (!syncing) fn(ev); } : undefined);
+  onNav = g(onNav);
+  onHeroRebuild = g(onHeroRebuild); onHeroStyle = g(onHeroStyle);
+  onV2Rebuild = g(onV2Rebuild); onV2Style = g(onV2Style);
+  onActCopy = g(onActCopy);
+  onEvidenceBuild = g(onEvidenceBuild); onEvidenceStyle = g(onEvidenceStyle);
+  onAtlasTitle = g(onAtlasTitle);
+  onTeam = g(onTeam); onTrioHead = g(onTrioHead);
+  onReplayBeats = g(onReplayBeats);
+
   const host = document.createElement("div");
   host.className = "was-panel was-panel-titles";
   host.setAttribute("data-lenis-prevent", "");
@@ -77,6 +98,21 @@ export function createTitlesPanel({
   // Hand-built, not through `block()`: the paragraph's fields are named
   // `para`/`paraMode`/… on `cfg.hero`, not the generic `text`/`mode`/… every
   // V2 block below shares.
+  // The title's two halves live here too now (2026-09-21) — each experience
+  // has its own words, and the panel edits the one on screen.
+  {
+    const f = pane.addFolder({ title: "Hero — title, two halves", expanded: false });
+    f.addBinding(cfg.hero, "title", { label: "left half ( | = line )" }).on("change", onHeroRebuild);
+    f.addBinding(cfg.hero, "titleB", { label: "right half ( | = line )" }).on("change", onHeroRebuild);
+    f.addBinding(cfg.hero, "titleSize", { min: 2, max: 9, step: 0.05, label: "size (vw)" }).on("change", onHeroStyle);
+    f.addBinding(cfg.hero, "titleLh", { min: 0.8, max: 1.4, step: 0.01, label: "line height" }).on("change", onHeroStyle);
+    f.addBinding(cfg.hero, "leftGap", { min: 0, max: 40, step: 0.25, label: "left · gap to centre (vw)" }).on("change", onHeroStyle);
+    f.addBinding(cfg.hero, "leftY", { min: 10, max: 90, step: 0.5, label: "left · y (%)" }).on("change", onHeroStyle);
+    f.addBinding(cfg.hero, "leftShift", { min: -20, max: 20, step: 0.25, label: "left · 2nd line shift (vw)" }).on("change", onHeroStyle);
+    f.addBinding(cfg.hero, "rightGap", { min: 0, max: 40, step: 0.25, label: "right · gap to centre (vw)" }).on("change", onHeroStyle);
+    f.addBinding(cfg.hero, "rightY", { min: 10, max: 90, step: 0.5, label: "right · y (%)" }).on("change", onHeroStyle);
+    f.addBinding(cfg.hero, "rightShift", { min: -20, max: 20, step: 0.25, label: "right · 2nd line shift (vw)" }).on("change", onHeroStyle);
+  }
   {
     const f = pane.addFolder({ title: "Hero — paragraph", expanded: false });
     f.addBinding(cfg.hero, "para", { label: "text ( | = line )" }).on("change", onHeroRebuild);
@@ -139,8 +175,21 @@ export function createTitlesPanel({
   {
     const A = cfg.v2.act;
     const f = pane.addFolder({ title: "V2 ring act — step copy (3 keyframes)", expanded: false });
+    // the words themselves (2026-09-21) — one per step of the act; `leaves
+    // at` 0 keeps a step's copy up until the next section covers it
+    for (let i = 0; i < 3; i++) {
+      const s = cfg.v2.steps[i];
+      if (!s) continue;
+      f.addBinding(s, "text", { label: `step ${i + 1} · text ( | = line )` }).on("change", onActCopy);
+      f.addBinding(s, "textOut", { min: 0, max: 0.5, step: 0.01, label: `step ${i + 1} · leaves over (0 = stays)` }).on("change", onActCopy);
+    }
     f.addBinding(A, "copyMode", { options: SPLIT_NO_FADE, label: "split" }).on("change", onV2Style);
-    f.addBinding(A, "copyAlign", { options: ALIGN, label: "align" }).on("change", onV2Style);
+    // one align per step (main.js keeps this an array of three)
+    if (!Array.isArray(A.copyAlign)) A.copyAlign = [A.copyAlign, A.copyAlign, A.copyAlign].map((v) => v || "left");
+    {
+      const kf = f.addFolder({ title: "align", expanded: false });
+      for (let i = 0; i < 3; i++) kf.addBinding(A.copyAlign, String(i), { options: ALIGN, label: `step ${i + 1}` }).on("change", onV2Style);
+    }
     const RANGE = {
       copySize: { min: 0.8, max: 6, step: 0.05, title: "size (vw)" },
       copyWidth: { min: 10, max: 60, step: 0.5, title: "measure (vw)" },
@@ -181,12 +230,43 @@ export function createTitlesPanel({
     f.addBinding(E, "summaryBottom", { min: 0, max: 60, step: 0.5, label: "y — from bottom (%)" }).on("change", onEvidenceStyle);
   }
 
+  // ── the evidence panel's three sources (2026-09-21) ──────────────────────
+  {
+    const E = cfg.evidence;
+    const f = pane.addFolder({ title: "Evidence — the three sources", expanded: false });
+    E.rows.forEach((r, i) => {
+      f.addBinding(r, "label", { label: `${i + 1} · label` }).on("change", onEvidenceBuild);
+      f.addBinding(r, "para", { label: `${i + 1} · line ( | = line )` }).on("change", onEvidenceBuild);
+    });
+  }
+
+  // ── Experience 2 — the header over the three circles (his frame 8) ───────
+  {
+    const H = cfg.v2.trio.head;
+    const f = pane.addFolder({ title: "Experience 2 — header over the circles", expanded: false });
+    f.addBinding(H, "show").on("change", onTrioHead);
+    f.addBinding(H, "heading", { label: "heading ( | = line )" }).on("change", onTrioHead);
+    f.addBinding(H, "sub", { label: "sub ( | = line )" }).on("change", onTrioHead);
+    f.addBinding(H, "in", { min: 0.01, max: 0.3, step: 0.01, label: "arrives over (of block)" });
+    f.addBinding(H, "outDur", { min: 0.01, max: 0.3, step: 0.01, label: "hands over to the Atlas's over" });
+  }
+
+  // ── the team section's head (2026-09-21) ─────────────────────────────────
+  {
+    const f = pane.addFolder({ title: "Team — title & paragraph", expanded: false });
+    f.addBinding(cfg.team, "title", { label: "title ( \\n = line )" }).on("change", onTeam);
+    f.addBinding(cfg.team, "desc", { label: "paragraph (right)" }).on("change", onTeam);
+  }
+
   // ── the Atlas header ──────────────────────────────────────────────────────
+  // (in Experience 2 it takes the trio header's place over the circles, in
+  // a crossfade, as the knot begins — same slot, same type)
   {
     const T = cfg.atlas.title;
     const f = pane.addFolder({ title: "Atlas — header (heading + sub)", expanded: false });
-    f.addBinding(T, "heading", { label: "heading" }).on("change", onAtlasTitle);
-    f.addBinding(T, "sub", { label: "sub" }).on("change", onAtlasTitle);
+    f.addBinding(T, "heading", { label: "heading ( \\n = line )" }).on("change", onAtlasTitle);
+    f.addBinding(T, "sub", { label: "sub (empty = none)" }).on("change", onAtlasTitle);
+    f.addBinding(T, "sketch", { label: "the small sketch above it" }).on("change", onAtlasTitle);
     f.addBinding(T, "align", { options: ALIGN }).on("change", onAtlasTitle);
     f.addBinding(T, "size", { min: 1, max: 4, step: 0.05, label: "size (vw)" }).on("change", onAtlasTitle);
     f.addBinding(T, "subSize", { min: 0.5, max: 2, step: 0.05, label: "sub size (vw)" }).on("change", onAtlasTitle);
@@ -200,7 +280,9 @@ export function createTitlesPanel({
     hide: () => host.classList.add("is-hidden"),
     show: () => host.classList.remove("is-hidden"),
     get isOpen() { return !host.classList.contains("is-hidden"); },
-    refresh: () => pane.refresh(),
+    /** the slots changed under the fields (an experience switch) — show them,
+     *  without firing a single callback */
+    refresh: () => { syncing = true; try { pane.refresh(); } finally { syncing = false; } },
     dispose() {
       pane.dispose();
       host.remove();

@@ -6,16 +6,22 @@
 // che noi abbiamo creato come The Atlas").
 //
 // It takes over from V5's flanking circles inside the same block (the canvas
-// block of #pinB, after the shader has closed into the bowl and the white has
-// risen). Six abutting windows on the block's own 0→1:
+// block of #pinB). The stage is SOLID here (his correction, 2026-09-21): it
+// rises over the bowl and covers it, exactly as Experience 1's does — no
+// shader outro, no lattice — and the circles are drawn on the white it
+// brought. Abutting windows on the block's own 0→1:
 //
-//   0..wire       the bowl crossfades to its 15% lattice, alone
-//   wire..c1      the TOP-RIGHT circle draws on
+//   0..c1         the header arrives; the TOP-RIGHT circle draws on
 //   c1..c2        the BOTTOM circle draws on
 //   c2..c3        the TOP-LEFT circle draws on
-//   c3..arcs      the three big arcs draw on, the side labels arrive
-//   arcs..knot    the paper warms to the Atlas's own, the lattice goes
-//   knot..1       the Atlas knot DRAWS ITSELF over the circles, cards arrive
+//   c3..knot      the paper warms to the Atlas's own
+//   knot..1       the header crossfades to the Atlas's; the knot DRAWS ITSELF
+//                 over the circles, the cards arrive
+//
+// (Two more windows exist behind flags he turned off the same day: `lattice`
+// — the bowl's wireframe before the first circle — and `arcs` — the three big
+// arcs with their side labels, between c3 and the paper. Off, each is a
+// zero-length window and the marks read straight through.)
 //
 // The circles are not placed by hand: each is the least-squares circle
 // through the outer stretch of ONE LOBE of the knot, projected through the
@@ -66,12 +72,23 @@ function arcPath(cx, cy, R, a1, a2) {
   return `M ${f2(x1)} ${f2(y1)} A ${f2(R)} ${f2(R)} 0 0 ${sweep} ${f2(x2)} ${f2(y2)}`;
 }
 
-export function createTrio({ mount, cfg, bowl, atlas }) {
+export function createTrio({ mount, cfg, bowl, atlas, stage: stageEl = null }) {
   const T = () => cfg.v2.trio;
   const K = () => cfg.v2.circles;
+  const latticeOn = () => T().lattice === true;
+  const arcsOn = () => T().arcs === true;
 
   const svg = el("svg", { class: "was-trio-svg" });
   mount.appendChild(svg);
+  // the header over the block (his frame 8) — real DOM type in the Atlas
+  // header's own classes, so the two titles are set identically and the
+  // crossfade between them is invisible as a swap
+  const head = document.createElement("div");
+  head.className = "was-trio-head";
+  head.innerHTML = `<h2 class="was-atlas-h"></h2><p class="was-atlas-sub"></p>`;
+  mount.appendChild(head);
+  const headH = head.querySelector(".was-atlas-h");
+  const headSub = head.querySelector(".was-atlas-sub");
 
   const draw1 = { pathLength: 1, "stroke-dasharray": 1, "stroke-dashoffset": 1, fill: "none" };
   // the three circles, in the order they draw: top-right, bottom, top-left
@@ -152,6 +169,21 @@ export function createTrio({ mount, cfg, bowl, atlas }) {
     labels.right.setAttribute("fill", t.ink);
     setLines(labels.left, [L.left]);
     setLines(labels.right, [L.right]);
+    // the arcs and their labels exist only while asked for
+    gArcs.style.display = arcsOn() ? "" : "none";
+    labels.left.style.display = arcsOn() ? "" : "none";
+    labels.right.style.display = arcsOn() ? "" : "none";
+    // the header: text, and the Atlas header's own measure and type
+    const h = t.head || {};
+    head.hidden = h.show === false;
+    headH.innerHTML = String(h.heading || "").split("|").map((l) => `<span>${l}</span>`).join("<br/>");
+    headSub.innerHTML = String(h.sub || "").split("|").map((l) => `<span>${l}</span>`).join("<br/>");
+    headSub.hidden = !h.sub;
+    const A = cfg.atlas.title;
+    head.style.setProperty("--atlas-title-top", `${A.top}px`);
+    head.style.setProperty("--atlas-title-w", `${A.maxWidth}px`);
+    head.style.setProperty("--atlas-title-size", `${A.size}vw`);
+    head.style.setProperty("--atlas-sub-size", `${A.subSize}vw`);
   }
   const style = build;
 
@@ -192,12 +224,13 @@ export function createTrio({ mount, cfg, bowl, atlas }) {
   }
 
   const state = {
-    p: 0, stage: 0, wire: 0, source: "", knotQ: 0, paper: 0, bowlOut: 0, under: 1,
+    p: 0, stage: 0, wire: 0, source: "", knotQ: 0, paper: 0, bowlOut: 0, under: 1, head: 0,
     circles: { tr: null, b: null, tl: null },
     draw: { tr: 0, b: 0, tl: 0, arcs: [0, 0, 0] },
     text: { tr: 0, b: 0, tl: 0, side: 0 },
   };
   let sheetColor = "";
+  let paperColor = "";
 
   function update(tl) {
     const t = T();
@@ -207,23 +240,48 @@ export function createTrio({ mount, cfg, bowl, atlas }) {
 
     const p = clamp01((tl.p - tl.canvasS0) / Math.max(1e-4, tl.canvasS1 - tl.canvasS0));
     const M = t.marks;
-    const tWire = win(p, 0, M.wire);
-    const tC1 = win(p, M.wire, M.c1);
+    const lat = latticeOn();
+    const arc = arcsOn();
+    // the two optional windows collapse to nothing when their flag is off
+    const mWire = lat ? Math.min(M.wire, M.c1) : 0;
+    const mArcs = arc ? Math.max(M.arcs, M.c3) : M.c3;
+    const tWire = lat ? win(p, 0, mWire) : 0;
+    const tC1 = win(p, mWire, M.c1);
     const tC2 = win(p, M.c1, M.c2);
     const tC3 = win(p, M.c2, M.c3);
-    const tArcs = win(p, M.c3, M.arcs);
+    const tArcs = arc ? win(p, M.c3, mArcs) : 0;
     const tKnot = win(p, M.knot, 1);
-    const stage = p < M.wire ? 1 : p < M.c1 ? 2 : p < M.c2 ? 3 : p < M.c3 ? 4 : p < M.arcs ? 5 : p < M.knot ? 6 : 7;
+    const stage = p < mWire ? 1 : p < M.c1 ? 2 : p < M.c2 ? 3 : p < M.c3 ? 4 : p < mArcs ? 5 : p < M.knot ? 6 : 7;
 
-    // ── 1 · the lattice, then — once the arcs are in — the bowl goes ──
-    const wire = smoothIO(tWire);
-    const out = smoothIO(win(p, t.bowlOut.at, t.bowlOut.at + t.bowlOut.dur));
-    bowl.setWireframe(wire, K().wireframeOpacity * (1 - out));
+    // ── (lattice on) the bowl as its wireframe, then gone ──
+    // Off — the default — the bowl is never touched from here: the stage
+    // covers it, as in Experience 1, and there is nothing behind the circles.
+    let wire = 0, out = 0;
+    if (lat) {
+      wire = smoothIO(tWire);
+      out = smoothIO(win(p, t.bowlOut.at, t.bowlOut.at + t.bowlOut.dur));
+      bowl.setWireframe(wire, K().wireframeOpacity * (1 - out));
+    }
 
     // ── the paper warms to the Atlas's own, under everything ──
+    // Painted on the STAGE itself — it is the solid thing on screen now — and,
+    // for the lattice layout, on the bowl's sheet under the canvas as well.
     const paper = smoothIO(win(p, t.atlas.paperAt, t.atlas.paperAt + t.atlas.paperDur));
     const col = mixColor(cfg.columns.rightBg, t.atlas.paper, paper);
-    if (col !== sheetColor) { sheetColor = col; bowl.setSheetColor(paper > 0.001 ? col : ""); }
+    if (col !== paperColor) {
+      paperColor = col;
+      if (stageEl) stageEl.style.backgroundColor = paper > 0.001 ? col : "";
+    }
+    if (lat && col !== sheetColor) { sheetColor = col; bowl.setSheetColor(paper > 0.001 ? col : ""); }
+
+    // ── the header: in from the block's start, and GONE by the knot's mark —
+    //    the Atlas's header arrives in the same slot from there, so the two
+    //    hand over rather than pass through each other ──
+    const H = t.head || {};
+    const hIn = smoothIO(win(p, 0, Math.max(0.01, H.in ?? 0.04)));
+    const hOut = smoothIO(win(p, M.knot - Math.max(0.01, H.outDur ?? 0.04), M.knot));
+    const headA = hIn * (1 - hOut);
+    head.style.opacity = headA.toFixed(3);
 
     // ── the three circles, TR → B → TL ──
     const G = geometry();
@@ -269,11 +327,13 @@ export function createTrio({ mount, cfg, bowl, atlas }) {
     const tr = Math.max(0.05, t.textReveal);
     const late = (v) => clamp01((v - (1 - tr)) / tr);
     const texts = { tr: late(tC1), b: late(tC2), tl: late(tC3) };
-    const side = late(tArcs);
+    const side = arc ? late(tArcs) : 0;
     // ...and go again as the knot takes the story over, if asked to
     const gone = t.captionsOut ? smoothIO(win(p, M.knot, M.knot + Math.max(0.02, t.captionsOutDur))) : 0;
     const rBase = (G.tr.r + G.b.r + G.tl.r) / 3;
-    const nameS = rBase * t.nameSize, descS = rBase * t.descSize, sideS = rBase * t.sideSize;
+    // px when the number reads as px (> 1.5), else × the circle radius
+    const sizeOf = (v) => (v > 1.5 ? v : rBase * v);
+    const nameS = sizeOf(t.nameSize), descS = sizeOf(t.descSize), sideS = sizeOf(t.sideSize);
     const rise = (v) => (1 - v) * rBase * 0.05;
     for (const r of ROLES) {
       const c = G[r];
@@ -294,6 +354,7 @@ export function createTrio({ mount, cfg, bowl, atlas }) {
     Object.assign(state, {
       p: +p.toFixed(4), stage, wire: +wire.toFixed(3), source: G.source,
       knotQ: +tKnot.toFixed(4), paper: +paper.toFixed(3), bowlOut: +out.toFixed(3), under: +under.toFixed(3),
+      head: +headA.toFixed(3), lattice: lat, arcs: arc,
       circles: {
         tr: { cx: +G.tr.cx.toFixed(1), cy: +G.tr.cy.toFixed(1), r: +G.tr.r.toFixed(1), t: +G.tr.t.toFixed(4) },
         b: { cx: +G.b.cx.toFixed(1), cy: +G.b.cy.toFixed(1), r: +G.b.r.toFixed(1), t: +G.b.t.toFixed(4) },
@@ -310,9 +371,12 @@ export function createTrio({ mount, cfg, bowl, atlas }) {
    *  of it can outlive the layout that asked for it */
   function reset() {
     sheetColor = "";
+    paperColor = "";
     bowl.setSheetColor("");
     bowl.setWireframe(0, K().wireframeOpacity);
-    Object.assign(state, { p: 0, stage: 0, wire: 0, knotQ: 0, paper: 0, bowlOut: 0, under: 1 });
+    if (stageEl) stageEl.style.backgroundColor = "";
+    head.style.opacity = "0";
+    Object.assign(state, { p: 0, stage: 0, wire: 0, knotQ: 0, paper: 0, bowlOut: 0, under: 1, head: 0 });
   }
 
   build();
@@ -324,8 +388,9 @@ export function createTrio({ mount, cfg, bowl, atlas }) {
     reset,
     /** the knot's own 0→1 inside this block — main.js hands it to the Atlas */
     get knotQ() { return state.knotQ; },
-    /** the bowl is entirely gone once the lattice has faded — nothing to draw */
-    get bowlGone() { return state.bowlOut >= 0.999 && state.wire >= 0.999; },
+    /** (lattice layout only) the bowl is entirely gone once the lattice has
+     *  faded — nothing to draw. Never true while the stage covers it instead. */
+    get bowlGone() { return latticeOn() && state.bowlOut >= 0.999 && state.wire >= 0.999; },
     get show() { return !!T().show; },
     /** the circle each card should sit on — the vertex `t` of the lobe under a role */
     roleT(role) { const c = state.circles[role]; return c ? c.t : null; },
@@ -335,6 +400,14 @@ export function createTrio({ mount, cfg, bowl, atlas }) {
         hidden: mount.hidden,
         box: { w: W, h: H },
         ...state,
+        headText: headH.textContent,
+        headSub: headSub.hidden ? "" : headSub.textContent,
+        headRect: (() => { const r = head.getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom) }; })(),
+        stageBg: stageEl ? getComputedStyle(stageEl).backgroundColor : null,
+        arcsDisplay: getComputedStyle(gArcs).display,
+        // the type, in px, as drawn (from the DOM's own font-size attribute)
+        descPx: +(parseFloat(labels.tr.desc.firstChild?.getAttribute("font-size")) || 0).toFixed(1),
+        namePx: +(parseFloat(labels.tr.name.firstChild?.getAttribute("font-size")) || 0).toFixed(1),
         // what the DOM itself says has drawn
         dom: {
           tr: +(1 - parseFloat(circles.tr.getAttribute("stroke-dashoffset"))).toFixed(3),

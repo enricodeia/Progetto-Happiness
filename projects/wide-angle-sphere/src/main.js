@@ -123,6 +123,92 @@ const navMode = () => {
   return CONFIG.experience === 2 || CONFIG.variant === 5 ? 2 : 1;
 };
 
+// ── the copy of each experience (his ask, 2026-09-21 — frames 1–9) ────────
+// `CONFIG.copy[e]` is a table of every title that differs between the two
+// experiences; the sections keep reading their own live slots (`hero.title`,
+// `v2.top.text`, the ring act's `steps[i].text`, `evidence.*`,
+// `atlas.title.*`, `team.*`), and `applyCopy()` writes the active table into
+// those slots whenever the experience changes. `copyBack()` is the other
+// direction: the Titles panel edits the live slots, and this puts the edit
+// into the table of the experience on screen, so it survives a switch away
+// and back. `COPY_LEGACY` is the page as first written, for a legacy version.
+const HERO_COPY_KEYS = ["title", "titleB", "para", "titleSize", "titleLh", "leftGap", "leftY", "leftShift", "rightGap", "rightY", "rightShift"];
+const ATLAS_COPY_KEYS = ["heading", "sub", "top", "size", "subSize", "maxWidth"];
+function snapCopy() {
+  const H = CONFIG.hero, A = CONFIG.v2.act, E = CONFIG.evidence, T = CONFIG.atlas.title;
+  return {
+    hero: Object.fromEntries(HERO_COPY_KEYS.map((k) => [k, H[k]])),
+    top: { text: CONFIG.v2.top.text },
+    bottom: { text: CONFIG.v2.bottom.text, align: CONFIG.v2.bottom.align, y: CONFIG.v2.bottom.y },
+    act: {
+      steps: CONFIG.v2.steps.slice(0, 3).map((s) => s.text),
+      out: CONFIG.v2.steps.slice(0, 3).map((s) => s.textOut),
+      delay: CONFIG.v2.steps.slice(0, 3).map((s) => s.textDelay),
+      align: Array.isArray(A.copyAlign) ? A.copyAlign.slice() : A.copyAlign,
+      x: A.copyX.slice(), y: A.copyY.slice(), width: A.copyWidth.slice(),
+    },
+    evidence: { title: E.title, titleWidth: E.titleWidth, summary: E.summary, rows: E.rows.map((r) => ({ ...r })) },
+    atlas: Object.fromEntries(ATLAS_COPY_KEYS.map((k) => [k, T[k]])),
+    team: { title: CONFIG.team.title, desc: CONFIG.team.desc },
+  };
+}
+const COPY_LEGACY = snapCopy();
+const copyTable = () => {
+  const e = CONFIG.experience;
+  return (e === 1 || e === 2) && CONFIG.copy?.[e] ? CONFIG.copy[e] : COPY_LEGACY;
+};
+let copySig = "";
+/** the active experience's words into the live slots — true if anything moved */
+function applyCopy() {
+  const c = copyTable();
+  const sig = `${CONFIG.experience}:${JSON.stringify(c)}`;
+  if (sig === copySig) return false;
+  copySig = sig;
+  if (c.hero) for (const k of HERO_COPY_KEYS) if (k in c.hero) CONFIG.hero[k] = c.hero[k];
+  if (c.top) Object.assign(CONFIG.v2.top, c.top);
+  if (c.bottom) Object.assign(CONFIG.v2.bottom, c.bottom);
+  // Everything is written IN PLACE — the same objects and arrays the panels
+  // are bound to — never replaced, or a panel field would keep pointing at
+  // the array the experience before had.
+  const fill = (arr, src) => { if (Array.isArray(arr) && Array.isArray(src)) arr.splice(0, arr.length, ...src); };
+  if (c.act) {
+    const A = CONFIG.v2.act;
+    (c.act.steps || []).forEach((text, i) => { if (CONFIG.v2.steps[i]) CONFIG.v2.steps[i].text = text; });
+    (c.act.out || []).forEach((o, i) => { if (CONFIG.v2.steps[i]) CONFIG.v2.steps[i].textOut = o; });
+    (c.act.delay || []).forEach((d, i) => { if (CONFIG.v2.steps[i]) CONFIG.v2.steps[i].textDelay = d; });
+    // the align is one per step from here on (a lone string becomes three)
+    if (!Array.isArray(A.copyAlign)) A.copyAlign = [A.copyAlign, A.copyAlign, A.copyAlign].map((v) => v || "left");
+    if (c.act.align) fill(A.copyAlign, Array.isArray(c.act.align) ? c.act.align : [c.act.align, c.act.align, c.act.align]);
+    fill(A.copyX, c.act.x);
+    fill(A.copyY, c.act.y);
+    fill(A.copyWidth, c.act.width);
+  }
+  if (c.evidence) {
+    const E = CONFIG.evidence;
+    E.title = c.evidence.title;
+    if (c.evidence.titleWidth) E.titleWidth = c.evidence.titleWidth;
+    E.summary = c.evidence.summary;
+    c.evidence.rows.forEach((r, i) => { if (E.rows[i]) Object.assign(E.rows[i], r); else E.rows.push({ ...r }); });
+    E.rows.length = Math.max(1, c.evidence.rows.length);
+  }
+  if (c.atlas) for (const k of ATLAS_COPY_KEYS) if (k in c.atlas) CONFIG.atlas.title[k] = c.atlas[k];
+  if (c.team) Object.assign(CONFIG.team, { title: c.team.title, desc: c.team.desc });
+  return true;
+}
+/** a panel edit on the live slots → into the table of the experience on screen */
+function copyBack() {
+  const c = copyTable();
+  const snap = snapCopy();
+  for (const k of Object.keys(snap)) if (c[k]) c[k] = snap[k];
+  copySig = `${CONFIG.experience}:${JSON.stringify(c)}`;
+}
+
+// ...and the boot experience's words go in NOW, before a single block is
+// built below, so nothing is built with one experience's words and rebuilt
+// with the other's a moment later
+applyCopy();
+
+
 // The split never moves: the canvas holds the right half from the first step
 // to the last, so the frustum skew is set once and stays.
 function applyColumns() {
@@ -391,10 +477,12 @@ function applyLive() {
   // must not be cut here either — pinB's stage pins the very frame the
   // handover begins, so this gate would kill the shader BEFORE its outro
   // could run; in V5 it stops only once that outro has closed it entirely.
-  // ...and in Experience 2 the bowl leaves for good once its lattice has
-  // faded under the knot: nothing left to pose or draw
-  bowl.setHidden((stageBCovers && !circlesOn()) || (trioOn() && trio.bowlGone));
-  ground.setHidden(circlesOn() ? outroNow() >= 0.999 : stageBCovers);
+  // Experience 2's trio is NOT V5's see-through stage (his correction,
+  // 2026-09-21: "scompare dietro, sopra passa la nostra sezione, come la
+  // prima versione 1"): its stage is solid and covers the bowl like every
+  // other version's — only the flanking pair keeps the outro and the lattice
+  bowl.setHidden((stageBCovers && !flankOutro()) || (flankOutro() && trioOn() && trio.bowlGone));
+  ground.setHidden(flankOutro() ? outroNow() >= 0.999 : stageBCovers);
 
   // ── the footer's reveal (his ask, 2026-09-16) ───────────────────────────
   // It can only become true once `.was-below` has scrolled up far enough to
@@ -478,7 +566,9 @@ const quiet = createQuiet({ el: quietEl, images: left.images, cfg: CONFIG });
 const atlas = createAtlas({ mount: atlasViewEl, cardsMount: atlasCardsEl });
 // Experience 2's three circles and the Atlas over them (his ask, 2026-09-21):
 // it fits its circles to the knot's own lobes, so it is handed the Atlas too
-const trio = createTrio({ mount: trioBoxEl, cfg: CONFIG, bowl, atlas });
+// the stage is handed over too: the trio paints the Atlas's paper onto it as
+// the knot begins (the stage is the solid thing on screen, not the bowl's sheet)
+const trio = createTrio({ mount: trioBoxEl, cfg: CONFIG, bowl, atlas, stage: stageBEl });
 const team = createTeam({ mount: belowEl, cfg: CONFIG });
 const footer = createFooter({ mount: footerEl, cfg: CONFIG });
 
@@ -512,6 +602,11 @@ function styleAtlasTitle() {
   if (!t.show) return;
   atlasHEl.innerHTML = t.heading.split("\n").map((l) => `<span>${l}</span>`).join("<br/>");
   atlasSubEl.textContent = t.sub;
+  // no sub at all when the experience's header is the one sentence
+  atlasSubEl.hidden = !t.sub;
+  // the sketch above the heading is off by his ask (2026-09-21) — hidden,
+  // still driven, so nothing else changes shape
+  atlasTitleEl.querySelector(".was-atlas-sketch-mount").hidden = t.sketch === false;
   atlasTitleEl.style.setProperty("--atlas-title-top", `${t.top}px`);
   atlasTitleEl.style.setProperty("--atlas-title-w", `${t.maxWidth}px`);
   atlasTitleEl.style.setProperty("--atlas-title-size", `${t.size}vw`);
@@ -597,12 +692,7 @@ const v3Panel = createV3Panel({
   onHeroStyle: () => hero.style(),
   onPlayer: () => player.style(),
   onFooter: () => {
-    document.body.classList.toggle(
-      "is-team-bw", CONFIG.variant >= 3 && CONFIG.team.grayscale !== false
-    );
-    document.body.classList.toggle(
-      "is-team-caps", CONFIG.variant === 4 && CONFIG.team.captions !== false
-    );
+    applyTeamClasses();
     team.style();
     footer.style();
     syncFooterSpacer();
@@ -614,16 +704,24 @@ const v3Panel = createV3Panel({
 // read, so it can never drift out of sync with what they draw. Docked on the
 // LEFT now (same message, later in it — "il control panel titles mettilo a
 // sinistra"), its own `.was-panel-titles` rule in style.css.
+// Every edit here is also written BACK into the copy table of the experience
+// on screen (`copyBack`, 2026-09-21), so it belongs to that experience and
+// survives switching away and back.
 const titlesPanel = createTitlesPanel({
   cfg: CONFIG,
   onNav: () => nav.build(),
-  onHeroRebuild: () => { hero.rebuild(); hero.replayAll(); },
-  onHeroStyle: () => hero.style(),
-  onV2Rebuild: () => hero.rebuildV2(),
-  onV2Style: () => { hero.style(); copyA.style(); copyB.style(); placeStages(); sphere?.resize(); },
-  onEvidenceBuild: () => left.build(),
-  onEvidenceStyle: () => left.style(),
-  onAtlasTitle: () => styleAtlasTitle(),
+  onHeroRebuild: () => { copyBack(); hero.rebuild(); hero.replayAll(); },
+  onHeroStyle: () => { copyBack(); hero.style(); },
+  onV2Rebuild: () => { copyBack(); hero.rebuildV2(); },
+  onV2Style: () => { copyBack(); hero.style(); copyA.style(); copyB.style(); placeStages(); sphere?.resize(); },
+  // the ring act's own step copy (text / stays) — the copy box is rebuilt
+  onActCopy: () => { copyBack(); copyA.build(); copyB.build(); },
+  onEvidenceBuild: () => { copyBack(); left.build(); },
+  onEvidenceStyle: () => { copyBack(); left.style(); },
+  onAtlasTitle: () => { copyBack(); styleAtlasTitle(); trio.style(); },
+  onTeam: () => { copyBack(); team.retitle(); },
+  // Experience 2's header over the circles (frame 8)
+  onTrioHead: () => trio.style(),
   // "fires at" / "plays in" / stagger / "leaves at" need the beat that has
   // ALREADY fired to rearm and replay right there — a plain re-paint (the
   // style callback) never touches it, which is why these read as broken
@@ -659,10 +757,15 @@ const EVIDENCE_V1 = CONFIG.evidence.show;
 const networkOn = () => !!CONFIG.v2.on && !!CONFIG.v2.network.show && CONFIG.variant !== 5;
 /** ...or is it V5's circles diagram? (his ask, 2026-09-21) */
 const circlesOn = () => CONFIG.variant === 5 && !!CONFIG.v2.circles.show;
+/** V5's OWN handover — the shader closing into the bowl, the white rising, the
+ *  stage see-through, the bowl posed home as a lattice — belongs to the
+ *  FLANKING pair only. Experience 2's trio (his correction, 2026-09-21) is
+ *  covered by its solid stage like every other version, so none of it runs. */
+const flankOutro = () => circlesOn() && !trioOn();
 /** V5's outro, 0→1 across the handover into pinB (ring act's end → the canvas
  *  block's start): the shader closing back into the bowl, the white rising.
- *  0 whenever V5 is off. Read off the live `tl`. */
-const outroNow = () => circlesOn()
+ *  0 whenever the flanking pair is off. Read off the live `tl`. */
+const outroNow = () => flankOutro()
   ? smooth(clamp01((tl.p - tl.actS1) / Math.max(1e-4, tl.canvasS0 - tl.actS1)))
   : 0;
 
@@ -764,6 +867,21 @@ function applyTrioAtlas() {
   }
 }
 
+/** how the team section is treated right now: `hover` (colour, the cursor
+ *  tooltip), `bw` (black and white, still the tooltip) or `captions` (black
+ *  and white, the names under the cards) — by experience (`exp.team`), or by
+ *  the legacy version's own rule (V3 bw, V4 captions) */
+const teamStyle = () => {
+  const e = CONFIG.experience;
+  if (e === 1 || e === 2) return CONFIG.exp.team?.[e] || (e === 2 ? "captions" : "hover");
+  return CONFIG.variant === 4 ? "captions" : CONFIG.variant >= 3 ? "bw" : "hover";
+};
+function applyTeamClasses() {
+  const s = teamStyle();
+  document.body.classList.toggle("is-team-bw", s !== "hover" && CONFIG.team.grayscale !== false);
+  document.body.classList.toggle("is-team-caps", s === "captions" && CONFIG.team.captions !== false);
+}
+
 /** Experience 2's steps: V2's first three (the ring act), then the block the
  *  trio and the Atlas draw through — `trio.blockVh`, split over its steps */
 const stepsTrio = () => {
@@ -788,14 +906,12 @@ function applyVariant() {
   document.body.classList.toggle("is-exp2", CONFIG.experience === 2);
   document.body.classList.toggle("is-paper", paperOn());
   document.body.classList.toggle("is-trio", trioOn());
-  // the team's black and white: V3's treatment, and liftable from the panel
-  document.body.classList.toggle(
-    "is-team-bw", CONFIG.variant >= 3 && CONFIG.team.grayscale !== false
-  );
-  // V4 names the faces under the card instead of in a cursor tooltip
-  document.body.classList.toggle(
-    "is-team-caps", CONFIG.variant === 4 && CONFIG.team.captions !== false
-  );
+  // the team: colour + tooltip, or black and white + names under the cards —
+  // Experience 1 the first, Experience 2 the second (his ask, 2026-09-21)
+  applyTeamClasses();
+  // the words of this experience into the live slots, BEFORE the steps are
+  // read and the blocks rebuilt below
+  const copyChanged = applyCopy();
   CONFIG.steps = on ? (trioOn() ? stepsTrio() : STEPS_V2) : STEPS_V1;
   CONFIG.sections.canvasFrom = on ? split() : 0;
   // The evidence panel is in BOTH: it always rides the second sticky. In V2 it
@@ -810,6 +926,15 @@ function applyVariant() {
   quiet.style();
   network.update(tl);
   hero.variant();
+  if (copyChanged) {
+    // the titles that carry the other experience's words are rebuilt (the
+    // ring act's copy and the evidence panel are rebuilt below regardless)
+    hero.rebuild();
+    team.retitle();
+    styleAtlasTitle();
+    titlesPanel?.refresh();
+  }
+  trio.style();
   for (const r of rings) r.build();
   left.build();
   copyA.build();
@@ -944,7 +1069,7 @@ bowl.setPoseHook((pose, ctx) => {
     //     `dur` it carries on at the same rate instead of parking: the bowl
     //     is still on its way down when the next section covers it.
     const E = A.exit;
-    if (E && !circlesOn()) {
+    if (E && !flankOutro()) {
       const raw = (actPExt - E.at) / Math.max(0.02, E.dur || 0.18);
       const sink = raw <= 0 ? 0
         : raw < 1 ? smooth(raw)
@@ -967,22 +1092,19 @@ bowl.setPoseHook((pose, ctx) => {
   //     the wireframe the circles are drawn around. Blended in across the
   //     handover into the canvas block (ring act's end → `canvasS0`), so it
   //     is already home when the first beat begins.
-  if (circlesOn()) {
+  //     Experience 2's trio does NOT take this: its stage covers the bowl
+  //     (his correction, 2026-09-21), so the bowl sinks with the rings as in
+  //     every other version and is simply gone once the stage is over it.
+  if (flankOutro()) {
     const K = CONFIG.v2.circles;
-    // Experience 2's trio has a bowl pose of its own (smaller: the circles
-    // are drawn around it, the knot takes the centre after) — V5's pair
-    // keeps the frame-filling one the fourth circle is measured from
-    const TB = trioOn() ? CONFIG.v2.trio.bowl : null;
     const s0 = tl.actS1 ?? 1;
     const s1 = Math.max(s0 + 0.01, tl.canvasS0 ?? 1);
     const home = smooth(clamp01((tl.p - s0) / (s1 - s0)));
     if (home > 0) {
-      const centre = TB
-        ? { ...P.until, x: TB.x ?? 0, y: TB.y ?? 0, size: TB.size, tilt: TB.tilt, tiltZ: TB.tiltZ ?? 0, opacity: 1 }
-        : {
-          ...P.until, x: K.bowlX ?? 0, y: K.bowlY ?? 0, size: K.bowlSize,
-          tilt: K.bowlTilt, tiltZ: K.bowlTiltZ ?? 0, opacity: 1,
-        };
+      const centre = {
+        ...P.until, x: K.bowlX ?? 0, y: K.bowlY ?? 0, size: K.bowlSize,
+        tilt: K.bowlTilt, tiltZ: K.bowlTiltZ ?? 0, opacity: 1,
+      };
       out = mix(out, centre, home);
     }
     poseDebug = { home: +home.toFixed(3), s0: +s0.toFixed(3), s1: +s1.toFixed(3), p: +tl.p.toFixed(3), size: +out.size.toFixed(3), opacity: +out.opacity.toFixed(3) };
@@ -1178,11 +1300,9 @@ function raf(now) {
   ground.setClose(outro);
   bowl.setSheet(outro);
   // ...and the idle turn eases to V5's own rate over the same handover
-  bowl.setSpinMul(circlesOn()
-    ? 1 + (((trioOn() ? CONFIG.v2.trio.bowl.spin : CONFIG.v2.circles.bowlSpin) ?? 1) - 1) * outro
-    : 1);
+  bowl.setSpinMul(flankOutro() ? 1 + ((CONFIG.v2.circles.bowlSpin ?? 1) - 1) * outro : 1);
   let bowlGain = 1;
-  if (CONFIG.bowl.fadeAfter > 0 && !circlesOn()) {
+  if (CONFIG.bowl.fadeAfter > 0 && !flankOutro()) {
     const vh = window.innerHeight;
     const covered = pinAEl.offsetTop + ((vhA() + gapVh()) / 100) * vh;
     bowlGain = 1 - clamp01((window.scrollY - covered) / (CONFIG.bowl.fadeAfter * vh));
@@ -1467,6 +1587,10 @@ window.__was = {
   get sphereScene() { return sphere.scene; },
   hero,
   setVariant,
+  /** the copy of each experience (2026-09-21) */
+  copyBack,
+  get copyTable() { return copyTable(); },
+  get teamStyle() { return teamStyle(); },
   /** the two experiences (2026-09-21): 1 the white page, 2 the trio + Atlas */
   setExperience,
   get experience() { return CONFIG.experience; },

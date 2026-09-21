@@ -62,7 +62,10 @@ export function createCopy({ mount, cfg, from = 0, to = Infinity, which = "A" })
     root.style.setProperty("--copy-size", `${act ? at(A.copySize, 0, 2) : t.size}vw`);
     root.style.setProperty("--copy-lh", String(t.lineHeight));
     root.style.setProperty("--copy-track", `${t.tracking}em`);
-    root.style.setProperty("--copy-align", act ? A.copyAlign || "left" : t.align);
+    // `copyAlign` may be ONE value or one per step (2026-09-21: Experience 2
+    // sets its third step centred, the first two left) — the resting paint
+    // takes step 0's, `update()` the visible step's
+    root.style.setProperty("--copy-align", act ? at(A.copyAlign, 0, "left") : t.align);
     root.style.setProperty("--copy-font", t.font);
     if (act) {
       // the real per-step position is applied every frame in `update()`, from
@@ -143,6 +146,7 @@ export function createCopy({ mount, cfg, from = 0, to = Infinity, which = "A" })
       mount.style.setProperty("--act-y", `${at(A.copyY, i, 18)}%`);
       mount.style.setProperty("--act-w", `${at(A.copyWidth, i, 40)}vw`);
       root.style.setProperty("--copy-size", `${at(A.copySize, i, 2)}vw`);
+      root.style.setProperty("--copy-align", at(A.copyAlign, i, "left"));
     }
   }
 

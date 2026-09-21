@@ -291,6 +291,11 @@ export function createHero({ nav, heroEl, untilEl, underEl, cfg, bowl }) {
     halfB.style.setProperty("--gap", `${h.rightGap}vw`);
     halfB.style.setProperty("--y", `${h.rightY}%`);
     halfB.style.textAlign = h.rightAlign || "left";
+    // the second line of each half, stepped sideways (Experience 1's "Where /
+    // practice" toward the bowl, "makes / progress" away — his frame 1,
+    // 2026-09-21); 0 keeps the lines flush, as every other version has them
+    halfA.style.setProperty("--shift2", `${h.leftShift ?? 0}vw`);
+    halfB.style.setProperty("--shift2", `${h.rightShift ?? 0}vw`);
     paraEl.style.setProperty("--copy-size", `${h.paraSize}vw`);
     paraEl.style.setProperty("--copy-lh", String(h.paraLh));
     paraEl.style.setProperty("--para-left", `${h.paraLeft}vw`);

@@ -77,9 +77,13 @@ export function createV3Panel({
       else onVariant(cfg.variant);
     });
     const P = cfg.exp.paper;
-    f.addBinding(P, "on", { label: "1 · white page" }).on("change", onPaper);
-    f.addBinding(P, "bg", { label: "1 · the page" }).on("change", onPaper);
+    f.addBinding(P, "on", { label: "1 · paper page (no shader)" }).on("change", onPaper);
+    f.addBinding(P, "bg", { label: "1 · first section's paper" }).on("change", onPaper);
     f.addBinding(P, "ink", { label: "1 · scroll bar ink" }).on("change", onPaper);
+    // the team, by experience (his ask, 2026-09-21: "invertiamo le due")
+    const TEAM = { "colour · hover tooltip": "hover", "b/w · names under the cards": "captions", "b/w · hover tooltip": "bw" };
+    f.addBinding(cfg.exp.team, "1", { options: TEAM, label: "1 · team" }).on("change", onFooter);
+    f.addBinding(cfg.exp.team, "2", { options: TEAM, label: "2 · team" }).on("change", onFooter);
     f.addBinding(state, "v", {
       label: "legacy version",
       options: {
@@ -147,26 +151,22 @@ export function createV3Panel({
     f.addBinding(t, "radiusScale", { min: 0.6, max: 1.4, step: 0.01, label: "× lobe radius" }).on("change", onTrio);
     f.addBinding(t, "fitSpan", { min: 0.04, max: 0.16, step: 0.005, label: "fit reads ± (of curve)" }).on("change", onTrioAtlas);
     f.addBinding(t, "blockVh", { min: 300, max: 1400, step: 20, label: "the block's scroll (vh)" }).on("change", onTrioBlock);
-    const bw = f.addFolder({ title: "The bowl behind (this block)", expanded: false });
-    bw.addBinding(t.bowl, "x", { min: -0.5, max: 0.5, step: 0.005, label: "x (of width)" });
-    bw.addBinding(t.bowl, "y", { min: -0.5, max: 0.5, step: 0.005, label: "y (of height)" });
-    bw.addBinding(t.bowl, "size", { min: 0.2, max: 1.6, step: 0.01, label: "size (vh)" });
-    bw.addBinding(t.bowl, "tilt", { min: -40, max: 80, step: 1, label: "lean (°)" });
-    bw.addBinding(t.bowl, "tiltZ", { min: -45, max: 45, step: 1, label: "roll (°)" });
-    bw.addBinding(t.bowl, "spin", { min: 0, max: 3, step: 0.05, label: "idle turn (× normal)" });
+    // what he took out (2026-09-21) — one flag each, off
+    f.addBinding(t, "lattice", { label: "bowl as lattice first (off: the stage covers it)" }).on("change", onTrio);
+    f.addBinding(t, "arcs", { label: "the three big arcs + side labels" }).on("change", onTrio);
     const h = f.addFolder({ title: "By hand (fit: manual)", expanded: false });
     h.addBinding(t.manual, "cx", { min: 0.2, max: 0.8, step: 0.005, label: "centre x" }).on("change", onTrio);
     h.addBinding(t.manual, "cy", { min: 0.2, max: 0.8, step: 0.005, label: "centre y" }).on("change", onTrio);
     h.addBinding(t.manual, "D", { min: 0.1, max: 0.45, step: 0.005, label: "spread (× short side)" }).on("change", onTrio);
     h.addBinding(t.manual, "rFrac", { min: 0.3, max: 1.2, step: 0.01, label: "radius (× spread)" }).on("change", onTrio);
     const s = f.addFolder({ title: "Where each beat ends (of the block)", expanded: false });
-    s.addBinding(t.marks, "wire", { min: 0.02, max: 0.3, step: 0.01, label: "1 · lattice" });
-    s.addBinding(t.marks, "c1", { min: 0.05, max: 0.5, step: 0.01, label: "2 · top-right" });
-    s.addBinding(t.marks, "c2", { min: 0.1, max: 0.6, step: 0.01, label: "3 · bottom" });
-    s.addBinding(t.marks, "c3", { min: 0.15, max: 0.7, step: 0.01, label: "4 · top-left" });
-    s.addBinding(t.marks, "arcs", { min: 0.2, max: 0.8, step: 0.01, label: "5 · the arcs" });
-    s.addBinding(t.marks, "knot", { min: 0.25, max: 0.9, step: 0.01, label: "6 · the Atlas from" });
-    s.addBinding(t.bowlOut, "at", { min: 0.2, max: 0.9, step: 0.01, label: "lattice goes at" });
+    s.addBinding(t.marks, "c1", { min: 0.05, max: 0.5, step: 0.01, label: "1 · top-right" });
+    s.addBinding(t.marks, "c2", { min: 0.1, max: 0.6, step: 0.01, label: "2 · bottom" });
+    s.addBinding(t.marks, "c3", { min: 0.15, max: 0.7, step: 0.01, label: "3 · top-left" });
+    s.addBinding(t.marks, "knot", { min: 0.25, max: 0.9, step: 0.01, label: "4 · the Atlas from" });
+    s.addBinding(t.marks, "wire", { min: 0.02, max: 0.3, step: 0.01, label: "(lattice on) lattice until" });
+    s.addBinding(t.marks, "arcs", { min: 0.2, max: 0.8, step: 0.01, label: "(arcs on) arcs until" });
+    s.addBinding(t.bowlOut, "at", { min: 0.2, max: 0.9, step: 0.01, label: "(lattice on) goes at" });
     s.addBinding(t.bowlOut, "dur", { min: 0.02, max: 0.3, step: 0.01, label: "...over" });
     s.addBinding(t, "textReveal", { min: 0.1, max: 1, step: 0.01, label: "captions, last share of" });
     s.addBinding(t, "captionsOut", { label: "captions go as the knot draws" });
@@ -179,13 +179,14 @@ export function createV3Panel({
     l.addBinding(t, "arcWidth", { min: 0.25, max: 3, step: 0.25, label: "arcs (px)" }).on("change", onTrio);
     l.addBinding(t, "arcAlpha", { min: 0.05, max: 1, step: 0.01, label: "arcs opacity" }).on("change", onTrio);
     l.addBinding(t, "arcStagger", { min: 0, max: 1, step: 0.05, label: "one arc after the next" });
-    const ty = f.addFolder({ title: "Type (× circle radius)", expanded: false });
-    ty.addBinding(t, "nameSize", { min: 0.04, max: 0.2, step: 0.002, label: "name" });
-    ty.addBinding(t, "descSize", { min: 0.03, max: 0.12, step: 0.002, label: "description" });
+    // px (his ask, 2026-09-21: 16 / 14); a value ≤ 1.5 is read as × the radius
+    const ty = f.addFolder({ title: "Type (px)", expanded: false });
+    ty.addBinding(t, "nameSize", { min: 8, max: 40, step: 0.5, label: "name (px)" });
+    ty.addBinding(t, "descSize", { min: 8, max: 40, step: 0.5, label: "description (px)" });
     ty.addBinding(t, "descLh", { min: 1, max: 1.8, step: 0.02, label: "...line height" });
-    ty.addBinding(t, "nameY", { min: 0, max: 0.4, step: 0.01, label: "name above centre" });
-    ty.addBinding(t, "descY", { min: 0, max: 0.5, step: 0.01, label: "description below" });
-    ty.addBinding(t, "sideSize", { min: 0.04, max: 0.2, step: 0.002, label: "side labels" });
+    ty.addBinding(t, "nameY", { min: 0, max: 0.7, step: 0.01, label: "name above centre" });
+    ty.addBinding(t, "descY", { min: 0, max: 0.7, step: 0.01, label: "description below" });
+    ty.addBinding(t, "sideSize", { min: 8, max: 40, step: 0.5, label: "side labels (px)" });
     ty.addBinding(t, "sideOut", { min: 0, max: 1, step: 0.01, label: "...outside by" });
     ty.addBinding(t, "sideDown", { min: -0.5, max: 1, step: 0.01, label: "...below the middle by" });
     const a = f.addFolder({ title: "The Atlas over the circles", expanded: false });
@@ -375,8 +376,9 @@ export function createV3Panel({
     f.addBinding(F, "padTop", { min: 96, max: 320, step: 2, label: "links start at (px)" }).on("change", onFooter);
     f.addBinding(F, "gap", { min: 0, max: 200, step: 2, label: "min gap above the logo (px)" }).on("change", onFooter);
     f.addBinding(F, "wordBottom", { min: 0, max: 120, step: 2, label: "air under the logo (px)" }).on("change", onFooter);
-    f.addBinding(cfg.team, "grayscale", { label: "team in black & white" }).on("change", onFooter);
-    f.addBinding(cfg.team, "captions", { label: "V4 — names under the cards" }).on("change", onFooter);
+    // the two LIFT a treatment the experience asked for (`exp.team`, above)
+    f.addBinding(cfg.team, "grayscale", { label: "allow black & white" }).on("change", onFooter);
+    f.addBinding(cfg.team, "captions", { label: "allow names under the cards" }).on("change", onFooter);
     f.addBinding(cfg.team, "captionSize", { min: 9, max: 24, step: 0.5, label: "name (px)" }).on("change", onFooter);
     f.addBinding(cfg.team, "captionRoleSize", { min: 8, max: 22, step: 0.5, label: "role (px)" }).on("change", onFooter);
   }

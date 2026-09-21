@@ -146,9 +146,123 @@ export const CONFIG = {
   experience: 1,
   exp: {
     paper: {
-      on: true,            // Experience 1's white page (off = V4 exactly as it was)
-      bg: "#ffffff",       // "solo sfondo bianco"
+      on: true,            // Experience 1's paper page (off = V4 exactly as it was)
+      // NOT a candid white any more (his correction, 2026-09-21: "non bianca
+      // candida, ma di questo colore di sfondo, fino alla parte dei tre step")
+      // — the first section, hero to ring act, sits on this warm grey, and the
+      // three-step stage that rises over it stays white (`columns.rightBg`), so
+      // the one collapsing over the other reads as two sheets, not one
+      bg: "#EBE9E5",
       ink: "#0a0a0a",      // ...and the scroll bar's ink on it
+    },
+    // how the team section is treated in each experience (his ask, 2026-09-21:
+    // "invertiamo le due") — `hover`: colour photographs, the cursor-follow
+    // tooltip; `captions`: black and white, the name and role under each card
+    team: { 1: "hover", 2: "captions" },
+  },
+
+  // ── the COPY of each experience (his ask, 2026-09-21 — his frames 1–9) ───
+  // Every title on the page that differs between the two, in one table per
+  // experience. `main.js` writes the active table into the live slots the
+  // sections already read (`hero.title`, `v2.top.text`, `v2.steps[i].text`,
+  // `evidence.*`, `atlas.title.*`, `team.*`) whenever the experience changes,
+  // and the Titles panel writes edits BACK into the table of the experience
+  // on screen — so a word changed in one experience stays changed there, and
+  // only there. A legacy version (experience 0) gets the page as first written.
+  // "|" is a line break where the block already uses it (hero, act two, the
+  // steps), "\n" where the block does (the Atlas header, the team title) —
+  // each field keeps the separator its own renderer reads.
+  copy: {
+    1: {
+      hero: {
+        // his frame 1: "Where / practice" stepping down toward the bowl, "makes /
+        // progress" stepping down away from it — the second line of each half
+        // is shifted (`leftShift`/`rightShift`, vw) so the four words read as
+        // one diagonal line through the object, not two right-aligned blocks
+        title: "Where|practice", titleB: "makes|progress",
+        para: "As users find practices that help|them, we’re building the science|around what works and why.",
+        titleSize: 5.4, titleLh: 0.94,
+        // Numbers here stay on a 0.5 grid on purpose: Tweakpane's `refresh()`
+        // writes a binding's value BACK through its `step` constraint, and the
+        // step's grid is anchored at the value the panel was built with (this
+        // table's, at boot) — a 14.75 here with a 0.5-step slider in the V
+        // panel turned the legacy 13 into 13.25 on every switch.
+        leftGap: 14.5, leftY: 46, leftShift: 8.5,
+        rightGap: 9.5, rightY: 59, rightShift: -2,
+      },
+      top: { text: "Across traditions and cultures,|people have found practices|that improve wellbeing." },
+      // frame 3: the second statement sits low on the right, its lines set LEFT
+      bottom: { text: "It’s time we help this wisdom|work for everybody.", align: "left", y: 78 },
+      // the ring act: the first ring is the teachers' ("quando esce il primo
+      // ring di Teachers")
+      act: {
+        steps: ["We connect people|and trusted teachers", "Practices that people|actually live by", ""],
+        out: [0.16, 0.16, 0], delay: [0.04, 0.04, 0.04],
+        align: ["left", "left", "left"], x: [4, 4, 4], y: [18, 18, 18], width: [40, 40, 40],
+      },
+      // frames 4 and 5: the statement, the three sources — in the order the
+      // globe builds them (the techniques, then the members, then the
+      // therapists) — and the summary
+      evidence: {
+        title: "By combining research and individual|outcomes at scale, we can understand which|practice will help someone and when.",
+        titleWidth: 46,   // vw — his three lines, unbroken
+        summary: "Insight Timer connects three data sources to|build a first-of-its-kind map: a model of helpful|practices and when to use them.",
+        rows: [
+          { label: "Validated practices", para: "Data from peer-reviewed|research is mapped to every|technique in our library." },
+          { label: "Member feedback", para: "Self-reported data from users|shows impact over time." },
+          { label: "Therapist reporting", para: "Clinical observation tells us|what works in context." },
+        ],
+      },
+      atlas: {
+        heading: "Bringing this data\ntogether lets us create\nsomething powerful.",
+        sub: "A map of how wellbeing practices change how we feel, based on precise circumstances, moment to moment.",
+        top: 108, size: 2.15, subSize: 0.95, maxWidth: 640,
+      },
+      // frame 6 — "rispetta l'andare a capo"
+      team: {
+        title: "The People\nLeading Insight",
+        desc: "Our small but dedicated team of 70 people has transformed a basic meditation timer into a community of 30 million people and 20,000 teachers.",
+      },
+    },
+    2: {
+      // the hero keeps its title ("lascia la hero con il titolo che abbiamo
+      // ad ora"); only the corner paragraph changes
+      hero: {
+        title: "Building|space", titleB: "to|practice",
+        para: "We’re forming a better understanding|of what helps people thrive.",
+        titleSize: 4.7, titleLh: 1.0,
+        leftGap: 13, leftY: 46, leftShift: 0,
+        rightGap: 13, rightY: 56, rightShift: 0,
+      },
+      top: { text: "Across generations and cultures,|people have found practices|that help them feel grounded." },
+      // "di come si apre il nostro shader" — the statement the ground opens under
+      bottom: { text: "But we’ve never had a full picture|of what works for each of us and why.", align: "right", y: 72 },
+      // frame 7 — "un altro titolo aggiuntivo... in alto al centro": the ring
+      // act's first two steps keep their copy, top-left; the THIRD step, which
+      // had none (the rings converge into the bowl and vanish), gets the added
+      // statement, centred at the top of the open field — the frame shows
+      // exactly that moment, the bowl alone on the shader — arriving once the
+      // rings have mostly gone (`delay`) and staying (`out` 0) until the next
+      // section has risen over it
+      act: {
+        steps: ["On a platform|guided by people", "Practices that people|actually live by", "Insight Timer is making the impact of|practice clear for everybody."],
+        out: [0.16, 0.16, 0], delay: [0.04, 0.04, 0.28],
+        align: ["left", "left", "center"], x: [4, 4, 28], y: [18, 18, 18], width: [40, 40, 44],
+      },
+      // the Atlas over the circles: its header is this one sentence, no sub —
+      // "il titolo deve essere scritto così nella sezione atlas appunto quando
+      // compare" — the trio's own header (frame 8) is `v2.trio.head`
+      atlas: {
+        heading: "We organize millions of context-rich\ndata points into a clearer\nunderstanding of what works.",
+        sub: "",
+        // wide enough that "context-rich" is never hyphen-broken at 2.15vw
+        top: 120, size: 2.15, subSize: 0.95, maxWidth: 840,
+      },
+      // frame 9
+      team: {
+        title: "The People\nLeading Insight",
+        desc: "Our small but dedicated team of 70 people has transformed a basic meditation timer into a community of 30 million people and 20,000 teachers.",
+      },
     },
   },
 
@@ -176,7 +290,14 @@ export const CONFIG = {
     radius: 20,            // px — both panels' corners
     rowSize: 15,           // px — a row
     rowHeight: 44,         // px — a row's height
-    shadow: 0.3,           // the panels' drop shadow, 0-1
+    // the panels' drop shadow, 0-1 — LIGHT, but there ("una leggera ombra...
+    // bianco su bianco non si vede", his ask 2026-09-21). It was there before
+    // and invisible: the opening curtain is a `clip-path`, and a clip-path
+    // clips the box-shadow with everything else. nav.js now clips a region
+    // `shadowPad` px LARGER than the panel on every side, so the shadow has
+    // room to fall.
+    shadow: 0.14,
+    shadowPad: 64,         // px of room the curtain leaves around the panel for it
     // ── motion: the card opens, THEN the rows arrive ─────────────────────
     openDelay: 70,         // ms of hover before it opens
     closeDelay: 180,       // ms of grace after the pointer leaves
@@ -258,6 +379,11 @@ export const CONFIG = {
     // bowl, the right half away from it
     leftAlign: "right",      // left | center | right
     rightAlign: "left",
+    // the SECOND line of each half, shifted sideways (vw, + is right) — 0 keeps
+    // the two lines flush. Experience 1's "Where / practice" steps down toward
+    // the bowl with this (his frame 1, 2026-09-21); see `copy`.
+    leftShift: 0,
+    rightShift: 0,
     // ── the two halves slide APART as the hero leaves ────────────────────
     // His ask, 2026-09-17: the left one travels left, the right one right,
     // "però devono sfasarsi sulla X" — so they are deliberately NOT a mirror
@@ -926,6 +1052,16 @@ export const CONFIG = {
       fitSpan: 0.11,         // how much of the curve either side of a vertex the fit reads
       manual: { cx: 0.5, cy: 0.52, D: 0.27, rFrac: 0.78 },   // centre, spread and radius, × min(W,H)
       strokeWidth: 1, ink: "#0a0a0a",
+      // ── what was taken OUT (his corrections, 2026-09-21) ────────────────
+      // No lattice: the bowl is not crossfaded to its wireframe as the block
+      // opens — the three-step stage simply rises over it and covers it, as
+      // in Experience 1 ("scompare dietro, sopra passa la nostra sezione,
+      // come la prima versione 1"). And no arcs: the three big lines around
+      // the circles, with "in the field" / "on platform", are gone ("quelle
+      // linee non le voglio"). Both stay one flag away; off, their windows
+      // collapse to zero and the marks below read straight through.
+      lattice: false,
+      arcs: false,
       // the big arcs, as in his frame: each centred on one circle, running
       // from the direction of one neighbour's centre to the other's
       arcFrac: 1.16,         // radius, × the circles' own centre-to-centre distance
@@ -933,33 +1069,46 @@ export const CONFIG = {
       arcWidth: 0.75, arcAlpha: 0.5,
       arcStagger: 0.5,       // 0 = all three at once, 1 = strictly one after the next
       // where each beat ENDS, as a fraction of the block's own 0→1 — abutting,
-      // so the whole thing reads as one continuous draw (the shader's outro
-      // and the white come BEFORE 0, in the handover)
-      marks: { wire: 0.07, c1: 0.19, c2: 0.31, c3: 0.43, arcs: 0.52, knot: 0.58 },
-      // the lattice fades out once the arcs are in — the knot has the centre
+      // so the whole thing reads as one continuous draw. `wire` and `arcs`
+      // only count while their flags are on.
+      marks: { wire: 0.06, c1: 0.17, c2: 0.34, c3: 0.5, arcs: 0.58, knot: 0.56 },
+      // (lattice on only) it fades out once the circles are in
       bowlOut: { at: 0.5, dur: 0.07 },
+      // the header over the whole block (his frame 8): centred at the top,
+      // the same type and place as the Atlas header, which then takes its
+      // place in a crossfade as the knot begins — one title slot, two texts
+      head: {
+        show: true,
+        heading: "Three sources of evidence come|together on Insight Timer.",
+        sub: "Together, they show which practice|works best in real circumstances.",
+        in: 0.04,            // share of the block it arrives over, from 0
+        // ...and leaves over this much BEFORE the knot's mark, so it is gone
+        // when the Atlas's header starts arriving in the same slot — a hand-
+        // over, never two titles through each other
+        outDur: 0.04,
+      },
       textReveal: 0.45,      // the LAST share of a beat over which its caption arrives
       captionsOut: true,     // the captions go as the knot begins (the cards take over)
       captionsOutDur: 0.08,
-      // type, × the circle radius — measured off his frame
-      nameSize: 0.1, descSize: 0.058, descLh: 1.4, sideSize: 0.095,
-      nameY: 0.1,            // the name sits this far ABOVE the centre (× r)
+      // type, in PX (his ask, 2026-09-21, second pass: "titoli 16px e
+      // paragrafi 14px" — the first pass had them at 24/20, up from a 7px
+      // that could not be read). A value ≤ 1.5 is still read as × the circle
+      // radius, the old idiom, so the sliders can go either way.
+      nameSize: 16, descSize: 14, descLh: 1.3, sideSize: 12,
+      nameY: 0.28,           // the name sits this far ABOVE the centre (× r)
       descY: 0.14,           // ...the description this far below
       sideOut: 0.42,         // "in the field" / "on platform": outside the top circles by
       sideDown: 0.42,        // ...and below the midpoint between them and the bottom one
+      // the descriptions in SHORT lines, so at readable size they stay inside
+      // the circle's own chord
       labels: {
         tr: { name: "Member feedback", desc: "Feedback from users\npracticing daily" },
-        b: { name: "Therapist reports", desc: "Therapist input on how to best\nimplement each practice" },
+        b: { name: "Therapist reports", desc: "Therapist input on how\nto best implement\neach practice" },
         tl: { name: "Clinical research", desc: "Linking our knowledge\nto 350k+ practices" },
         left: "in the field",
         right: "on platform",
       },
       blockVh: 720,          // the block's whole scroll, split evenly over its three steps
-      // the bowl for THIS block — V5's flanking pair fills the frame with it
-      // (the fourth circle IS the bowl); here it is the object the three
-      // circles are drawn around before the knot takes the centre, so it
-      // sits smaller. Same units as `v2.circles.bowl*`.
-      bowl: { x: 0, y: 0, size: 0.6, tilt: 14, tiltZ: 0, spin: 1 },
       // the Atlas, as this stage wants it — put back as the preset had it
       // whenever the trio is off
       atlas: {
@@ -1209,6 +1358,10 @@ export const CONFIG = {
     // same "strictly in place" treatment every other block on the page got.
     title: {
       show: true,
+      // the small 2D curve that sat above the heading (the morphing sketch of
+      // the mark) is OFF — his ask, 2026-09-21: "non voglio nessun tipo di
+      // icona sopra il titolo". Still built (its probe still answers), hidden.
+      sketch: false,
       heading: "Bringing this data\ntogether lets us create\nsomething powerful.",
       sub: "A map of how wellbeing practices change how we feel, based on precise circumstances, moment to moment.",
       align: "center",
@@ -1226,8 +1379,12 @@ export const CONFIG = {
   // `tooltip.js`, the one piece of that repo he asked for). Names and roles
   // live in `src/data/team.js`; photos are their own folder, `src/team/*`.
   team: {
-    // V4 — the names live UNDER the card instead of in a cursor tooltip (his
-    // ask, 2026-09-17): the name in the ink, the role in a grey under it.
+    // The names UNDER the card instead of in a cursor tooltip (his ask,
+    // 2026-09-17): the name in the ink, the role in a grey under it. WHICH
+    // experience gets it is `exp.team` (2026-09-21, "invertiamo le due":
+    // Experience 2 has the captions and the black and white, Experience 1
+    // the colour photographs with the hover tooltip); legacy V4 keeps it.
+    // These two flags only LIFT a treatment the experience asked for.
     captions: true,
     captionSize: 13,      // px — the name
     captionRoleSize: 12,  // px — the role under it

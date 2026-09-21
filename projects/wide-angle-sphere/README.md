@@ -2796,3 +2796,74 @@ bar 1, his bowl values. Three legacy checks were re-pointed from the keyboard
 to `setVariant` (the keys mean something else now), the inner-ramp check reads
 his preset (colour noise off, ramp on), the nav layout check reads the new
 bar. 245 checks.
+
+## His review of the two experiences (his ask, 2026-09-21 — the same day)
+
+Nine notes on the frames above, all in. The two he could see straight away:
+the nav's dropdowns had **no shadow** — *"bianco su bianco non si vede un
+cazzo"* — and the shadow had been in the CSS the whole time: the opening
+curtain is a `clip-path`, and a clip-path clips the box-shadow with everything
+else. `nav.js` now clips a region `nav.shadowPad` px LARGER than the panel on
+every side (negative insets, tweened in px), so the shadow has room to fall;
+the shadow itself is three light layers (`nav.shadow` 0.14): a hairline that
+separates white from white, a near one and a far soft one. And Experience 1's
+first section is **not a candid white** any more but his `#EBE9E5`
+(`exp.paper.bg`), hero to ring act, with the three-step stage and the team
+staying white — so one sheet collapsing over the other reads as two.
+
+**Experience 2, corrected.** No lattice and no arcs: the stage is SOLID and
+rises over the bowl exactly as Experience 1's does (*"scompare dietro, sopra
+passa la nostra sezione, come la prima versione 1"*), so the V5 outro, the
+see-through stage, the wireframe crossfade and the bowl's home pose belong to
+the flanking pair only (`flankOutro()` in `main.js`; `trio.lattice` and
+`trio.arcs` are flags, off, their windows collapsing to nothing). Over the
+circles a header in the Atlas header's own type and place — *"Three sources of
+evidence come together on Insight Timer."* with its sub (`v2.trio.head`, his
+frame 8) — which is GONE by the knot's mark, where the Atlas's header arrives
+in the same slot: *"We organize millions of context-rich data points into a
+clearer understanding of what works."*, no sub, and no sketch above it
+(`atlas.title.sketch: false` — *"nessun tipo di icona sopra il titolo"*). The
+paper warms on the stage itself now (an inline background trio.js writes and
+resets), since the stage is the solid thing on screen. The type inside the
+circles was 7px — `descSize` 0.058 × a ~120px radius — and is set in PX now,
+at his numbers from the second pass (*"titoli 16px e paragrafi 14px"*): the
+name 16, the description 14, the side labels 12, the same on every screen; a
+value ≤ 1.5 in those fields is still read as × the radius. The two blocks are
+pushed apart and the descriptions re-broken into short lines so they sit
+inside the disc.
+
+**The copy of each experience.** `CONFIG.copy[1]` / `copy[2]` hold every title
+that differs between the two — his frames 1–9 transcribed: the hero
+(*"Where / practice · makes / progress"*, the second line of each half stepped
+toward the bowl with `hero.leftShift` / `rightShift`, and its paragraph), act
+two's two statements (Experience 1's second one set LEFT low on the right, as
+in his frame 3), the ring act's step copy (Experience 1's first ring *"We
+connect people and trusted teachers"*; Experience 2 keeps its two and ADDS a
+third, centred at the top of the open field on the step that had none —
+*"Insight Timer is making the impact of practice clear for everybody."*, his
+frame 7: the rings gone into the bowl, the white stage rising under it — with
+`copyAlign` one per step now), the evidence panel (statement, the three
+sources in the globe's own order, the summary), the Atlas header, the team
+(*"The People / Leading Insight"* and the paragraph of the 70). `applyCopy()`
+writes the active table into the live slots the sections already read —
+in place, never replacing an array a panel is bound to — before anything is
+built, and `copyBack()` puts a Titles-panel edit into the table of the
+experience on screen, so it survives switching away and back. A legacy
+version gets the page as first written (`COPY_LEGACY`). The Titles panel gained
+the hero's two halves, the ring act's step texts, the three sources, the trio
+header and the team head, behind a `syncing` guard so a refresh after a switch
+fires nothing.
+
+**The team, inverted.** `exp.team` — Experience 1 in colour with the cursor
+tooltip, Experience 2 in black and white with the names under the cards
+(`teamStyle()`); legacy V3/V4 keep their own.
+
+Verified: the EXPERIENCES block re-read for the cover mechanic (the handover
+frame, `b0` at 2% instead of the lattice, the arcs frame replaced by "three
+whole, no arcs, the paper warming", the header handover at the knot, the way
+back from the ring act's third step), plus ten new checks — Experience 1's
+hero/act-two/ring/evidence/team copy, Experience 2's copy, frame 7 live at
+mid-step-three, the header and team over the circles, the type inside the
+circles drawn at 16 / 14 px, the panel edit persisting per
+experience, the nav shadow's room — and the boot re-read (EBE9E5, "Where /
+practice", the team on hover). 255 checks.

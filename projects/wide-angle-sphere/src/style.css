@@ -144,9 +144,13 @@ body {
   padding: 0 0 8px;
   background: #fff;
   border-radius: var(--nav-r, 20px);
+  /* light, in three layers: a hairline that separates white from white, a
+     near shadow, a far soft one. It only shows because nav.js leaves the
+     clip region `shadowPad` px past the panel — a clip-path cuts shadows. */
   box-shadow:
-    0 2px 6px rgba(20, 18, 12, calc(var(--nav-shadow, 0.16) * 0.4)),
-    0 22px 56px -18px rgba(20, 18, 12, calc(var(--nav-shadow, 0.16) * 2));
+    0 0 0 1px rgba(20, 18, 12, calc(var(--nav-shadow, 0.14) * 0.35)),
+    0 6px 16px -6px rgba(20, 18, 12, calc(var(--nav-shadow, 0.14) * 1.1)),
+    0 28px 64px -20px rgba(20, 18, 12, calc(var(--nav-shadow, 0.14) * 1.6));
   visibility: hidden;
   opacity: 0;
   z-index: 3;
@@ -210,8 +214,9 @@ body {
   background: #fff;
   border-radius: var(--nav-r, 20px);
   box-shadow:
-    0 2px 6px rgba(20, 18, 12, calc(var(--nav-shadow, 0.16) * 0.4)),
-    0 22px 56px -18px rgba(20, 18, 12, calc(var(--nav-shadow, 0.16) * 2));
+    0 0 0 1px rgba(20, 18, 12, calc(var(--nav-shadow, 0.14) * 0.35)),
+    0 6px 16px -6px rgba(20, 18, 12, calc(var(--nav-shadow, 0.14) * 1.1)),
+    0 28px 64px -20px rgba(20, 18, 12, calc(var(--nav-shadow, 0.14) * 1.6));
   visibility: hidden;
   opacity: 0;
   z-index: 2;
@@ -367,6 +372,11 @@ body.is-nav-sticky .was-nav::before {
 }
 .was-hero-half.is-a { right: calc(50% + var(--gap, 11vw)); text-align: right; }
 .was-hero-half.is-b { left: calc(50% + var(--gap, 11vw)); text-align: left; }
+/* the SECOND line of a half, stepped sideways by `hero.leftShift` /
+   `rightShift` (Experience 1's "Where / practice" toward the bowl, his frame
+   1, 2026-09-21). A relative offset, so the half's own box — and the gap it
+   keeps from the centre — is measured off the first line as before. */
+.was-hero-half .was-line:nth-child(2) { position: relative; left: var(--shift2, 0vw); }
 
 /* act two: 200vh of scroll, one screen that holds while the two beats
    alternate across the bowl */
@@ -458,14 +468,17 @@ body.is-v2 #stageA { background: none; }
   top: var(--act-y, 18%);
   right: auto;
   bottom: auto;
-  width: auto;
-  max-width: var(--act-w, 32vw);
+  /* the box IS its measure, not shrink-to-fit: a step set `center` (Experience
+     2's third, 2026-09-21) centres its lines on the box, so the box has to
+     span x → x + w for the text to sit where the numbers say */
+  width: var(--act-w, 32vw);
+  max-width: none;
   padding: 0;
   align-items: flex-start;
   justify-content: flex-start;
 }
-.was-copy-box.is-act .was-copy-stack { max-width: none; margin: 0; }
-.was-copy-box.is-act .was-copy { text-align: var(--copy-align, left); }
+.was-copy-box.is-act .was-copy-stack { width: 100%; max-width: none; margin: 0; }
+.was-copy-box.is-act .was-copy { width: 100%; text-align: var(--copy-align, left); }
 
 /* one copy column at a time: V1 uses the one in the first stage, V2 the one in
    the second, because that is where its canvas experience lives */
@@ -519,6 +532,11 @@ body:not(.is-v2) #copyboxB { display: none; }
    fades it to. Its own left column and title/paragraph are dropped — a
    clean canvas is the whole point (his ask). */
 body.is-v5 #stageB.is-solid { background: transparent; }
+/* ...but NOT Experience 2's trio (his correction, 2026-09-21): its stage is
+   solid and rises over the bowl like every other version's — the circles are
+   drawn on the white it brings, and trio.js warms that white to the Atlas's
+   paper as the knot begins (an inline background on the stage) */
+body.is-trio #stageB.is-solid { background: var(--right-bg); }
 body.is-v5 #leftB,
 body.is-v5 #copyboxB { display: none; }
 /* Experience 2 (his ask, 2026-09-21): the three circles, full-bleed like V5's
@@ -538,6 +556,22 @@ body.is-v5 #copyboxB { display: none; }
 /* `fill-opacity`, not `opacity`: the reveal writes the `opacity` ATTRIBUTE */
 .was-trio-desc { font-weight: 400; fill-opacity: 0.72; }
 .was-trio-side { font-weight: 400; letter-spacing: -0.005em; }
+/* the header over the block (his frame 8) — the Atlas header's own place and
+   type (`.was-atlas-h` / `.was-atlas-sub`), so the Atlas's header can take
+   its slot in a crossfade as the knot begins. Opacity is written per frame. */
+.was-trio-head {
+  position: absolute;
+  top: var(--atlas-title-top, 108px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(var(--atlas-title-w, 640px), 80vw);
+  text-align: center;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0;
+}
+.was-trio-head[hidden] { display: none; }
+.was-trio-head .was-atlas-sub[hidden] { display: none; }
 body.is-trio #stageB .was-atlas-view { position: absolute; inset: 0; z-index: 2; }
 body.is-trio #stageB .was-atlas-canvas { background: transparent; }
 .was-network-svg {
@@ -828,6 +862,9 @@ body.is-atlas-shadow .was-atlas .was-stage {
    the same `atlasQ/title.dur` ramp as the heading's own opacity, so the two
    arrive together. */
 .was-atlas-sketch-mount { display: flex; justify-content: center; margin-bottom: 18px; }
+/* off by his ask (2026-09-21: "nessun tipo di icona sopra il titolo") */
+.was-atlas-sketch-mount[hidden] { display: none; }
+.was-atlas-sub[hidden] { display: none; }
 .was-atlas-sketch {
   width: 72px;
   height: 72px;

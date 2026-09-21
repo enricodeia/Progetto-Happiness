@@ -177,10 +177,24 @@ export function createNav({ mount, cfg, mode }) {
     it.tClose = setTimeout(() => closeNow(it), Math.max(0, N().closeDelay));
   }
 
+  // The curtain is a `clip-path`, and a clip-path cuts the box-shadow along
+  // with everything else — which is why the panels' shadow, though always in
+  // the CSS, was invisible ("bianco su bianco non si vede", his report
+  // 2026-09-21). The clip region is `shadowPad` px LARGER than the panel on
+  // every side (negative insets), so the shadow has room to fall; the closed
+  // edge starts past the panel's far side by the same margin, so nothing of
+  // it shows before the curtain starts. GSAP tweens the numbers — all px, so
+  // the two states interpolate cleanly.
+  const pad = () => Math.max(0, N().shadowPad ?? 64);
+  const closedFromTop = (el, S) => `inset(-${S}px -${S}px ${(el.offsetHeight || 400) + S}px -${S}px`;
+  const closedFromLeft = (el, S) => `inset(-${S}px ${(el.offsetWidth || 600) + S}px -${S}px -${S}px`;
+  const openClip = (S) => `inset(-${S}px -${S}px -${S}px -${S}px`;
+
   /** the card: a curtain from the top, then the rows, one after the next */
   function cardTl(it) {
     const n = N();
     const R = `${n.radius}px`;
+    const S = pad();
     const tl = gsap.timeline({
       paused: true,
       defaults: { ease: n.ease },
@@ -188,8 +202,8 @@ export function createNav({ mount, cfg, mode }) {
     });
     tl.set(it.menu, { visibility: "visible" }, 0);
     tl.fromTo(it.menu,
-      { clipPath: `inset(0 0 100% 0 round ${R})`, opacity: 0, y: -6 },
-      { clipPath: `inset(0 0 0% 0 round ${R})`, opacity: 1, y: 0, duration: n.dur }, 0);
+      { clipPath: `${closedFromTop(it.menu, S)} round ${R})`, opacity: 0, y: -6 },
+      { clipPath: `${openClip(S)} round ${R})`, opacity: 1, y: 0, duration: n.dur }, 0);
     tl.fromTo(it.head, { opacity: 0 }, { opacity: 1, duration: n.rowDur }, n.dur * 0.08);
     tl.fromTo(it.rows,
       { opacity: 0, y: n.rowRise },
@@ -207,10 +221,11 @@ export function createNav({ mount, cfg, mode }) {
       defaults: { ease: n.ease },
       onReverseComplete: () => { it.mega.style.visibility = "hidden"; it.megaOpen = false; },
     });
+    const S = pad();
     tl.set(it.mega, { visibility: "visible" }, 0);
     tl.fromTo(it.mega,
-      { clipPath: `inset(0 100% 0 0 round ${R})`, opacity: 0 },
-      { clipPath: `inset(0 0% 0 0 round ${R})`, opacity: 1, duration: n.megaDur }, 0);
+      { clipPath: `${closedFromLeft(it.mega, S)} round ${R})`, opacity: 0 },
+      { clipPath: `${openClip(S)} round ${R})`, opacity: 1, duration: n.megaDur }, 0);
     tl.fromTo(title, { opacity: 0 }, { opacity: 1, duration: n.rowDur }, n.megaDur * 0.12);
     tl.fromTo(cells,
       { opacity: 0, y: n.rowRise },
@@ -331,12 +346,22 @@ export function createNav({ mount, cfg, mode }) {
       const cs = (el) => (el ? getComputedStyle(el) : null);
       const clipOpen = (el) => {
         const c = cs(el)?.clipPath || "";
-        // fully open: every inset is zero — GSAP leaves the one it animated
-        // as `0%`, the others as `0px` — or no clip at all
+        // fully open: no inset CUTS the box — every value is zero or negative
+        // (negative = the clip region stands past the panel, where its
+        // shadow falls) — or no clip at all
         if (c === "none" || c === "") return true;
         const m = c.match(/inset\(([^)]*)\)/);
         if (!m) return false;
-        return m[1].split(" round ")[0].trim().split(/\s+/).every((v) => parseFloat(v) === 0);
+        return m[1].split(" round ")[0].trim().split(/\s+/).every((v) => parseFloat(v) <= 0);
+      };
+      // the shadow can only show where the clip region extends PAST the box
+      // (the browser serialises equal insets as ONE value — `inset(-64px round
+      // 20px)` — so one to four values are all read as the shorthand they are)
+      const shadowRoom = (el) => {
+        const m = (cs(el)?.clipPath || "").match(/inset\(([^)]*)\)/);
+        if (!m) return cs(el)?.clipPath === "none";
+        const v = m[1].split(" round ")[0].trim().split(/\s+/).map(parseFloat);
+        return v.length >= 1 && v.length <= 4 && v.every((x) => x < 0);
       };
       return {
         mode: built.mode,
@@ -350,6 +375,8 @@ export function createNav({ mount, cfg, mode }) {
           open: it.open,
           visible: cs(it.menu).visibility === "visible" && +cs(it.menu).opacity > 0.01,
           fullyOpen: it.open && +cs(it.menu).opacity > 0.99 && clipOpen(it.menu),
+          shadow: cs(it.menu).boxShadow,
+          shadowRoom: shadowRoom(it.menu),
           rows: it.rows.map((r) => r.querySelector("span").textContent),
           rowAlphas: it.rows.map((r) => +(+cs(r).opacity).toFixed(2)),
           hasIcon: !!it.head.querySelector(".was-menu-ico"),
@@ -358,6 +385,7 @@ export function createNav({ mount, cfg, mode }) {
             open: it.megaOpen, sub: it.sub,
             visible: cs(it.mega).visibility === "visible" && +cs(it.mega).opacity > 0.01,
             fullyOpen: it.megaOpen && +cs(it.mega).opacity > 0.99 && clipOpen(it.mega),
+            shadowRoom: shadowRoom(it.mega),
             title: it.mega.querySelector(".was-mega-title").textContent,
             count: it.mega.querySelectorAll(".was-mega-item").length,
             alphas: [...it.mega.querySelectorAll(".was-mega-item")].map((c) => +(+cs(c).opacity).toFixed(2)),
