@@ -117,6 +117,12 @@ export function createFooter({ mount, cfg }) {
     mount.style.setProperty("--foot-gap-min", `${F.gap ?? 56}px`);
     // vw, not px, so the row scales with the page (his ask, 2026-09-17)
     mount.style.setProperty("--foot-col-gap", `${F.colGap ?? 4}vw`);
+    // the category's own sub-columns, and the type (his ask, 2026-09-21)
+    mount.style.setProperty("--foot-sub-gap", `${F.subGap ?? 1.6}vw`);
+    mount.style.setProperty("--foot-link-size", `${F.linkSize ?? 12}px`);
+    mount.style.setProperty("--foot-legal-size", `${F.legalSize ?? 10}px`);
+    mount.style.setProperty("--foot-policy-size", `${F.policySize ?? 12}px`);
+    mount.style.setProperty("--foot-pad-bottom", `${F.padBottom ?? 24}px`);
     // never under 96: that is what clears the fixed nav, which paints over
     // the footer (z 7 against z 4)
     mount.style.setProperty("--foot-pad-top", `${Math.max(96, F.padTop ?? 96)}px`);

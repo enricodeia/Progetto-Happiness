@@ -1444,7 +1444,9 @@ body.is-team-caps .was-team-tooltip { display: none !important; }
   /* the same inset below as at the sides, a touch less (his ask: "uguale al
      padding di sinistra e destra, o anche un po' di meno — tanto è un footer")
      — the player has parked long before this, so nothing sits under it */
-  padding: var(--foot-pad-top, 96px) 4vw 3vw;
+  /* ...less of it below now (his ask, 2026-09-21: "meno padding bottom") */
+  padding: var(--foot-pad-top, 96px) 4vw var(--foot-pad-bottom, 24px);
+  text-align: left;
   overflow: hidden;
 
   /* The vertical budget, written down. The link columns are the tallest
@@ -1464,7 +1466,7 @@ body.is-team-caps .was-team-tooltip { display: none !important; }
   --foot-bottom-h: 78px;
   --foot-word-cap: calc(
     100vh - var(--foot-pad-top) - var(--foot-top-h)
-          - var(--foot-gap-min) - var(--foot-bottom-h) - 3vw
+          - var(--foot-gap-min) - var(--foot-bottom-h) - var(--foot-pad-bottom, 24px)
   );
 }
 /* the column the whole thing is laid out in: link columns at the top, the
@@ -1492,9 +1494,11 @@ body.is-team-caps .was-team-tooltip { display: none !important; }
   gap: var(--foot-col-gap, 4vw);
   width: 100%;
 }
+/* ...but a category's own two sub-columns sit CLOSER than one category does
+   to the next (his ask, 2026-09-21), so a group reads as a group */
 .was-footer-lists {
   display: flex;
-  gap: var(--foot-col-gap, 4vw);
+  gap: var(--foot-sub-gap, 1.6vw);
 }
 .was-footer-sub {
   display: flex;
@@ -1511,7 +1515,9 @@ body.is-team-caps .was-team-tooltip { display: none !important; }
   display: block;
   margin-bottom: 11px;
   font-family: var(--ui);
-  font-size: 13.5px;
+  /* 12px (his ask, 2026-09-21) — smaller than the 14px heads, so the
+     hierarchy reads */
+  font-size: var(--foot-link-size, 12px);
   color: #0a0a0a;
   text-decoration: none;
   /* the list reads as one quiet block and the one you are pointing at comes
@@ -1560,7 +1566,7 @@ body.is-team-caps .was-team-tooltip { display: none !important; }
 .was-footer-legal {
   margin: 0;
   font-family: var(--ui);
-  font-size: 12.5px;
+  font-size: var(--foot-legal-size, 10px);   /* 10px (his ask, 2026-09-21) */
   line-height: 1.5;
   color: #6b6b6b;
 }
@@ -1570,7 +1576,7 @@ body.is-team-caps .was-team-tooltip { display: none !important; }
 }
 .was-footer-policies a {
   font-family: var(--ui);
-  font-size: 13px;
+  font-size: var(--foot-policy-size, 12px);   /* 12px (his ask, 2026-09-21) */
   color: #0a0a0a;
   text-decoration: underline;
 }

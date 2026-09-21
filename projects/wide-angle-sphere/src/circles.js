@@ -247,8 +247,9 @@ export function createCircles({ mount, cfg, bowl }) {
     place(labels.bDesc, bx, cy + gap * 0.75 + rise(aText), descS, descS * 1.35, aText);
     place(labels.cName, cx, cy - gap * 0.55 + rise(cText), nameS, nameS * 1.2, cText);
     place(labels.cDesc, cx, cy + gap * 0.75 + rise(cText), descS, descS * 1.35, cText);
-    place(labels.outerLeft, ax, cy - rOuter * 0.66 + rise(oText), outS, outS * 1.2, oText);
-    place(labels.outerRight, bx, cy - rOuter * 0.66 + rise(oText), outS, outS * 1.2, oText);
+    // ...in the top of each big circle, clear of the smaller one inside it
+    place(labels.outerLeft, ax, cy - rOuter * 0.78 + rise(oText), outS, outS * 1.2, oText);
+    place(labels.outerRight, bx, cy - rOuter * 0.78 + rise(oText), outS, outS * 1.2, oText);
     place(labels.title, cx, cy - (R + rOuter) / 2 + rise(tText), titS, titS * (c.titleLh || 1.3), tText);
 
     Object.assign(state, {
@@ -277,6 +278,15 @@ export function createCircles({ mount, cfg, bowl }) {
         ...state,
         // A's right edge to B's left edge — 0 is "touching"
         gapAB: +((state.b.x - state.a.x) - 2 * state.r).toFixed(1),
+        // the third's edge to A's (and B's) edge — his complaint was 0 < this
+        gapCA: +(state.sep - state.r).toFixed(1),
+        // the captions themselves: no description box meets its neighbour's
+        captionsClear: (() => {
+          try {
+            const a = labels.aDesc.getBBox(), c = labels.cDesc.getBBox(), b = labels.bDesc.getBBox();
+            return c.x > a.x + a.width + 4 && b.x > c.x + c.width + 4;
+          } catch { return false; }
+        })(),
         // the fourth circle IS the bowl, and the union of the two big ones is tangent to it
         bigMatchesBowl: Math.abs(state.big.r - state.R) < 1.5,
         unionMatchesBowl: Math.abs(state.unionHalf - state.R) < 2,

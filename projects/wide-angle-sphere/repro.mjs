@@ -1440,10 +1440,15 @@ await wait(600)
 const footerProbe = await page.evaluate(() => window.__was.footer.probe())
 // the five tracks: where the first one starts, and the real gap between each
 const footerCols = await page.evaluate(() => {
-  const subs = [...document.querySelectorAll('.was-footer-sub')].map((e) => e.getBoundingClientRect())
-  const gaps = []
-  for (let i = 1; i < subs.length; i++) gaps.push(Math.round(subs[i].left - subs[i - 1].right))
-  return { left: Math.round(subs[0].left), gaps }
+  const els = [...document.querySelectorAll('.was-footer-sub')]
+  const subs = els.map((e) => e.getBoundingClientRect())
+  const gaps = [], kinds = []
+  for (let i = 1; i < subs.length; i++) {
+    gaps.push(Math.round(subs[i].left - subs[i - 1].right))
+    // two sub-columns of the SAME category, or the step to the next one
+    kinds.push(els[i].closest('.was-footer-col') === els[i - 1].closest('.was-footer-col') ? 'sub' : 'cat')
+  }
+  return { left: Math.round(subs[0].left), gaps, kinds }
 })
 console.log('le colonne del footer:', footerCols)
 // the link list sits back at .65 and only the one under the pointer comes forward
@@ -1907,6 +1912,36 @@ const freshBoot = await page.evaluate(() => {
   }
 })
 console.log('freshBoot:', freshBoot)
+// ...and `c` opens ALL of them, not just the V panel (his report, 2026-09-21:
+// "il control panel della bowl che ancora non vedo" — the boot-time hides had
+// left Bowl and Titles `is-hidden` behind the body class)
+const panelsOpen = await page.evaluate(async () => {
+  const pause = (ms) => new Promise((r) => setTimeout(r, ms))
+  const vis = () => [...document.querySelectorAll('.was-panel')].filter((e) => getComputedStyle(e).display !== 'none').length
+  window.__was.setClean(false); await pause(120)
+  const shown = vis()
+  window.__was.setClean(true); await pause(120)
+  return { shown, total: document.querySelectorAll('.was-panel').length, hiddenAgain: vis() === 0 }
+})
+console.log('c opens:', panelsOpen)
+
+// the footer's type and rhythm (his ask, 2026-09-21): two DIFFERENT gaps,
+// 12px links under 14px heads, 10px legal, 12px policies, less air below,
+// everything left
+const footerType = await page.evaluate(() => {
+  const cs = (s) => getComputedStyle(document.querySelector(s))
+  return {
+    head: cs('.was-footer-col h4').fontSize,
+    link: cs('.was-footer-col a').fontSize,
+    legal: cs('.was-footer-legal').fontSize,
+    policy: cs('.was-footer-policies a').fontSize,
+    colGap: parseFloat(cs('.was-footer-cols').columnGap),
+    subGap: parseFloat(cs('.was-footer-lists').columnGap),
+    padBottom: cs('.was-footer').paddingBottom,
+    align: cs('.was-footer').textAlign,
+  }
+})
+console.log('footer type:', footerType)
 
 const drift = HERO_CFG.drift
 const checks = [
@@ -2398,8 +2433,9 @@ const checks = [
    'invece di restare in cima alla colonna che divideva con lui',
     playerNoWave.before < -8 && playerNoWave.hidden.cls === true &&
     Math.abs(playerNoWave.hidden.off) < 2 && playerNoWave.after < -8],
-  ['il footer: logo a TUTTA larghezza, padding sotto uguale ai lati (3vw) — niente più fascia alta',
-    footerProbe.wordWidthRatio > 0.85 && Math.abs(footerProbe.paddingBottom - innerWidthPx * 0.03) < 1.5],
+  ['il footer: logo a TUTTA larghezza, e sotto l\'aria che decide `footer.padBottom` (24px — "meno ' +
+   'padding bottom", sua richiesta 2026-09-21; era 3vw) — niente più fascia alta',
+    footerProbe.wordWidthRatio > 0.85 && Math.abs(footerProbe.paddingBottom - FOOT_CFG.padBottom) < 1.5],
   ['...e copre TUTTA l\'altezza del viewport (sua richiesta, 2026-09-17: prima restava ' +
    '"una parte scoperta sopra"), con le colonne sotto la nav e un vero gap prima del logo',
     footerProbe.fullHeight && footerProbe.top <= 1 &&
@@ -2560,7 +2596,10 @@ const checks = [
   ['...le colonne partono da SINISTRA sul padding della sezione con 30px fra una ' +
    'e l\'altra (sua richiesta: niente space-between), e i link scendono più in basso',
     footerCols.left === Math.round(innerWidthPx * 0.04) &&
-    footerCols.gaps.every((g) => Math.abs(g - innerWidthPx * 0.04) <= 2) &&
+    // between categories `colGap`, INSIDE a category the smaller `subGap`
+    // (his ask, 2026-09-21) — each gap read against what kind it is
+    footerCols.gaps.every((g, i) => Math.abs(g - innerWidthPx * (footerCols.kinds[i] === 'sub' ? FOOT_CFG.subGap : FOOT_CFG.colGap) / 100) <= 2) &&
+    footerCols.kinds.includes('sub') && footerCols.kinds.includes('cat') &&
     footerProbe.colsTop >= 140],
   ['la bowl come FOTO (non il 3D), il wordmark = il SUO logo SVG (14 path, tutti in ' +
    'currentColor così è il CSS a colorarlo), il copyright e i tre link legali, tutti presenti',
@@ -2717,7 +2756,9 @@ const checks = [
   ['il gap fra le colonne del footer è in vw, non px, così scala con la pagina ' +
    '(sua richiesta, 2026-09-17: "60px che convertiremo con il valore di vw")',
     FOOT_CFG.colGap > 0 && FOOT_CFG.colGap < 12 &&
-    footerCols.gaps.every((g) => Math.abs(g - innerWidthPx * FOOT_CFG.colGap / 100) <= 2)],
+    // ...both of them: the category gap AND the smaller in-category one (2026-09-21)
+    FOOT_CFG.subGap > 0 && FOOT_CFG.subGap < FOOT_CFG.colGap &&
+    footerCols.gaps.every((g, i) => Math.abs(g - innerWidthPx * (footerCols.kinds[i] === 'sub' ? FOOT_CFG.subGap : FOOT_CFG.colGap) / 100) <= 2)],
 
   ['...e l\'ORDINE è il suo (sua correzione, 2026-09-17: "il contrario, bro"): prima ' +
    'escono le TECNICHE, poi i punti con i cerchi, e solo alla fine diventa mondo',
@@ -2760,7 +2801,7 @@ const checks = [
   ['beat 2: i due cerchi si DISEGNANO (path reveal: dashoffset, non opacità) dal punto in cui si ' +
    'toccano, grandi 0.32 del raggio della bowl, gap 0 — e le didascalie arrivano con loro',
     v5.b2.stage === 2 && v5.b2.draw.a > 0.95 && v5.b2.dom.a > 0.95 && v5.b2.gapAB <= 0.5 &&
-    Math.abs(v5.b2.r / v5.b2.R - 0.32) < 0.01 && v5.b2.draw.union === 0 &&
+    Math.abs(v5.b2.r / v5.b2.R - 0.23) < 0.01 && v5.b2.draw.union === 0 &&
     v5.b2.wire.mix === 1 && Math.abs(v5.b2.wire.alpha - 0.15) < 0.01],
   ['beat 3: si allontanano (gap > 0) e i due cerchi grandi si disegnano attorno — unione piena, lente ' +
    'tratteggiata rivelata attraverso una maschera — un continuo col beat 2',
@@ -2771,7 +2812,10 @@ const checks = [
   ['beat 5: il quarto È la bowl (stesso raggio, ±1.5px), si disegna attorno a tutto, e l\'unione dei ' +
    'due grandi vi è tangente — "SVG lines che si intersecano perfettamente con la bowl" — col titolo',
     v5.b5.stage === 5 && v5.b5.draw.big > 0.95 && v5.b5.dom.big > 0.95 && v5.b5.bigMatchesBowl &&
-    v5.b5.unionMatchesBowl && v5.b5.text.title > 0.9 && v5.b5.draw.c === 1],
+    v5.b5.unionMatchesBowl && v5.b5.text.title > 0.9 && v5.b5.draw.c === 1 &&
+    // ...and the third is NOT stuck to the two (his follow-up, 2026-09-21: "mi va in overlap il
+    // testo"): a real gap edge to edge, and no caption box touches its neighbour's
+    v5.b5.gapCA > 0 && v5.b5.captionsClear === true],
   ['...e tornando su al primo beat si RI-DISEGNA all\'indietro: tutto a zero, la bowl di nuovo ' +
    'verso il solido — pura funzione dello scroll',
     v5.back.stage === 1 && v5.back.draw.a === 0 && v5.back.draw.big === 0 && v5.back.wire.mix < 1],
@@ -2785,12 +2829,22 @@ const checks = [
     v5.to4.networkHidden === false && v5.to4.circlesHidden === true && v5.to4.v5 === false &&
     v5.to1.v5 === false && v5.to1.variant === 1 && v5.to1.stageBg !== 'rgba(0, 0, 0, 0)'],
 
+  // ── the footer's type and rhythm (his ask, 2026-09-21) ────────────────
+  ['il footer legge come gerarchia: link a 12px sotto teste a 14, legal a 10, policy in basso a destra a ' +
+   '12; il gap DENTRO una categoria è più stretto di quello fra categorie; meno aria sotto; tutto a sinistra',
+    footerType.link === '12px' && footerType.head === '14px' && footerType.legal === '10px' &&
+    footerType.policy === '12px' && footerType.subGap > 0 && footerType.subGap < footerType.colGap &&
+    footerType.padBottom === '24px' && footerType.align === 'left'],
+
   // ── shipped default: V4, panels hidden until "c" (his ask, 2026-09-18) ──
   ['una pagina APPENA CARICATA, senza toccare nulla, è già in V4 — non più V1, ' +
    'niente localStorage a decidere per lei',
     freshBoot.variant === 4 && freshBoot.v2on === true && freshBoot.isV4 === true],
   ['...e tutti i control panel sono nascosti di default: si vedono SOLO premendo "c"',
     freshBoot.clean === true && freshBoot.panelsHidden === true],
+  ['...e "c" li RIAPRE TUTTI e tre — Titles, Bowl e V — non solo il V (suo report, 2026-09-21: ' +
+   '"il control panel della bowl che ancora non vedo"), e premuto di nuovo li nasconde tutti',
+    panelsOpen.total === 3 && panelsOpen.shown === 3 && panelsOpen.hiddenAgain === true],
 ]
 console.log('\n— checks —')
 for (const [label, ok] of checks) console.log(`${ok ? 'OK ' : 'KO '} ${label}`)

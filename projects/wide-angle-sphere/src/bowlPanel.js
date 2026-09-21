@@ -383,5 +383,6 @@ export function createBowlPanel({ cfg, bowl, onLayout, onReplay, onProgress, onP
     refresh: () => pane.refresh(),
     toggle: () => host.classList.toggle("is-hidden"),
     hide: () => host.classList.add("is-hidden"),
+    show: () => host.classList.remove("is-hidden"),
   };
 }

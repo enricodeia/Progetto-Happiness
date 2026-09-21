@@ -846,6 +846,15 @@ function setClean(v) {
   if (clean) {
     bowlPanel.hide();
     titlesPanel.hide();
+  } else {
+    // `c` opens ALL of them (his ask, 2026-09-18 — "tutti i control panel...
+    // solo se schiaccio c"): with clean the boot state, the hides above had
+    // left Bowl and Titles `is-hidden` behind the body class, so `c` was
+    // only ever bringing back the V panel ("il control panel della bowl che
+    // ancora non vedo", 2026-09-21). The per-panel keys still toggle each.
+    bowlPanel.show();
+    titlesPanel.show();
+    v3Panel.show();
   }
 }
 setClean(true);

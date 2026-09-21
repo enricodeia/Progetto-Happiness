@@ -223,7 +223,13 @@ export function createV3Panel({
     const f = pane.addFolder({ title: "Footer & team", expanded: false });
     const F = cfg.footer;
     f.addBinding(F, "linkAlpha", { min: 0.1, max: 1, step: 0.01, label: "links at rest" }).on("change", onFooter);
-    f.addBinding(F, "colGap", { min: 0, max: 12, step: 0.1, label: "gap between columns (vw)" }).on("change", onFooter);
+    f.addBinding(F, "colGap", { min: 0, max: 12, step: 0.1, label: "gap between categories (vw)" }).on("change", onFooter);
+    // ...and the footer's own type and inner rhythm (his ask, 2026-09-21)
+    f.addBinding(F, "subGap", { min: 0, max: 8, step: 0.1, label: "gap inside a category (vw)" }).on("change", onFooter);
+    f.addBinding(F, "linkSize", { min: 9, max: 18, step: 0.5, label: "links (px)" }).on("change", onFooter);
+    f.addBinding(F, "legalSize", { min: 8, max: 16, step: 0.5, label: "legal line (px)" }).on("change", onFooter);
+    f.addBinding(F, "policySize", { min: 9, max: 16, step: 0.5, label: "policy links (px)" }).on("change", onFooter);
+    f.addBinding(F, "padBottom", { min: 0, max: 120, step: 2, label: "air below (px)" }).on("change", onFooter);
     f.addBinding(F, "padTop", { min: 96, max: 320, step: 2, label: "links start at (px)" }).on("change", onFooter);
     f.addBinding(F, "gap", { min: 0, max: 200, step: 2, label: "min gap above the logo (px)" }).on("change", onFooter);
     f.addBinding(F, "wordBottom", { min: 0, max: 120, step: 2, label: "air under the logo (px)" }).on("change", onFooter);
@@ -237,6 +243,7 @@ export function createV3Panel({
     pane,
     toggle: () => host.classList.toggle("is-hidden"),
     hide: () => host.classList.add("is-hidden"),
+    show: () => host.classList.remove("is-hidden"),
     get isOpen() { return !host.classList.contains("is-hidden"); },
     refresh: () => { syncVariant?.(); },
     dispose() {

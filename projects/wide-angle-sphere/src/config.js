@@ -145,7 +145,20 @@ export const CONFIG = {
     // in vw, not px, so the whole row scales with the page (his ask,
     // 2026-09-17: "un gap di 60px, che però convertiremo con il valore di
     // vw, così che scali tutto bene"). 4vw is 60px at his own 1500.
-    colGap: 4,        // vw
+    colGap: 4,        // vw — between one CATEGORY and the next
+    // ...and a DIFFERENT, smaller gap between a category's own two
+    // sub-columns (his ask, 2026-09-21: "il gap tra le categorie... deve
+    // essere differente dal gap che hanno le colonne interne della singola
+    // categoria") — so Browse's two lists read as one group, not five equal
+    // tracks. Also in vw.
+    subGap: 1.6,      // vw
+    // the type, in px (his ask, same day: "senò non si capisce nulla di cosa
+    // sia gerarchicamente parlando") — links 12, the legal line 10, the
+    // policy links bottom-right 12
+    linkSize: 12,
+    legalSize: 10,
+    policySize: 12,
+    padBottom: 24,    // px — the air under the legal line (was 3vw ≈ 45)
     padTop: 150,      // px — the links start this far down (was 96)
     // how much air is left UNDER the wordmark, before the legal line. Making
     // it smaller moves the logo DOWN, which is what he asked for.
@@ -780,8 +793,15 @@ export const CONFIG = {
       // circles are ~0.32R and end up centred at ±0.40R. The two big circles
       // drawn around them are NOT a knob: circles.js sizes them so their
       // union is exactly 2R wide — tangent to the fourth circle, the bowl's.
-      radiusFrac: 0.32,     // each base circle's radius (× R)
-      spreadFrac: 0.25,     // stage 2: how much further apart they move (× r)
+      // (his follow-up, same day: "il cerchio del centro non fosse così
+      // attaccato ai due... mi va in overlap il testo") — at 0.32R / 0.25r
+      // the third OVERLAPPED the two by 0.75r. Now A and B move a full
+      // 1.12r each, so the third clears them by 0.12r, edge to edge, and
+      // the captions no longer meet. The base radius comes down to keep
+      // the derived big circles overlapping (r + spread must stay < 0.5R
+      // for the union to be one shape, not two).
+      radiusFrac: 0.23,     // each base circle's radius (× R)
+      spreadFrac: 1.12,     // stage 2: how much further apart they move (× r)
       // the bowl itself, brought back to dead-centre for this block (instead
       // of the ring act sinking it off the bottom): its size (in viewport
       // heights, like `v2.bowlSize`) and a slight lean so the wireframe

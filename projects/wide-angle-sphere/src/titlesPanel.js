@@ -191,6 +191,7 @@ export function createTitlesPanel({
     pane,
     toggle: () => host.classList.toggle("is-hidden"),
     hide: () => host.classList.add("is-hidden"),
+    show: () => host.classList.remove("is-hidden"),
     get isOpen() { return !host.classList.contains("is-hidden"); },
     refresh: () => pane.refresh(),
     dispose() {

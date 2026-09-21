@@ -2653,3 +2653,37 @@ back. 222 checks.
 font per i titoli"* — `v2.reveal.expoRest` is `0` now. It was the one rest
 value on the page still at −10 (the ring act's copy); the intro and the body
 text already sat at 0, and the existing EXPO check reads those.
+
+### Air around the third circle, `c` opens everything, the footer's rhythm (2026-09-21)
+
+*"Il cerchio del centro non fosse così attaccato ai due... mi va in overlap
+il testo."* At `0.32R` / `spreadFrac 0.25` the third circle OVERLAPPED the two
+by 0.75r — the captions met. A and B now move `1.12r` each, so the third
+clears them edge to edge by 0.12r, and the base radius comes down to `0.23R`
+to keep the derived big circles overlapping (`r + spread` must stay under
+0.5R for their union to be one shape, not two). The outer labels sit higher
+in their big circle (0.78 of its radius) to stay clear of the smaller one
+inside. The probe now reports `gapCA` (third's edge to A's, positive) and
+`captionsClear` — the three description blocks' own `getBBox()` boxes, none
+touching its neighbour's — and beat 5 asserts both. That is his complaint,
+measured.
+
+*"Il control panel della bowl che ancora non vedo."* A real bug from the
+clean-by-default change: `setClean(true)` at boot called `bowlPanel.hide()` /
+`titlesPanel.hide()` (an `is-hidden` class on each host), but `c` only ever
+removed the body's `is-clean` — so `c` was bringing back the V panel alone,
+Bowl and Titles stayed hidden until `b`/`t`. Each panel has `show()` now and
+`setClean(false)` calls all three. Asserted off the fresh boot: `c` shows
+3 of 3, `c` again hides 3 of 3.
+
+*"Il gap tra le categorie delle colonne deve essere differente dal gap che
+hanno le colonne interne della singola categoria... allineare tutto a
+sinistra... 12px per i link... meno padding bottom... il testo in basso 10px,
+i link in basso a destra 12px."* `footer.subGap` (1.6vw) now separates a
+category's own two sub-columns, distinct from `colGap` (4vw) between
+categories, so Browse's two lists read as one group; `linkSize` 12 under the
+14px heads, `legalSize` 10, `policySize` 12, `padBottom` 24px (was 3vw ≈ 45,
+and the wordmark's vertical budget subtracts the same variable), and
+`text-align: left` made explicit on the footer. All in the Footer folder of
+the `V` panel. One check reads every one of those off the computed styles.
+224 checks now.
