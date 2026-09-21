@@ -192,13 +192,16 @@ export const CONFIG = {
       },
       top: { text: "Across traditions and cultures,|people have found practices|that improve wellbeing." },
       // frame 3: the second statement sits low on the right, its lines set LEFT
-      bottom: { text: "It’s time we help this wisdom|work for everybody.", align: "left", y: 78 },
+      // `out: 0` — it stays: nothing on this layer follows it in Experience 1
+      bottom: { text: "It’s time we help this wisdom|work for everybody.", align: "left", y: 78, out: 0, outDur: 0.9 },
       // act two's third beat (the "Until now" slot) is not used here
       until: { show: false },
       // the ring act: the first ring is the teachers' ("quando esce il primo
       // ring di Teachers")
+      // the second ring — his correction, same day: "With thousands of ways
+      // to feel good." in place of "Practices that people actually live by"
       act: {
-        steps: ["We connect people|and trusted teachers", "Practices that people|actually live by", ""],
+        steps: ["We connect people|and trusted teachers", "With thousands of ways to feel good.", ""],
         out: [0.16, 0.16, 0], delay: [0.04, 0.04, 0.04],
         align: ["left", "left", "left"], x: [4, 4, 4], y: [18, 18, 18], width: [40, 40, 40],
       },
@@ -237,16 +240,27 @@ export const CONFIG = {
         rightGap: 13, rightY: 56, rightShift: 0,
       },
       top: { text: "Across generations and cultures,|people have found practices|that help them feel grounded." },
-      // "di come si apre il nostro shader" — the statement the ground opens under
-      bottom: { text: "But we’ve never had a full picture|of what works for each of us and why.", align: "right", y: 72 },
+      // "di come si apre il nostro shader" — the statement the ground opens
+      // under. It LEAVES here (his ask, later the same day — "abbastanza
+      // spazio di scroll" between one beat and the next): the base
+      // `v2.bottom` object has it stay forever (`out: 0`, right for V1,
+      // where nothing else on this layer ever follows it), so Experience 2
+      // overrides `out`/`outDur` to actually take it off screen before the
+      // added statement's own `at` — real scroll between the two rather
+      // than the two standing on screen together.
+      bottom: {
+        text: "But we’ve never had a full picture|of what works for each of us and why.",
+        align: "right", y: 72, out: 0.53, outDur: 0.06,
+      },
       // frame 7 — "un altro titolo aggiuntivo... in alto al centro", and it
       // goes BETWEEN "But we’ve never had a full picture…" and the ring act's
       // "On a platform guided by people" (his correction, later the same
       // day): act two's THIRD beat — the "Until now" slot, on the layer under
-      // the bowl, centred — fired once the ground is open, and leaving on its
-      // own reveal run backwards over act two's last stretch: that layer is
-      // FIXED and simply switches off when act two has scrolled away, and a
-      // statement that was still up would be cut, not closed
+      // the bowl, centred — fired once `bottom` above has actually left the
+      // screen, and leaving on its own reveal run backwards over act two's
+      // last stretch: that layer is FIXED and simply switches off when act
+      // two has scrolled away, and a statement that was still up would be
+      // cut, not closed
       until: {
         show: true,
         text: "Insight Timer is making the impact of|practice clear for everybody.",

@@ -2886,3 +2886,40 @@ left anything visible — so the block stayed at 0 and its state stuck. The
 driver now remembers whether the arrival played (`entered`): a beat jumped
 past owes its arrival when the reader comes back, and has no exit to play
 when it never arrived.
+
+## The scroll room between act two's three beats, and one ring line (his ask, later the same evening)
+
+*"Assicurarti che abbiamo abbastanza spazio di scroll per mostrare dopo 'But
+we've never had a full picture…', 'Insight Timer is making the impact…', e
+solo dopo questo…"* — the two used to overlap: the base `v2.bottom` object
+has it stay forever (`out: 0`, correct for V1, nothing else on that layer
+ever follows it there), so in Experience 2 it stood on screen for the whole
+rest of act two, at the same time as the added statement. `bottom` now
+carries its own `out`/`outDur` in the copy table — `0` (stays) for
+Experience 1, `0.53` for Experience 2, so it is off screen a real stretch of
+scroll before the added statement's own `at` (0.64). The sequence reads as
+three beats now, not two standing together: "But we've never had…" → a gap →
+"Insight Timer is making the impact…" → another gap → the ring act's own
+"On a platform guided by people".
+
+And in Experience 1's ring act, the second ring (his correction) now reads
+*"With thousands of ways to feel good."* in place of *"Practices that people
+actually live by"*.
+
+**A real bug, found chasing this**: act two's beat driver (`hero.js`'s
+`drive()`) could fire a beat's ENTRANCE unconditionally, ignoring its own
+`at` mark — not just once, on every load of Experience 2. A stray `q` reading
+of 1 during the first frame or two of boot (before `untilEl`'s real height is
+measured) set a beat to `gone` before it had ever appeared; the very next
+frame, once the real (low) scroll position took over, the driver saw "coming
+back into the window from `gone`, never entered" and played the entrance
+right there — without checking whether the real `q` had actually reached
+`at`. Every beat on that layer was appearing seconds after boot, in place,
+regardless of scroll position. Fixed: coming back from a `gone` state that
+never actually showed anything now just stands down (`on: false`) and lets
+the ordinary `q >= at` check decide, on its own next evaluation, whether it
+is really time. `variant()` — which resets a beat's `on`/`gone` on every
+version switch — now resets `entered` alongside them too, which it had
+missed.
+
+Verified: 256/256, re-pointed at the new sequence and the new ring line; build clean.

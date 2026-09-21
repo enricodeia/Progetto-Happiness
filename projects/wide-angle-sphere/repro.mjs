@@ -3098,10 +3098,11 @@ const checks = [
     exp.e1.copy.hero.para === 'As users find practices that help|them, we’re building the science|around what works and why.'],
   ['E1 · atto due: "Across traditions and cultures, / people have found practices / that improve wellbeing." ' +
    '(frame 2), poi in basso a destra, allineato a SINISTRA come nel frame 3, "It’s time we help this wisdom / ' +
-   'work for everybody."; il primo ring (Teachers) dice "We connect people / and trusted teachers", il secondo resta',
+   'work for everybody."; il primo ring (Teachers) dice "We connect people / and trusted teachers", il secondo ' +
+   '(sua correzione, stesso giorno) "With thousands of ways to feel good."',
     exp.e1.copy.top === 'Across traditions and cultures,|people have found practices|that improve wellbeing.' &&
     exp.e1.copy.bottom.text === 'It’s time we help this wisdom|work for everybody.' && exp.e1.copy.bottom.align === 'left' &&
-    exp.e1.copy.act[0] === 'We connect people|and trusted teachers' && exp.e1.copy.act[1] === 'Practices that people|actually live by' &&
+    exp.e1.copy.act[0] === 'We connect people|and trusted teachers' && exp.e1.copy.act[1] === 'With thousands of ways to feel good.' &&
     exp.e1.copy.act[2] === '' && exp.e1.copy.actAlign[0] === 'left'],
   ['E1 · i tre step (frame 4/5): "By combining research and individual outcomes at scale…" su TRE righe senza ' +
    'nessuna che spezzi (misura 46vw), le tre fonti "Validated practices · Member feedback · Therapist reporting" ' +
@@ -3154,12 +3155,12 @@ const checks = [
     exp.e2.copy.act[0] === 'On a platform|guided by people' && exp.e2.copy.act[1] === 'Practices that people|actually live by' &&
     exp.e2.copy.act[2] === '' && exp.e1.copy.until.show === false],
   ['E2 · frame 7 dal vivo: a 0.88 dell\'atto due il titolo aggiunto è VISIBILE (alpha 1), centrato in alto sullo ' +
-   'shader aperto (is-ground, ground acceso e aperto), in chiaro, mentre "But we’ve never had…" è ancora lì in ' +
-   'basso a destra — è la frase TRA quella e "On a platform guided by people", che arriva dopo, in alto a sinistra, ' +
-   'col terzo step del ring act muto',
+   'shader aperto (is-ground, ground acceso e aperto), in chiaro — e "But we’ve never had…" se n\'è ANDATO (sua ' +
+   'correzione, stesso giorno — "abbastanza spazio di scroll" tra i due, niente più sovrapposizione): la sequenza ' +
+   'è quella, poi in alto a sinistra "On a platform guided by people", col terzo step del ring act muto',
     exp.e2until.alpha > 0.95 && exp.e2until.text.startsWith('Insight Timer is making the impact of') && exp.e2until.centred === true &&
     exp.e2until.top < exp.e2until.vh * 0.3 && exp.e2until.isGround === true && exp.e2until.groundOn === true && exp.e2until.groundOpen > 0.9 &&
-    exp.e2until.color !== 'rgb(10, 10, 10)' && exp.e2until.bottomAlpha > 0.95 && exp.e2until.ringCopy === 'On a platform|guided by people' &&
+    exp.e2until.color !== 'rgb(10, 10, 10)' && exp.e2until.bottomAlpha < 0.05 && exp.e2until.ringCopy === 'On a platform|guided by people' &&
     exp.e2act1.text === 'On a platformguided by people' && exp.e2act1.vis === 'visible' && exp.e2act1.step3 === '' &&
     exp.e2act1.untilAlpha < 0.05],
   ['E2 · sopra i cerchi l\'header del frame 8 — "Three sources of evidence come together on Insight Timer." con ' +

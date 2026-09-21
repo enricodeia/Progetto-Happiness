@@ -142,7 +142,10 @@ function snapCopy() {
   return {
     hero: Object.fromEntries(HERO_COPY_KEYS.map((k) => [k, H[k]])),
     top: { text: CONFIG.v2.top.text },
-    bottom: { text: CONFIG.v2.bottom.text, align: CONFIG.v2.bottom.align, y: CONFIG.v2.bottom.y },
+    bottom: {
+      text: CONFIG.v2.bottom.text, align: CONFIG.v2.bottom.align, y: CONFIG.v2.bottom.y,
+      out: CONFIG.v2.bottom.out, outDur: CONFIG.v2.bottom.outDur,
+    },
     until: Object.fromEntries(UNTIL_COPY_KEYS.map((k) => [k, CONFIG.v2.until[k]])),
     act: {
       steps: CONFIG.v2.steps.slice(0, 3).map((s) => s.text),

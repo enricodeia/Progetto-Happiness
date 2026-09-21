@@ -179,8 +179,14 @@ export function createHero({ nav, heroEl, untilEl, underEl, cfg, bowl }) {
       if (b.entered) {
         b.r.playUnitsOut({ duration: outDur, stagger, ease, to: 0 });
       } else {
-        b.entered = true;
-        b.r.playStagger({ duration: dur, stagger, ease });
+        // never actually arrived — `gone` was set by a jump that landed at
+        // or past `out` without ever crossing `at` (a fling straight past
+        // the whole window, or a transient q spike before layout settles,
+        // early in boot, before this beat's own section is even measured).
+        // Stand down and let check 3 below decide, on real footing: it
+        // plays the entrance ONLY if q has actually reached `at` this frame,
+        // never unconditionally just because a `gone` state is being left.
+        b.on = false;
       }
     }
     // 3 · should it be ON?
@@ -427,6 +433,7 @@ export function createHero({ nav, heroEl, untilEl, underEl, cfg, bowl }) {
     for (const b of beats) {
       b.on = false;
       b.gone = false;
+      b.entered = false;
       b.r.reset();
       if (b.clock !== a) b.r.redraw();
     }
