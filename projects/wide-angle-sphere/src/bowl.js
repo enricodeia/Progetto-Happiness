@@ -330,10 +330,11 @@ export function createBowl({ mount, cfg }) {
       const size = (p) => p.geometry.boundingBox.getSize(new THREE.Vector3()).x;
       const outer = list.reduce((a, p) => (!a || size(p) > size(a) ? p : a), null);
       if (outer) {
+        wireSrc = outer.geometry;
         wireMat = new THREE.LineBasicMaterial({
           color: 0x0a0a0a, transparent: true, opacity: 0, depthWrite: false,
         });
-        wire = new THREE.LineSegments(buildBowlWire(outer.geometry), wireMat);
+        wire = new THREE.LineSegments(buildBowlWire(wireSrc, wireRings, wireMeridians), wireMat);
         wire.visible = false;
         norm.add(wire);
       }
@@ -435,6 +436,18 @@ export function createBowl({ mount, cfg }) {
   let wireframeMix = 0;
   let wireframeTarget = 0.15;
   let wire = null, wireMat = null;   // the lattice, built once the geometry is in
+  let wireSrc = null;                // ...from this geometry, kept so it can be re-fitted
+  let wireRings = 14, wireMeridians = 24;
+  /** V5's panel: re-fit the lattice with a different density */
+  function rebuildWire(rings, meridians) {
+    wireRings = Math.max(3, Math.round(rings));
+    wireMeridians = Math.max(3, Math.round(meridians));
+    if (!wire || !wireSrc) return;
+    const old = wire.geometry;
+    wire.geometry = buildBowlWire(wireSrc, wireRings, wireMeridians);
+    old.dispose();
+  }
+  function setWireInk(hex) { wireMat?.color.set(hex); }
   let rimY = 0.25;                   // the rim's height in group space, set at load
   function onPointerMove(e) {
     pointer.x = (e.clientX / Math.max(1, window.innerWidth)) * 2 - 1;
@@ -455,6 +468,12 @@ export function createBowl({ mount, cfg }) {
   const worldH = () => 2 * camDist() * Math.tan(rad(B.cam.fov) / 2);
 
   let clock = 0;
+  // the idle turn keeps its OWN clock, so its rate can be changed live (V5
+  // slows or stops the lattice) without the angle jumping: the multiplier
+  // scales the increment, never the accumulated value
+  let idleClock = 0;
+  let spinMul = 1;
+  const setSpinMul = (m) => { spinMul = Math.max(0, m); };
 
   /**
    * q1 — 0 at the top of the page, 1 when the pinned section engages.
@@ -471,6 +490,7 @@ export function createBowl({ mount, cfg }) {
       return;
     }
     clock += dt;
+    idleClock += dt * spinMul;
     state.q1 = q1;
     state.q2 = q2;
 
@@ -520,7 +540,7 @@ export function createBowl({ mount, cfg }) {
     state.spin =
       rad(B.spin.start) +
       (q1 * B.spin.turns + q2 * B.spin.pinTurns) * Math.PI * 2 +
-      clock * B.spin.idle;
+      idleClock * B.spin.idle;
     state.tilt = pose.tilt;
 
     // the pointer is smoothed toward here, not in the input handler, so it is
@@ -616,6 +636,9 @@ export function createBowl({ mount, cfg }) {
     replay,
     setWireframe,
     setSheet,
+    setSpinMul,
+    rebuildWire,
+    setWireInk,
     /** the white under the bowl, for the assertions */
     get sheet() { return +sheetA.toFixed(3); },
     loadReliefImage,

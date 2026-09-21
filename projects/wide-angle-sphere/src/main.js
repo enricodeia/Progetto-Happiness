@@ -535,6 +535,13 @@ const v3Panel = createV3Panel({
   onVariant: (v) => setVariant(v),
   onNetwork: () => network.resize(),
   onCircles: () => { circles.style(); circles.resize(); },
+  // the bowl's lattice re-fitted to a new density / re-inked (his ask,
+  // 2026-09-21 — "dammi i controlli sulla bowl")
+  onBowlWire: () => {
+    const K = CONFIG.v2.circles;
+    bowl.rebuildWire(K.wireRings, K.wireMeridians);
+    bowl.setWireInk(K.wireInk);
+  },
   onHeroRebuild: () => { hero.rebuild(); hero.replayAll(); },
   onHeroStyle: () => hero.style(),
   onPlayer: () => player.style(),
@@ -812,7 +819,10 @@ bowl.setPoseHook((pose, ctx) => {
     const s1 = Math.max(s0 + 0.01, tl.canvasS0 ?? 1);
     const home = smooth(clamp01((tl.p - s0) / (s1 - s0)));
     if (home > 0) {
-      const centre = { ...P.until, x: 0, y: 0, size: K.bowlSize, tilt: K.bowlTilt, tiltZ: 0, opacity: 1 };
+      const centre = {
+        ...P.until, x: K.bowlX ?? 0, y: K.bowlY ?? 0, size: K.bowlSize,
+        tilt: K.bowlTilt, tiltZ: K.bowlTiltZ ?? 0, opacity: 1,
+      };
       out = mix(out, centre, home);
     }
     poseDebug = { home: +home.toFixed(3), s0: +s0.toFixed(3), s1: +s1.toFixed(3), p: +tl.p.toFixed(3), size: +out.size.toFixed(3), opacity: +out.opacity.toFixed(3) };
@@ -991,6 +1001,8 @@ function raf(now) {
   const outro = outroNow();
   ground.setClose(outro);
   bowl.setSheet(outro);
+  // ...and the idle turn eases to V5's own rate over the same handover
+  bowl.setSpinMul(circlesOn() ? 1 + ((CONFIG.v2.circles.bowlSpin ?? 1) - 1) * outro : 1);
   let bowlGain = 1;
   if (CONFIG.bowl.fadeAfter > 0 && !circlesOn()) {
     const vh = window.innerHeight;

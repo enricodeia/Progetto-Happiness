@@ -379,7 +379,10 @@ export const CONFIG = {
     // motion: no blur, no skew, no rise.
     reveal: {
       expoFrom: 100,
-      expoRest: -10,
+      // 0, not −10 (his ask, 2026-09-21 — "così che sia più asciutto il
+      // font per i titoli"): the same rest the intro and the body text
+      // already sit at, so every Exposure title on the page lands drier
+      expoRest: 0,
       fadeIn: 1,      // the opacity ramp IS the whole travel
       // ── strictly in place ───────────────────────────────────────────────
       // No vertical travel AT ALL, in or out: a line unfolds exactly where it
@@ -784,6 +787,13 @@ export const CONFIG = {
       // heights, like `v2.bowlSize`) and a slight lean so the wireframe
       // still reads as a bowl and not a flat ring
       bowlSize: 1.0, bowlTilt: 14,   // ≈ a 0.7vh-wide silhouette at 1.0 (his frames)
+      // ...and the rest of its pose for this block (his ask, 2026-09-21 —
+      // "dammi i controlli sulla bowl"): where it sits (pose units, like the
+      // bowl's own `poses.*.x/y` — 0,0 is dead-centre), its roll, and how
+      // fast the idle turn runs here (1 = as everywhere else, 0 = still)
+      bowlX: 0, bowlY: 0, bowlTiltZ: 0, bowlSpin: 1,
+      // the lattice it turns into: how dense, and what ink
+      wireRings: 14, wireMeridians: 24, wireInk: "#0a0a0a",
       strokeWidth: 1,
       ink: "#0a0a0a",
       dashInner: "2 5",

@@ -1866,6 +1866,23 @@ const v5 = await page.evaluate(async () => {
   await go(0.72);  out.b4 = snap()          // 4 · the third drawn
   await go(0.995); out.b5 = snap()          // 5 · the fourth IS the bowl
   await go(0.08);  out.back = snap()        // ...and back up: un-drawn the way it drew
+  // the bowl's own controls (his ask, 2026-09-21): the lattice re-fits live
+  // to a new density, and the block's pose knobs actually move it
+  {
+    const K = W.cfg.v2.circles
+    const before = W.bowl.wireframe.lines
+    W.bowl.rebuildWire(7, 12); await pause(200)
+    const sparse = W.bowl.wireframe.lines
+    W.bowl.rebuildWire(K.wireRings, K.wireMeridians); await pause(200)
+    const restored = W.bowl.wireframe.lines
+    await go(0.5)
+    const cx0 = W.circles.probe().cx
+    const x0 = K.bowlX; K.bowlX = 0.1; await pause(700)
+    const cx1 = W.circles.probe().cx
+    K.bowlX = x0; await pause(700)
+    const cx2 = W.circles.probe().cx
+    out.knobs = { before, sparse, restored, cx0, cx1, cx2 }
+  }
   // reversible: 4 gets the network back, 1 drops every V5 trace
   W.setVariant(4); await pause(600)
   out.to4 = { networkHidden: document.getElementById('networkBox').hidden, circlesHidden: document.getElementById('circlesBox').hidden, v5: document.body.classList.contains('is-v5') }
@@ -2758,6 +2775,11 @@ const checks = [
   ['...e tornando su al primo beat si RI-DISEGNA all\'indietro: tutto a zero, la bowl di nuovo ' +
    'verso il solido — pura funzione dello scroll',
     v5.back.stage === 1 && v5.back.draw.a === 0 && v5.back.draw.big === 0 && v5.back.wire.mix < 1],
+  ['i controlli della bowl (sua richiesta, 2026-09-21): il reticolo si RI-FITTA dal vivo a una densità ' +
+   'diversa (7×12 ha meno linee di 14×24, e tornando indietro le riavi), e `bowlX` sposta davvero ' +
+   'il centro su cui i cerchi sono costruiti — e lo rimette a posto',
+    v5.knobs.sparse < v5.knobs.before && v5.knobs.restored === v5.knobs.before &&
+    v5.knobs.cx1 > v5.knobs.cx0 + 20 && Math.abs(v5.knobs.cx2 - v5.knobs.cx0) < 2],
   ['...e le versioni restano reversibili: la 4 riprende la rete e nasconde i cerchi, la 1 toglie ogni ' +
    'traccia di V5 e ridà alla stage il suo fondo',
     v5.to4.networkHidden === false && v5.to4.circlesHidden === true && v5.to4.v5 === false &&

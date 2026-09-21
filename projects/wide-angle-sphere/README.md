@@ -2633,3 +2633,23 @@ opaque); then the five beats, reading both the drive value and the DOM's own
 masked; the third drawn; the fourth matching the bowl with the union tangent
 to it — the un-draw on the way back up, and reversibility to 4 and to 1.
 221 checks now.
+
+### The bowl's own controls, and a drier EXPO (his asks, 2026-09-21)
+
+*"Dammi i controlli sulla bowl"* — a "The bowl behind" folder inside V5 in
+the `V` panel: the bowl's pose for this block (`bowlX`/`bowlY` in the bowl's
+own pose units, 0,0 dead-centre; `bowlSize`; `bowlTilt` lean; `bowlTiltZ`
+roll) and `bowlSpin`, how fast the idle turn runs here (1 as everywhere, 0
+still). The idle turn now accumulates on its OWN clock scaled by that
+multiplier — the rate changes, the angle never jumps — eased to V5's value
+over the same handover as the outro. Under it, "The lattice": alpha, and
+`wireRings` / `wireMeridians` / `wireInk`, which re-fit the lattice live
+(`bowl.rebuildWire`, disposing the old geometry) and re-ink it. Asserted:
+14×24 → 7×12 has fewer lines and comes back to the same count; `bowlX 0.1`
+moves the construction centre the circles are built on by 150px and puts it
+back. 222 checks.
+
+*"Per l'Exposure trial come default 0 e non −10, così che sia più asciutto il
+font per i titoli"* — `v2.reveal.expoRest` is `0` now. It was the one rest
+value on the page still at −10 (the ring act's copy); the intro and the body
+text already sat at 0, and the existing EXPO check reads those.

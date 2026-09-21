@@ -31,6 +31,7 @@ export function createV3Panel({
   onVariant,      // 1 | 2 | 3 — rebuilds the whole page for that version
   onNetwork,      // the disc's geometry changed: re-lay it out
   onCircles,      // V5's circles changed: restyle and re-lay them out
+  onBowlWire,     // V5's bowl lattice: re-fit its density, re-ink it
   onHeroRebuild,  // the title TEXT changed: tear the reveal down and re-arm it
   onHeroStyle,    // position/size only: a cheap repaint, no replay
   onFooter,       // the footer's own vertical budget has to be re-measured
@@ -163,9 +164,20 @@ export function createV3Panel({
     l.addBinding(K, "ink", { label: "ink" }).on("change", onCircles);
     l.addBinding(K, "dashInner", { label: "dash — lens" }).on("change", onCircles);
     l.addBinding(K, "dashOuter", { label: "dash — bowl circle" }).on("change", onCircles);
-    l.addBinding(K, "wireframeOpacity", { min: 0.02, max: 0.6, step: 0.01, label: "bowl wireframe α" });
-    l.addBinding(K, "bowlSize", { min: 0.2, max: 0.8, step: 0.01, label: "bowl size (vh)" });
-    l.addBinding(K, "bowlTilt", { min: -40, max: 60, step: 1, label: "bowl lean (°)" });
+    // ── the bowl behind (his ask, 2026-09-21 — "dammi i controlli sulla
+    //    bowl"): its pose for this block, and the lattice it turns into ──
+    const b = f.addFolder({ title: "The bowl behind", expanded: false });
+    b.addBinding(K, "bowlX", { min: -0.5, max: 0.5, step: 0.005, label: "x (of width)" });
+    b.addBinding(K, "bowlY", { min: -0.5, max: 0.5, step: 0.005, label: "y (of height)" });
+    b.addBinding(K, "bowlSize", { min: 0.2, max: 1.6, step: 0.01, label: "size (vh)" });
+    b.addBinding(K, "bowlTilt", { min: -40, max: 80, step: 1, label: "lean (°)" });
+    b.addBinding(K, "bowlTiltZ", { min: -45, max: 45, step: 1, label: "roll (°)" });
+    b.addBinding(K, "bowlSpin", { min: 0, max: 3, step: 0.05, label: "idle turn (× normal)" });
+    const w = b.addFolder({ title: "The lattice", expanded: false });
+    w.addBinding(K, "wireframeOpacity", { min: 0.02, max: 0.6, step: 0.01, label: "alpha" });
+    w.addBinding(K, "wireRings", { min: 3, max: 40, step: 1, label: "rings" }).on("change", onBowlWire);
+    w.addBinding(K, "wireMeridians", { min: 3, max: 72, step: 1, label: "meridians" }).on("change", onBowlWire);
+    w.addBinding(K, "wireInk", { label: "ink" }).on("change", onBowlWire);
     const t = f.addFolder({ title: "Type (× bowl radius)", expanded: false });
     t.addBinding(K, "nameSize", { min: 0.03, max: 0.12, step: 0.002, label: "name" });
     t.addBinding(K, "descSize", { min: 0.02, max: 0.09, step: 0.002, label: "description" });
