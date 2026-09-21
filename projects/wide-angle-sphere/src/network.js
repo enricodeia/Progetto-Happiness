@@ -1187,7 +1187,7 @@ export function createNetwork({ mount, cfg }) {
   }
 
   function style() {
-    const on = !!cfg.v2.on && !!N().show;
+    const on = !!cfg.v2.on && !!N().show && cfg.variant !== 5;
     mount.hidden = !on;
     if (on) layout();
   }
@@ -1199,7 +1199,7 @@ export function createNetwork({ mount, cfg }) {
     update,
     resize: layout,
     /** is IT the thing actually occupying the corner right now? */
-    get show() { return !!cfg.v2.on && !!N().show; },
+    get show() { return !!cfg.v2.on && !!N().show && cfg.variant !== 5; },
     /** what is actually on screen right now, for the assertions */
     probe() {
       const originX = discOrigin ? discOrigin.x : (N().centerX / 100) * w;

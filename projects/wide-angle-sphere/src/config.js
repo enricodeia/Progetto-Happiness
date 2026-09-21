@@ -755,6 +755,58 @@ export const CONFIG = {
       },
     },
 
+    // ── V5: two circles around the bowl (his ask, 2026-09-21) ────────────
+    // Not the vertex field — a small, four-stage diagram of plain SVG circles
+    // and paths, sized off the BOWL'S OWN on-screen radius so the last one
+    // lands exactly on its silhouette. Pure scrub: one continuous 0→1 value
+    // off the canvas's own progress (`tl.canvasS0..S1`, the same span the
+    // network's three `ev` ramps come from), cut into four stage windows
+    // instead of three discrete steps — his diagram has four beats, not three.
+    //   stage 1  two circles, touching, flank the bowl — captions reveal, the
+    //            bowl itself crossfades to a 15%-opacity wireframe
+    //   stage 2  they pull apart; a solid "stadium" boundary and a dashed
+    //            echo of where they used to touch both appear
+    //   stage 3  a third circle grows in the gap they left
+    //   stage 4  a fourth, dashed circle — the bowl's own diameter — appears
+    //            around all three, with the closing title above it
+    circles: {
+      show: true,
+      // Every length is a share of the BOWL'S OWN on-screen radius R, read
+      // off the bowl each frame — so the diagram is always the bowl's size,
+      // whatever the viewport. Measured off his fourth frame: the two base
+      // circles are ~0.32R and end up centred at ±0.40R. The two big circles
+      // drawn around them are NOT a knob: circles.js sizes them so their
+      // union is exactly 2R wide — tangent to the fourth circle, the bowl's.
+      radiusFrac: 0.32,     // each base circle's radius (× R)
+      spreadFrac: 0.25,     // stage 2: how much further apart they move (× r)
+      // the bowl itself, brought back to dead-centre for this block (instead
+      // of the ring act sinking it off the bottom): its size (in viewport
+      // heights, like `v2.bowlSize`) and a slight lean so the wireframe
+      // still reads as a bowl and not a flat ring
+      bowlSize: 1.0, bowlTilt: 14,   // ≈ a 0.7vh-wide silhouette at 1.0 (his frames)
+      strokeWidth: 1,
+      ink: "#0a0a0a",
+      dashInner: "2 5",
+      dashOuter: "2 6",
+      // where each stage BEGINS, as a fraction of the canvas's own 0→1 —
+      // stage 1 runs 0..s2, stage 2 s2..s3, stage 3 s3..s4, stage 4 s4..1
+      s2: 0.26, s3: 0.5, s4: 0.74,
+      wireframeOpacity: 0.15, // the bowl's own opacity once fully turned to wireframe
+      textReveal: 0.55,       // share of a stage a caption takes to fully reveal
+      // type, as shares of R too — measured off his frames: a name is ~0.03R
+      // (three of them have to sit side by side, 0.4R apart, without touching)
+      nameSize: 0.03, descSize: 0.021, descGap: 0.07,
+      outerLabelSize: 0.026, titleSize: 0.032, titleLh: 1.3,
+      labels: {
+        a: { name: "Contextual Research", desc: "Connecting the dots between\n350k+ practices" },
+        b: { name: "Therapist Observation", desc: "Therapists put practices to the test\ninputting on how to best implement" },
+        c: { name: "Real World Application", desc: "Giving them to people for free to practice\non their terms provides feedback" },
+        outerLeft: "User driven feedback",
+        outerRight: "Clinical Validation",
+        title: "Better Practice\nEffective Discovery\nInsight Timer",
+      },
+    },
+
     // The canvas experience does not take the frame in V2: it sits in a box
     // of its own on the RIGHT of the evidence section (his own reference,
     // 2026-09-15 — moved off the bottom-left corner once the summary

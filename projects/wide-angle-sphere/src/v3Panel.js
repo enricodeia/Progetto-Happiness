@@ -30,6 +30,7 @@ export function createV3Panel({
   cfg,
   onVariant,      // 1 | 2 | 3 — rebuilds the whole page for that version
   onNetwork,      // the disc's geometry changed: re-lay it out
+  onCircles,      // V5's circles changed: restyle and re-lay them out
   onHeroRebuild,  // the title TEXT changed: tear the reveal down and re-arm it
   onHeroStyle,    // position/size only: a cheap repaint, no replay
   onFooter,       // the footer's own vertical budget has to be re-measured
@@ -53,7 +54,7 @@ export function createV3Panel({
       label: "version",
       options: {
         "1 — the first cut": 1, "2 — the ring act": 2,
-        "3 — the disc": 3, "4 — the braid": 4,
+        "3 — the disc": 3, "4 — the globe": 4, "5 — the circles": 5,
       },
     }).on("change", (e) => onVariant(e.value));
     // the 1/2/3 keys do the same thing, so the dropdown has to follow them
@@ -140,6 +141,36 @@ export function createV3Panel({
     d.addBinding(R, "dragTilt", { min: 0, max: 1, step: 0.01, label: "° per px (lean)" });
     d.addBinding(R, "inertia", { min: 0.5, max: 0.98, step: 0.01, label: "fling" });
     d.addBinding(R, "recenter", { min: 0, max: 0.2, step: 0.002, label: "settles back" });
+  }
+
+  // ── V5: the two circles around the bowl (his ask, 2026-09-21) ────────────
+  //    Four stage windows along the canvas's own 0→1, every radius a share of
+  //    the bowl's own on-screen radius, so the fourth circle always lands on it.
+  {
+    const K = cfg.v2.circles;
+    const f = pane.addFolder({ title: "V5 — the circles (four beats)", expanded: false });
+    f.addBinding(K, "show").on("change", onCircles);
+    f.addBinding(K, "radiusFrac", { min: 0.2, max: 0.7, step: 0.01, label: "circle (× bowl r)" }).on("change", onCircles);
+    f.addBinding(K, "spreadFrac", { min: 0, max: 1.5, step: 0.01, label: "pull apart (× r)" }).on("change", onCircles);
+    const s = f.addFolder({ title: "Where each beat begins", expanded: false });
+    s.addBinding(K, "s2", { min: 0.05, max: 0.6, step: 0.01, label: "2 · pull apart" });
+    s.addBinding(K, "s3", { min: 0.2, max: 0.8, step: 0.01, label: "3 · third circle" });
+    s.addBinding(K, "s4", { min: 0.4, max: 0.95, step: 0.01, label: "4 · the bowl's own" });
+    s.addBinding(K, "textReveal", { min: 0.1, max: 1, step: 0.01, label: "captions take" });
+    const l = f.addFolder({ title: "The line and the bowl behind", expanded: false });
+    l.addBinding(K, "strokeWidth", { min: 0.5, max: 3, step: 0.25, label: "stroke (px)" }).on("change", onCircles);
+    l.addBinding(K, "ink", { label: "ink" }).on("change", onCircles);
+    l.addBinding(K, "dashInner", { label: "dash — lens" }).on("change", onCircles);
+    l.addBinding(K, "dashOuter", { label: "dash — bowl circle" }).on("change", onCircles);
+    l.addBinding(K, "wireframeOpacity", { min: 0.02, max: 0.6, step: 0.01, label: "bowl wireframe α" });
+    l.addBinding(K, "bowlSize", { min: 0.2, max: 0.8, step: 0.01, label: "bowl size (vh)" });
+    l.addBinding(K, "bowlTilt", { min: -40, max: 60, step: 1, label: "bowl lean (°)" });
+    const t = f.addFolder({ title: "Type (× bowl radius)", expanded: false });
+    t.addBinding(K, "nameSize", { min: 0.03, max: 0.12, step: 0.002, label: "name" });
+    t.addBinding(K, "descSize", { min: 0.02, max: 0.09, step: 0.002, label: "description" });
+    t.addBinding(K, "descGap", { min: 0.04, max: 0.25, step: 0.005, label: "name ↔ description" });
+    t.addBinding(K, "outerLabelSize", { min: 0.03, max: 0.1, step: 0.002, label: "outer labels" });
+    t.addBinding(K, "titleSize", { min: 0.04, max: 0.14, step: 0.002, label: "title" });
   }
 
   // ── the player, and where it lives ────────────────────────────────────────

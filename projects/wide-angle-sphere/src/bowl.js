@@ -24,6 +24,54 @@ import { VIGNETTE } from "./postfx.js";
 
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const lerp = (a, b, t) => a + (b - a) * t;
+
+/** V5's wireframe (his ask, 2026-09-21): NOT the mesh's own triangles — at
+    1.1M of them `wireframe: true` is a solid, shaded surface with extra
+    steps, and a million 15%-opacity lines stack up to nearly opaque. This is
+    the wireframe a designer means: a lattice of rings and meridians fitted to
+    the ACTUAL bowl's profile — for each of `rings` height bands, the widest
+    radius any vertex reaches in it — so it is this bowl's silhouette, not a
+    generic hemisphere. Built once, in the geometry's own space, and parented
+    under `norm` so it inherits the same normalisation and pose. */
+function buildBowlWire(geometry, rings = 14, meridians = 24, seg = 72) {
+  const pos = geometry.attributes.position;
+  const bb = geometry.boundingBox;
+  const y0 = bb.min.y, y1 = bb.max.y, span = y1 - y0 || 1;
+  const cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2;
+  const prof = new Float32Array(rings);
+  const stride = Math.max(1, Math.floor(pos.count / 250000));
+  for (let i = 0; i < pos.count; i += stride) {
+    const x = pos.getX(i) - cx, y = pos.getY(i), z = pos.getZ(i) - cz;
+    const k = Math.min(rings - 1, Math.max(0, Math.floor(((y - y0) / span) * rings)));
+    const r = Math.hypot(x, z);
+    if (r > prof[k]) prof[k] = r;
+  }
+  const yOf = (k) => y0 + ((k + 0.5) / rings) * span;
+  const pts = [];
+  for (let k = 0; k < rings; k++) {
+    const r = prof[k];
+    if (r <= 0) continue;
+    const y = yOf(k);
+    for (let s = 0; s < seg; s++) {
+      const a0 = (s / seg) * Math.PI * 2, a1 = ((s + 1) / seg) * Math.PI * 2;
+      pts.push(cx + Math.cos(a0) * r, y, cz + Math.sin(a0) * r, cx + Math.cos(a1) * r, y, cz + Math.sin(a1) * r);
+    }
+  }
+  for (let m = 0; m < meridians; m++) {
+    const a = (m / meridians) * Math.PI * 2;
+    let prev = null;
+    for (let k = 0; k < rings; k++) {
+      const r = prof[k];
+      if (r <= 0) continue;
+      const p = [cx + Math.cos(a) * r, yOf(k), cz + Math.sin(a) * r];
+      if (prev) pts.push(...prev, ...p);
+      prev = p;
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+  return g;
+}
 const smooth = (x) => x * x * (3 - 2 * x);
 const expoOut = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
 const rad = THREE.MathUtils.degToRad;
@@ -262,10 +310,24 @@ export function createBowl({ mount, cfg }) {
       shells[part.slot] = { mesh, mat, name: part.name };
       box.union(part.geometry.boundingBox);
     }
+    // V5's lattice, fitted to the OUTER shell (the widest one)
+    {
+      const size = (p) => p.geometry.boundingBox.getSize(new THREE.Vector3()).x;
+      const outer = list.reduce((a, p) => (!a || size(p) > size(a) ? p : a), null);
+      if (outer) {
+        wireMat = new THREE.LineBasicMaterial({
+          color: 0x0a0a0a, transparent: true, opacity: 0, depthWrite: false,
+        });
+        wire = new THREE.LineSegments(buildBowlWire(outer.geometry), wireMat);
+        wire.visible = false;
+        norm.add(wire);
+      }
+    }
     // normalise: widest span 1, centred on its own bounding box
     const size = box.getSize(new THREE.Vector3());
     const centre = box.getCenter(new THREE.Vector3());
     const d = Math.max(size.x, size.z) || 1;
+    rimY = (size.y / d) / 2;   // the rim's height in group space (the top of the box)
     norm.scale.setScalar(1 / d);
     norm.position.set(-centre.x / d, -centre.y / d, -centre.z / d);
     applyMaterials();
@@ -346,6 +408,19 @@ export function createBowl({ mount, cfg }) {
   // wherever it is, not only while it happens to be over the bowl.
   const pointer = { x: 0, y: 0 };
   let lookX = 0, lookY = 0;
+
+  // ── V5's wireframe crossfade (his ask, 2026-09-21) — set by circles.js as
+  // a pure function of ITS OWN scroll progress, read here every frame. The
+  // shell material already has a `wireframe` flag (a debug toggle, `B.model.
+  // wireframe`) but it is a hard boolean — there is no such thing as a
+  // half-wireframe triangle. So the crossfade is an opacity trick instead:
+  // fade the solid shell OUT to nothing, flip the flag at the bottom of that
+  // dip (invisible either way at opacity 0), then fade the wireframe IN —
+  // one continuous, reversible ramp with no pop anywhere a viewer can see it.
+  let wireframeMix = 0;
+  let wireframeTarget = 0.15;
+  let wire = null, wireMat = null;   // the lattice, built once the geometry is in
+  let rimY = 0.25;                   // the rim's height in group space, set at load
   function onPointerMove(e) {
     pointer.x = (e.clientX / Math.max(1, window.innerWidth)) * 2 - 1;
     pointer.y = (e.clientY / Math.max(1, window.innerHeight)) * 2 - 1;
@@ -448,7 +523,14 @@ export function createBowl({ mount, cfg }) {
       rad(B.model.rotZ + pose.tiltZ)
     );
 
-    for (const slot of Object.keys(shells)) shells[slot].mat.opacity = opacity;
+    // V5's crossfade: the solid shells fade OUT as the lattice fades IN, both
+    // still under the pose's own opacity, the intro and the gain
+    const wf = wireframeMix;
+    for (const slot of Object.keys(shells)) shells[slot].mat.opacity = opacity * (1 - wf);
+    if (wireMat) {
+      wireMat.opacity = wireframeTarget * wf * opacity;
+      wire.visible = wf > 0.001;
+    }
 
     // The attachments go last: the bowl is already placed, so what they get is
     // where it actually IS this frame, not where it was on the one before.
@@ -496,9 +578,19 @@ export function createBowl({ mount, cfg }) {
     env.dispose();
     hdr.dispose();
     for (const slot of Object.keys(shells)) shells[slot].mat.dispose();
+    wire?.geometry.dispose();
+    wireMat?.dispose();
     composer.dispose();
     renderer.dispose();
     renderer.domElement.remove();
+  }
+
+  /** V5's crossfade (his ask, 2026-09-21) — `mix` 0..1, `target` the
+   * wireframe's own settled opacity (circles.js passes `v2.circles.
+   * wireframeOpacity`) */
+  function setWireframe(mix, target = 0.15) {
+    wireframeMix = clamp01(mix);
+    wireframeTarget = target;
   }
 
   return {
@@ -507,6 +599,7 @@ export function createBowl({ mount, cfg }) {
     dispose,
     play,
     replay,
+    setWireframe,
     loadReliefImage,
     clearReliefImage,
     reliefInfo,
@@ -566,6 +659,10 @@ export function createBowl({ mount, cfg }) {
     get shells() { return shells; },
     /** the bowl's centre, in CSS pixels of the viewport */
     projected() {
+      // the matrices only refresh inside a render — and the canvas is skipped
+      // entirely at opacity 0 — so bring them up to date here, or a reader
+      // gets wherever the bowl last DREW, not where it is
+      group.updateMatrixWorld(true);
       const v = new THREE.Vector3(0, 0, 0)
         .applyMatrix4(group.matrixWorld)
         .project(camera);
@@ -575,6 +672,40 @@ export function createBowl({ mount, cfg }) {
       const w = renderer.domElement.clientWidth || window.innerWidth || 1;
       const h = renderer.domElement.clientHeight || window.innerHeight || 1;
       return { x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h };
+    },
+    /** the bowl's own on-screen radius, in CSS pixels (his ask, 2026-09-21 —
+     * V5's fourth circle has to land exactly on the bowl's silhouette).
+     * `norm` (not `group`) carries the "widest span 1" normalisation, so its
+     * own local 0.5 on X is the actual rendered edge — the equatorial one,
+     * which is what a 2D circle drawn around it should match. */
+    projectedRadius() {
+      group.updateMatrixWorld(true);
+      // the rim, sampled all the way round and read as its on-screen
+      // half-WIDTH — a single point on local X would swing with the idle
+      // spin (foreshortened whenever it points at the camera) and the
+      // diagram built on it would breathe. The silhouette's width does not.
+      const w = renderer.domElement.clientWidth || window.innerWidth || 1;
+      let minX = Infinity, maxX = -Infinity;
+      const v = new THREE.Vector3();
+      for (let i = 0; i < 32; i++) {
+        const a = (i / 32) * Math.PI * 2;
+        // GROUP space: after `norm`'s normalisation the bowl is centred on the
+        // origin, half a unit wide, its rim at `rimY`
+        v.set(Math.cos(a) * 0.5, rimY, Math.sin(a) * 0.5).applyMatrix4(group.matrixWorld).project(camera);
+        const x = ((v.x + 1) / 2) * w;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+      }
+      return (maxX - minX) / 2;
+    },
+    /** the wireframe crossfade's own numbers, for the assertions */
+    get wireframe() {
+      return {
+        mix: +wireframeMix.toFixed(3),
+        on: wireframeMix >= 0.5,
+        lines: wire ? wire.geometry.attributes.position.count / 2 : 0,
+        alpha: wireMat ? +wireMat.opacity.toFixed(3) : 0,
+      };
     },
   };
 }

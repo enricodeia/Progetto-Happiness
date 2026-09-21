@@ -1827,6 +1827,49 @@ const evTop = await page.evaluate(async () => {
 })
 console.log('il paragrafo dei tre step:', evTop)
 
+// ═══════════════════════════════════════════════════════════════════════
+// V5 — the two circles around the bowl (his ask, 2026-09-21): four beats
+// along the canvas block, every length a share of the bowl's own on-screen
+// radius, the bowl itself staying behind as a 15% wireframe lattice.
+// ═══════════════════════════════════════════════════════════════════════
+const v5 = await page.evaluate(async () => {
+  const pause = (ms) => new Promise((r) => setTimeout(r, ms))
+  const W = window.__was
+  const cs = (el) => getComputedStyle(el)
+  const snap = () => ({ ...W.circles.probe(), wire: W.bowl.wireframe, bowlOpacity: W.bowl.state.opacity })
+  W.setVariant(5)
+  await pause(600)
+  const out = {
+    variant: W.cfg.variant, v2on: W.cfg.v2.on,
+    body: { v5: document.body.classList.contains('is-v5'), v2: document.body.classList.contains('is-v2') },
+    circlesHidden: document.getElementById('circlesBox').hidden,
+    networkHidden: document.getElementById('networkBox').hidden,
+    canvasHidden: document.getElementById('canvasLayer').hidden,
+    stageBg: cs(document.getElementById('stageB')).backgroundColor,
+    leftB: cs(document.getElementById('leftB')).display,
+    copyB: cs(document.getElementById('copyboxB')).display,
+    hasSvg: !!document.querySelector('.was-circles-svg'),
+  }
+  // beat 1 — canvas p ≈ 0.15: touching, captions revealing, bowl turning to wire
+  W.scrollToStep(3, 0.7); await pause(900); out.b1 = snap()
+  // beat 2 — p ≈ 0.45 (well into its 0.26..0.5 window, so the union has
+  // mostly faded in): pulled apart, the big circles closing around them
+  W.scrollToStep(4, 0.6); await pause(900); out.b2 = snap()
+  // beat 3 — p ≈ 0.65: the third growing at the centre
+  W.scrollToStep(4, 0.95); await pause(900); out.b3 = snap()
+  // beat 4 — p ≈ 1: the fourth IS the bowl
+  W.scrollToStep(5, 0.995); await pause(900); out.b4 = snap()
+  // ...and back up to beat 1: it un-draws the way it drew
+  W.scrollToStep(3, 0.7); await pause(900); out.back = snap()
+  // reversible: 4 gets the network back, 1 drops every V5 trace
+  W.setVariant(4); await pause(600)
+  out.to4 = { networkHidden: document.getElementById('networkBox').hidden, circlesHidden: document.getElementById('circlesBox').hidden, v5: document.body.classList.contains('is-v5') }
+  W.setVariant(1); await pause(600)
+  out.to1 = { v5: document.body.classList.contains('is-v5'), variant: W.cfg.variant, stageBg: cs(document.getElementById('stageB')).backgroundColor }
+  return out
+})
+console.log('V5:', JSON.stringify(v5, null, 1))
+
 // il boot vero, senza toccare nulla (sua richiesta, 2026-09-18): V4 di
 // default, pannelli nascosti finché non premo "c"
 await page.reload({ waitUntil: 'networkidle2', timeout: 45000 })
@@ -2666,6 +2709,34 @@ const checks = [
   ['...e ogni tecnica è in fondo a una CATENA che salta di vertice in vertice sulla ' +
    'superficie per arrivarci ("punti con punti che si collegano con le techniques")',
     v4.globe.chains >= v4.globe.orbit && v4.globe.arcs > v4.globe.chains],
+
+  // ── V5: the two circles around the bowl (his ask, 2026-09-21) ───────────
+  ['il tasto 5 porta alla V5, che resta "V2 più i delta": il box dei cerchi al posto di rete e ' +
+   'sfera, la stage TRASPARENTE (la bowl dietro si vede), colonna sinistra e titolo/paragrafo spenti',
+    v5.variant === 5 && v5.v2on === true && v5.body.v5 && v5.body.v2 && v5.hasSvg &&
+    v5.circlesHidden === false && v5.networkHidden === true && v5.canvasHidden === true &&
+    v5.stageBg === 'rgba(0, 0, 0, 0)' && v5.leftB === 'none' && v5.copyB === 'none'],
+  ['beat 1: due cerchi che si TOCCANO senza intersecarsi (gap 0), grandi 0.32 del raggio della bowl, ' +
+   'le didascalie che si rivelano — e la bowl dietro sta diventando wireframe (un reticolo, non i triangoli)',
+    v5.b1.stage === 1 && v5.b1.gapAB <= 0.5 && Math.abs(v5.b1.r / v5.b1.R - 0.32) < 0.01 &&
+    v5.b1.text.a > 0 && v5.b1.wire.mix > 0 && v5.b1.wire.mix < 1 && v5.b1.wire.lines > 1000],
+  ['beat 2: si allontanano (gap > 0) e i due cerchi grandi si chiudono attorno — unione piena, lente ' +
+   'tratteggiata — con la bowl ormai wireframe al 15% e ancora opaca come posa',
+    v5.b2.stage === 2 && v5.b2.gapAB > 5 && v5.b2.outerAlpha > 0.5 &&
+    v5.b2.wire.mix === 1 && Math.abs(v5.b2.wire.alpha - 0.15) < 0.01 && v5.b2.bowlOpacity > 0.9],
+  ['beat 3: il terzo cerchio CRESCE al centro, dentro il varco che i due hanno lasciato',
+    v5.b3.stage === 3 && v5.b3.c.r > 0 && v5.b3.c.r < v5.b3.r && v5.b3.outerAlpha === 1],
+  ['beat 4: il quarto cerchio È la bowl (stesso raggio, ±1.5px) e l\'unione dei due grandi vi è ' +
+   'tangente a destra e a sinistra — "assicurati che combaci con la bowl" — col titolo sopra',
+    v5.b4.stage === 4 && v5.b4.bigMatchesBowl && v5.b4.unionMatchesBowl &&
+    v5.b4.big.alpha > 0.95 && v5.b4.text.title > 0.9 && Math.abs(v5.b4.c.r - v5.b4.r) < 0.5],
+  ['...e tornando su al primo beat si RI-DISEGNA all\'indietro: gap di nuovo 0, quarto cerchio spento, ' +
+   'la bowl di nuovo verso il solido — pura funzione dello scroll',
+    v5.back.stage === 1 && v5.back.gapAB <= 0.5 && v5.back.big.alpha === 0 && v5.back.wire.mix < 1],
+  ['...e le versioni restano reversibili: la 4 riprende la rete e nasconde i cerchi, la 1 toglie ogni ' +
+   'traccia di V5 e ridà alla stage il suo fondo',
+    v5.to4.networkHidden === false && v5.to4.circlesHidden === true && v5.to4.v5 === false &&
+    v5.to1.v5 === false && v5.to1.variant === 1 && v5.to1.stageBg !== 'rgba(0, 0, 0, 0)'],
 
   // ── shipped default: V4, panels hidden until "c" (his ask, 2026-09-18) ──
   ['una pagina APPENA CARICATA, senza toccare nulla, è già in V4 — non più V1, ' +

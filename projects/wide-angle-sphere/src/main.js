@@ -15,6 +15,7 @@ import { createAtlas, ATLAS_STATE } from "./atlas/atlas.js";
 import { createTeam } from "./team.js";
 import { createFooter } from "./footer.js";
 import { createV3Panel } from "./v3Panel.js";
+import { createCircles } from "./circles.js";
 import { createAtlasSketch } from "./atlasSketch.js";
 import { createRing } from "./ring.js";
 import { createGround } from "./ground.js";
@@ -75,6 +76,7 @@ const leftBEl = document.getElementById("leftB");
 const copyBoxEl = document.getElementById("copybox");
 const copyBoxBEl = document.getElementById("copyboxB");
 const networkBoxEl = document.getElementById("networkBox");
+const circlesBoxEl = document.getElementById("circlesBox");
 const bowlLayerEl = document.getElementById("bowlLayer");
 const atlasViewEl = document.getElementById("atlasView");
 const atlasTitleEl = document.getElementById("atlasTitle");
@@ -273,15 +275,21 @@ function readProgress() {
   return clamp01(q);
 }
 
-// pinA's OWN clock (his ask, 2026-09-18 — the scroll bar should read the
-// first pinned module alone, not the combined six-step travel): 0 where
-// #pinA starts pinning, 1 where it releases (its own `vhA()`, not `pinVh`).
-// #pinA is always steps 0..canvasSteps — the ring act in V2/V3/V4, the
-// canvas in V1 — regardless of which content is parented into it.
+// pinA's OWN clock (his ask, 2026-09-18, then corrected the same day — the
+// scroll bar should read the first pinned module alone, not the combined
+// six-step travel): 0 at scrollY 0, so it starts the instant the page starts
+// scrolling, not once it has already scrolled all the way to `#pinA`. It
+// ends BEFORE `#pinA`'s own nominal release — the final `gapVh()` of `vhA()`
+// is B's own run-in already rising over it (see the "three sections, one
+// clock" note above `canvasSteps`), so counting all the way to `vhA()` would
+// have the bar finish reading full while the next section is visibly already
+// taking over the frame.
 let rawProgressA = 0;
 function readProgressA() {
-  const travel = (vhA() / 100) * window.innerHeight;
-  const q = travel > 0 ? (window.scrollY - pinAEl.offsetTop) / travel : 0;
+  const vh = window.innerHeight;
+  const end = pinAEl.offsetTop + ((vhA() - gapVh()) / 100) * vh;
+  const travel = Math.max(1, end);
+  const q = window.scrollY / travel;
   rawProgressA = q;
   return clamp01(q);
 }
@@ -324,7 +332,7 @@ function applyLive() {
   // ...unless the trust network has replaced it in that corner entirely: then
   // there is nothing for the sphere to be active FOR, whatever `canvasHost`'s
   // own visibility says.
-  const on = !networkOn() && a.bottom > 0 && a.top < vh;
+  const on = !networkOn() && !circlesOn() && a.bottom > 0 && a.top < vh;
   canvasOpen = on ? clamp01((Math.min(vh, a.bottom) - Math.max(0, a.top)) / vh) : 0;
   if (on !== lastOn) {
     lastOn = on;
@@ -348,7 +356,10 @@ function applyLive() {
   // happens, and come back the instant it stops being true on the way up.
   const sb = stageBEl.getBoundingClientRect();
   const stageBCovers = sb.top <= 1 && sb.bottom >= vh - 1;
-  bowl.setHidden(stageBCovers);
+  // ...except in V5 (his ask, 2026-09-21), whose stage is see-through by
+  // design: the bowl IS what is behind it, as the wireframe. The ground
+  // still stops — V5 draws on the page's own white, not the dark field.
+  bowl.setHidden(stageBCovers && !circlesOn());
   ground.setHidden(stageBCovers);
 
   // ── the footer's reveal (his ask, 2026-09-16) ───────────────────────────
@@ -418,6 +429,9 @@ const ground = createGround({ mount: groundEl, cfg: CONFIG, images: left.images 
 // techniques, chained, fired by the evidence rows' own three ramps. Replaces
 // the sphere box below when `v2.network.show` is on.
 const network = createNetwork({ mount: networkBoxEl, cfg: CONFIG });
+// V5's two circles around the bowl (his ask, 2026-09-21) — it reads the
+// bowl's own projected centre and radius every frame, so it is handed the bowl
+const circles = createCircles({ mount: circlesBoxEl, cfg: CONFIG, bowl });
 const quiet = createQuiet({ el: quietEl, images: left.images, cfg: CONFIG });
 const atlas = createAtlas({ mount: atlasViewEl, cardsMount: atlasCardsEl });
 const team = createTeam({ mount: belowEl, cfg: CONFIG });
@@ -518,6 +532,7 @@ const v3Panel = createV3Panel({
   cfg: CONFIG,
   onVariant: (v) => setVariant(v),
   onNetwork: () => network.resize(),
+  onCircles: () => { circles.style(); circles.resize(); },
   onHeroRebuild: () => { hero.rebuild(); hero.replayAll(); },
   onHeroStyle: () => hero.style(),
   onPlayer: () => player.style(),
@@ -580,7 +595,9 @@ const EVIDENCE_V1 = CONFIG.evidence.show;
  *        panel has that section to say its piece in.
  */
 /** is the trust network the thing actually occupying the corner right now? */
-const networkOn = () => !!CONFIG.v2.on && !!CONFIG.v2.network.show;
+const networkOn = () => !!CONFIG.v2.on && !!CONFIG.v2.network.show && CONFIG.variant !== 5;
+/** ...or is it V5's circles diagram? (his ask, 2026-09-21) */
+const circlesOn = () => CONFIG.variant === 5 && !!CONFIG.v2.circles.show;
 
 function placeStages() {
   const on = !!CONFIG.v2.on;
@@ -594,8 +611,13 @@ function placeStages() {
   // replaces the sphere box, not stacks on top of it. The sphere stays mounted
   // (nothing here disposes it) but hidden, and `applyLive` below is told to
   // never turn its draw back on while the network has the corner.
-  canvasLayerEl.hidden = netOn;
-  if (netOn) sphere?.setActive(false);
+  // ...and V5's circles take the whole stage instead of either (his ask,
+  // 2026-09-21): sphere box and network box both hidden, the diagram shown.
+  const circOn = circlesOn();
+  canvasLayerEl.hidden = netOn || circOn;
+  circlesBoxEl.hidden = !circOn;
+  if (netOn || circOn) sphere?.setActive(false);
+  if (circOn) circles.resize();
   // V3 and V4 draw in a bigger frame than V2's sphere was composed for
   const b = (CONFIG.variant >= 3 && CONFIG.v2.canvasBoxBig) || CONFIG.v2.canvasBox;
   canvasLayerEl.style.setProperty("--cb-x", `${b.x}%`);
@@ -617,6 +639,9 @@ function applyVariant() {
   // black and white, the lighter footer — so it carries BOTH classes
   document.body.classList.toggle("is-v3", CONFIG.variant === 3);
   document.body.classList.toggle("is-v4", CONFIG.variant === 4);
+  // V5: the two circles around the bowl (his ask, 2026-09-21) — its stage
+  // goes see-through so the bowl shows behind, and its own text goes
+  document.body.classList.toggle("is-v5", CONFIG.variant === 5);
   // the team's black and white: V3's treatment, and liftable from the panel
   document.body.classList.toggle(
     "is-team-bw", CONFIG.variant >= 3 && CONFIG.team.grayscale !== false
@@ -655,7 +680,7 @@ function applyVariant() {
 
 function setVariant(n) {
   const raw = Number(n);
-  const v = raw >= 1 && raw <= 4 ? Math.round(raw) : 1;
+  const v = raw >= 1 && raw <= 5 ? Math.round(raw) : 1;
   if (v === CONFIG.variant) return;
   CONFIG.variant = v;
   // the derived flag, written in ONE place: every `v2.on` read means
@@ -750,7 +775,7 @@ bowl.setPoseHook((pose, ctx) => {
     //     `dur` it carries on at the same rate instead of parking: the bowl
     //     is still on its way down when the next section covers it.
     const E = A.exit;
-    if (E) {
+    if (E && !circlesOn()) {
       const raw = (actPExt - E.at) / Math.max(0.02, E.dur || 0.18);
       const sink = raw <= 0 ? 0
         : raw < 1 ? smooth(raw)
@@ -766,8 +791,28 @@ bowl.setPoseHook((pose, ctx) => {
     const tgt = up > 0 ? mix(dropped, P.hand, smooth(up)) : dropped;
     out = mix(out, tgt, smooth(down));
   }
+
+  // 5 · V5 (his ask, 2026-09-21) — the LAST word, after the sink and the
+  //     descent: the bowl is not taken over here. It comes back to dead-
+  //     centre, upright, at its own settled size, opaque, and stays there as
+  //     the wireframe the circles are drawn around. Blended in across the
+  //     handover into the canvas block (ring act's end → `canvasS0`), so it
+  //     is already home when the first beat begins.
+  if (circlesOn()) {
+    const K = CONFIG.v2.circles;
+    const s0 = tl.actS1 ?? 1;
+    const s1 = Math.max(s0 + 0.01, tl.canvasS0 ?? 1);
+    const home = smooth(clamp01((tl.p - s0) / (s1 - s0)));
+    if (home > 0) {
+      const centre = { ...P.until, x: 0, y: 0, size: K.bowlSize, tilt: K.bowlTilt, tiltZ: 0, opacity: 1 };
+      out = mix(out, centre, home);
+    }
+    poseDebug = { home: +home.toFixed(3), s0: +s0.toFixed(3), s1: +s1.toFixed(3), p: +tl.p.toFixed(3), size: +out.size.toFixed(3), opacity: +out.opacity.toFixed(3) };
+  }
   return out;
 });
+/** what V5's own pose step last decided, for the assertions */
+let poseDebug = null;
 
 // C — the clean frame: both panels, the markers and the legend, gone. It is a
 // single body class, so nothing can be left behind by a panel that happened to
@@ -792,7 +837,7 @@ addEventListener("keydown", (e) => {
   const t = e.target;
   if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
   const k = e.key.toLowerCase();
-  if (k === "1" || k === "2" || k === "3" || k === "4") { setVariant(k); return; }
+  if (k === "1" || k === "2" || k === "3" || k === "4" || k === "5") { setVariant(k); return; }
   if (k === "c") { setClean(!clean); return; }
   if (clean) return;              // nothing else answers while it is clean — panels included
   if (k === "v") v3Panel.toggle();
@@ -811,6 +856,7 @@ addEventListener("resize", () => {
   applyPinHeight();
   quiet.style();
   network.resize();
+  circles.resize();
   syncFooterSpacer();
 });
 
@@ -924,8 +970,11 @@ function raf(now) {
   // already complete — one handover past the end of the first pinned act — so
   // it is never seen; it is there so the bowl is not still being drawn, and
   // cannot come back out over the empty tail of the page.
+  // ...except in V5 (his ask, 2026-09-21), where the bowl is NOT taken over:
+  // the circles' stage is see-through and the bowl stays, as the wireframe
+  // the diagram is drawn around, to the end of the canvas block.
   let bowlGain = 1;
-  if (CONFIG.bowl.fadeAfter > 0) {
+  if (CONFIG.bowl.fadeAfter > 0 && !circlesOn()) {
     const vh = window.innerHeight;
     const covered = pinAEl.offsetTop + ((vhA() + gapVh()) / 100) * vh;
     bowlGain = 1 - clamp01((window.scrollY - covered) / (CONFIG.bowl.fadeAfter * vh));
@@ -992,6 +1041,7 @@ function raf(now) {
   // the network measures its own mount (inside the sticky stage), so it runs
   // with the reads, ahead of the frame's transform and opacity writes
   network.update(tl);
+  circles.update(tl);
   ground.frame(dt, bowl.projected(), actBg);
   // the scroll bar rides pinA's own UNCLAMPED clock (his ask, 2026-09-18),
   // so it can fade in and out across THAT module, not the combined one
@@ -1029,6 +1079,9 @@ requestAnimationFrame(raf);
 window.__was = {
   cfg: CONFIG,
   atlasState: ATLAS_STATE,
+  /** the live timeline, for the assertions */
+  get tl() { return tl; },
+  get poseDebug() { return poseDebug; },
   get state() {
     return {
       progress,
@@ -1143,11 +1196,13 @@ window.__was = {
     if (lenis) lenis.scrollTo(y, { immediate: true });
     else window.scrollTo(0, y);
   },
-  /** scroll to a fraction of pinA's OWN clock (his ask, 2026-09-18 — the
-   * scroll bar's span), distinct from `scrollTo`'s combined six-step one */
+  /** scroll to a fraction of pinA's OWN clock (his ask, 2026-09-18, then
+   * corrected the same day — 0 at the very top of the page, 1 just before
+   * `#pinB` starts rising over it), distinct from `scrollTo`'s combined one */
   scrollToA(p) {
     const vh = window.innerHeight;
-    const y = pinAEl.offsetTop + clamp01(p) * (vhA() / 100) * vh;
+    const end = pinAEl.offsetTop + ((vhA() - gapVh()) / 100) * vh;
+    const y = clamp01(p) * end;
     if (lenis) lenis.scrollTo(y, { immediate: true });
     else window.scrollTo(0, y);
   },
@@ -1208,6 +1263,7 @@ window.__was = {
   rings,
   ground,
   network,
+  circles,
   quiet,
   /** scroll to a fraction of act two's own clock */
   scrollToUntil(f = 0.5) {

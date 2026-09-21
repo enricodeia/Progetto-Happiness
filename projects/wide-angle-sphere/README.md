@@ -2505,3 +2505,84 @@ sampling mid-transition (`rgb(254,254,254)` instead of a settled
 `rgb(255,255,255)`) by the extra real time this pass's own new steps added
 earlier in the run. Raised to `wait(1100)`; nothing about the product
 changed, only how much slack the check gives the tween to settle.
+
+### ...and then corrected: from the very top, ending before the handover
+
+His follow-up the same day: *"l'inizio della bar scroll... che inizia
+esattamente quando inizia lo scroll... dovrebbe finire prima, calcolando lo
+scroll up della sezione che arriva successivamente."* `readProgressA()` now
+reads 0 at `scrollY 0` — the bar starts the instant the page does, not once
+it has already scrolled all the way to `#pinA` — and reaches 1 at
+`pinA.offsetTop + (vhA() − gapVh())`: the last `handoverVh` of pinA's own
+travel IS pinB's run-in, already rising over it (the "three sections, one
+clock" note above `canvasSteps`), so counting to the full `vhA()` had the
+bar reading full while the next section was visibly taking the frame.
+`scrollToA()` uses the same two ends.
+
+## V5 — two circles around the bowl (his ask, 2026-09-21)
+
+Press `5`. It is V2 plus one delta, like V3 and V4 were: the canvas block
+(`#pinB`) no longer holds the sphere/disc/globe but a four-beat diagram of
+plain SVG circles — `src/circles.js`, mounted full-bleed in a new
+`#circlesBox`, because it has to stay centred on the bowl, which is
+dead-centre of the whole viewport, not tucked in the corner box the network
+draws in. His four reference frames, in his words:
+
+1. *"due sfere, una a destra e a sinistra della bowl, vicine tra loro che si
+   toccano ma che non si intersecano"* — two circles flank the bowl, tangent
+   at its centre; their captions reveal as a share of the beat, and the bowl
+   behind crossfades to a **15%-opacity wireframe**.
+2. *"le sfere si allontanano, creano un'area che contiene i due cerchi"* —
+   they pull apart; two BIG circles close around them, their union drawn
+   solid and their overlap (the lens between) dashed.
+3. *"far comparire il terzo cerchio al centro"* — a third grows in the gap.
+4. *"il cerchio grande che compone tutto, che deve essere il diametro della
+   bowl"* — a dashed fourth, the bowl's own diameter, around all three, the
+   closing title inside its top.
+
+**Every length is a share of the bowl's own on-screen radius R**, read off the
+bowl every frame (`bowl.projectedRadius()` — the rim sampled all the way
+round and read as its on-screen half-width; a single point on local X swung
+with the idle spin and the diagram breathed). Measured off his frames: the
+base circles are 0.32R and end up centred at ±0.40R. The two big circles are
+NOT a knob — `circles.js` sizes them as `R − (r + spread)`, so their union is
+exactly 2R wide: **the fourth circle is tangent to it left and right by
+construction** (*"assicurati che combaci con la bowl"* — asserted:
+`unionHalf === R`, `|big.r − R| < 1.5px`). Type scales with R too
+(a name is 0.03R, three of them sit 0.4R apart without touching).
+
+One progress value drives it: the canvas block's own 0→1
+(`(tl.p − tl.canvasS0) / (tl.canvasS1 − tl.canvasS0)`, the same span the
+network's three `ev` ramps are cut from), read against four stage windows
+(`s2`, `s3`, `s4` in `v2.circles`). Pure scrub: back up and it un-draws the
+way it drew (asserted).
+
+**The wireframe is a lattice, not the mesh.** `wireframe: true` on a 1.1M-
+triangle Draco shell is a solid, shaded surface with extra steps, and a
+million 15%-opacity lines stack to nearly opaque. `buildBowlWire()` in
+`bowl.js` fits 14 rings and 24 meridians to the ACTUAL bowl's profile — for
+each height band, the widest radius any vertex reaches — so it is this
+bowl's silhouette, parented under `norm` to inherit its pose. The crossfade
+is two opacities: shells `× (1 − mix)`, lattice `× mix × 0.15`, both still
+under the pose's own opacity, the intro and the gain.
+
+**Three things had to stop taking the bowl away in V5**, each gated on
+`circlesOn()`: the ring act's exit no longer SINKS it (`A.exit`); the
+"stage B fully covers" cutoff no longer hides it (`bowl.setHidden`) — V5's
+stage is see-through by design (`body.is-v5 #stageB.is-solid { background:
+transparent }`, and the bowl layer sits at z-index 4 under every `.was-pin`);
+and `bowl.fadeAfter` no longer fades it. Instead a fifth, LAST step in the
+V2 pose hook brings it back to dead-centre, upright (`bowlTilt` 14°), at
+`bowlSize` and opaque, blended in across the handover into the canvas block
+so it is home when beat 1 begins. `#leftB` and `#copyboxB` are `display:
+none` in V5 — *"non includere i testi del titolo e del paragrafo... voglio
+che sia un'esperienza pulita on scroll"*.
+
+Panel: "V5 — the circles (four beats)" in the `V` panel — radii, spread, the
+four stage marks, caption timing, stroke/dash/ink, the bowl's wireframe
+alpha, size and lean, and type sizes (all × R). `5` on the keyboard and the
+Version dropdown. Seven checks: the swap and the see-through stage, each of
+the four beats (touching at 0.32R; pulled apart with the union at full alpha
+and the lattice at 15%; the third growing; the fourth matching the bowl and
+the union tangent to it), the un-draw on the way back up, and reversibility
+to 4 and to 1. 218 checks now.
