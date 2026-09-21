@@ -357,10 +357,12 @@ function applyLive() {
   const sb = stageBEl.getBoundingClientRect();
   const stageBCovers = sb.top <= 1 && sb.bottom >= vh - 1;
   // ...except in V5 (his ask, 2026-09-21), whose stage is see-through by
-  // design: the bowl IS what is behind it, as the wireframe. The ground
-  // still stops — V5 draws on the page's own white, not the dark field.
+  // design: the bowl IS what is behind it, as the wireframe. And the ground
+  // must not be cut here either — pinB's stage pins the very frame the
+  // handover begins, so this gate would kill the shader BEFORE its outro
+  // could run; in V5 it stops only once that outro has closed it entirely.
   bowl.setHidden(stageBCovers && !circlesOn());
-  ground.setHidden(stageBCovers);
+  ground.setHidden(circlesOn() ? outroNow() >= 0.999 : stageBCovers);
 
   // ── the footer's reveal (his ask, 2026-09-16) ───────────────────────────
   // It can only become true once `.was-below` has scrolled up far enough to
@@ -598,6 +600,12 @@ const EVIDENCE_V1 = CONFIG.evidence.show;
 const networkOn = () => !!CONFIG.v2.on && !!CONFIG.v2.network.show && CONFIG.variant !== 5;
 /** ...or is it V5's circles diagram? (his ask, 2026-09-21) */
 const circlesOn = () => CONFIG.variant === 5 && !!CONFIG.v2.circles.show;
+/** V5's outro, 0→1 across the handover into pinB (ring act's end → the canvas
+ *  block's start): the shader closing back into the bowl, the white rising.
+ *  0 whenever V5 is off. Read off the live `tl`. */
+const outroNow = () => circlesOn()
+  ? smooth(clamp01((tl.p - tl.actS1) / Math.max(1e-4, tl.canvasS0 - tl.actS1)))
+  : 0;
 
 function placeStages() {
   const on = !!CONFIG.v2.on;
@@ -973,6 +981,16 @@ function raf(now) {
   // ...except in V5 (his ask, 2026-09-21), where the bowl is NOT taken over:
   // the circles' stage is see-through and the bowl stays, as the wireframe
   // the diagram is drawn around, to the end of the canvas block.
+  // V5's outro (his ask, 2026-09-21): across the handover into pinB — the
+  // ring act's end → the canvas block's start, the same span the pose hook
+  // brings the bowl home over — the ring act's shader CLOSES back into the
+  // bowl (its intro run backwards, scrubbed) and the pinned sections' white
+  // fades in under the bowl. Both are 1 by `canvasS0`, so nothing in
+  // circles.js starts until the shader is entirely gone. Pure function of
+  // the scroll; 0 whenever V5 is not on, so every other version is untouched.
+  const outro = outroNow();
+  ground.setClose(outro);
+  bowl.setSheet(outro);
   let bowlGain = 1;
   if (CONFIG.bowl.fadeAfter > 0 && !circlesOn()) {
     const vh = window.innerHeight;

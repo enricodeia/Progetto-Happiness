@@ -116,6 +116,21 @@ export function createBowl({ mount, cfg }) {
   renderer.setClearColor(0x000000, 0);
   renderer.domElement.className = "was-bowl-canvas";
   mount.appendChild(renderer.domElement);
+  // V5's white (his ask, 2026-09-21 — "la fine della sezione arrivi sempre
+  // con sfondo bianco"): a sheet UNDER the canvas, inside this same fixed
+  // layer, so it sits above the ground shader (z 2) and below the bowl — the
+  // pinned sections' own white, faded in as the shader closes. Nothing above
+  // z 4 is touched, so V5's see-through stage still shows the bowl on it.
+  const sheet = document.createElement("div");
+  sheet.className = "was-bowl-sheet";
+  mount.insertBefore(sheet, renderer.domElement);
+  let sheetA = 0;
+  function setSheet(a) {
+    const v = clamp01(a);
+    if (v === sheetA) return;
+    sheetA = v;
+    sheet.style.opacity = v.toFixed(3);
+  }
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(B.cam.fov, 1, 0.05, 200);
@@ -600,6 +615,9 @@ export function createBowl({ mount, cfg }) {
     play,
     replay,
     setWireframe,
+    setSheet,
+    /** the white under the bowl, for the assertions */
+    get sheet() { return +sheetA.toFixed(3); },
     loadReliefImage,
     clearReliefImage,
     reliefInfo,

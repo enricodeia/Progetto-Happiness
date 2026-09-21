@@ -52,6 +52,14 @@ body {
   height: 100%;
   display: block;
 }
+/* V5: the white the section ends on — under the canvas, over the ground */
+.was-bowl-sheet {
+  position: absolute;
+  inset: 0;
+  background: var(--right-bg);
+  opacity: 0;
+  pointer-events: none;
+}
 
 .was-nav {
   position: absolute;

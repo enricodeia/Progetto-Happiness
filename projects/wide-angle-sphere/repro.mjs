@@ -1836,7 +1836,11 @@ const v5 = await page.evaluate(async () => {
   const pause = (ms) => new Promise((r) => setTimeout(r, ms))
   const W = window.__was
   const cs = (el) => getComputedStyle(el)
-  const snap = () => ({ ...W.circles.probe(), wire: W.bowl.wireframe, bowlOpacity: W.bowl.state.opacity })
+  const snap = () => ({
+    ...W.circles.probe(), wire: W.bowl.wireframe, bowlOpacity: W.bowl.state.opacity,
+    ground: W.ground.probe(), sheet: W.bowl.sheet,
+    groundCanvas: cs(document.querySelector('.was-ground-canvas, .was-ground canvas') || document.body).display,
+  })
   W.setVariant(5)
   await pause(600)
   const out = {
@@ -1849,18 +1853,19 @@ const v5 = await page.evaluate(async () => {
     leftB: cs(document.getElementById('leftB')).display,
     copyB: cs(document.getElementById('copyboxB')).display,
     hasSvg: !!document.querySelector('.was-circles-svg'),
+    sheetBg: cs(document.querySelector('.was-bowl-sheet')).backgroundColor,
   }
-  // beat 1 — canvas p ≈ 0.15: touching, captions revealing, bowl turning to wire
-  W.scrollToStep(3, 0.7); await pause(900); out.b1 = snap()
-  // beat 2 — p ≈ 0.45 (well into its 0.26..0.5 window, so the union has
-  // mostly faded in): pulled apart, the big circles closing around them
-  W.scrollToStep(4, 0.6); await pause(900); out.b2 = snap()
-  // beat 3 — p ≈ 0.65: the third growing at the centre
-  W.scrollToStep(4, 0.95); await pause(900); out.b3 = snap()
-  // beat 4 — p ≈ 1: the fourth IS the bowl
-  W.scrollToStep(5, 0.995); await pause(900); out.b4 = snap()
-  // ...and back up to beat 1: it un-draws the way it drew
-  W.scrollToStep(3, 0.7); await pause(900); out.back = snap()
+  // the block's own 0→1, straight off the live timeline
+  const go = async (f) => { const tl = W.tl; W.scrollTo(tl.canvasS0 + f * (tl.canvasS1 - tl.canvasS0)); await pause(900) }
+  // the outro — the handover into pinB: shader closing, white rising, nothing drawn yet
+  { const tl = W.tl; W.scrollTo(tl.actS1 + 0.5 * (tl.canvasS0 - tl.actS1)); await pause(900); out.outro = snap() }
+  await go(0.005); out.b0 = snap()          // the block begins: shader gone, white in
+  await go(0.08);  out.b1 = snap()          // 1 · wireframe, alone
+  await go(0.36);  out.b2 = snap()          // 2 · the two circles drawn, touching
+  await go(0.54);  out.b3 = snap()          // 3 · pulled apart, the big circles drawn
+  await go(0.72);  out.b4 = snap()          // 4 · the third drawn
+  await go(0.995); out.b5 = snap()          // 5 · the fourth IS the bowl
+  await go(0.08);  out.back = snap()        // ...and back up: un-drawn the way it drew
   // reversible: 4 gets the network back, 1 drops every V5 trace
   W.setVariant(4); await pause(600)
   out.to4 = { networkHidden: document.getElementById('networkBox').hidden, circlesHidden: document.getElementById('circlesBox').hidden, v5: document.body.classList.contains('is-v5') }
@@ -2716,23 +2721,43 @@ const checks = [
     v5.variant === 5 && v5.v2on === true && v5.body.v5 && v5.body.v2 && v5.hasSvg &&
     v5.circlesHidden === false && v5.networkHidden === true && v5.canvasHidden === true &&
     v5.stageBg === 'rgba(0, 0, 0, 0)' && v5.leftB === 'none' && v5.copyB === 'none'],
-  ['beat 1: due cerchi che si TOCCANO senza intersecarsi (gap 0), grandi 0.32 del raggio della bowl, ' +
-   'le didascalie che si rivelano — e la bowl dietro sta diventando wireframe (un reticolo, non i triangoli)',
-    v5.b1.stage === 1 && v5.b1.gapAB <= 0.5 && Math.abs(v5.b1.r / v5.b1.R - 0.32) < 0.01 &&
-    v5.b1.text.a > 0 && v5.b1.wire.mix > 0 && v5.b1.wire.mix < 1 && v5.b1.wire.lines > 1000],
-  ['beat 2: si allontanano (gap > 0) e i due cerchi grandi si chiudono attorno — unione piena, lente ' +
-   'tratteggiata — con la bowl ormai wireframe al 15% e ancora opaca come posa',
-    v5.b2.stage === 2 && v5.b2.gapAB > 5 && v5.b2.outerAlpha > 0.5 &&
-    v5.b2.wire.mix === 1 && Math.abs(v5.b2.wire.alpha - 0.15) < 0.01 && v5.b2.bowlOpacity > 0.9],
-  ['beat 3: il terzo cerchio CRESCE al centro, dentro il varco che i due hanno lasciato',
-    v5.b3.stage === 3 && v5.b3.c.r > 0 && v5.b3.c.r < v5.b3.r && v5.b3.outerAlpha === 1],
-  ['beat 4: il quarto cerchio È la bowl (stesso raggio, ±1.5px) e l\'unione dei due grandi vi è ' +
-   'tangente a destra e a sinistra — "assicurati che combaci con la bowl" — col titolo sopra',
-    v5.b4.stage === 4 && v5.b4.bigMatchesBowl && v5.b4.unionMatchesBowl &&
-    v5.b4.big.alpha > 0.95 && v5.b4.text.title > 0.9 && Math.abs(v5.b4.c.r - v5.b4.r) < 0.5],
-  ['...e tornando su al primo beat si RI-DISEGNA all\'indietro: gap di nuovo 0, quarto cerchio spento, ' +
-   'la bowl di nuovo verso il solido — pura funzione dello scroll',
-    v5.back.stage === 1 && v5.back.gapAB <= 0.5 && v5.back.big.alpha === 0 && v5.back.wire.mix < 1],
+  ['l\'OUTRO (sua richiesta, 2026-09-21): nell\'handover in pinB lo shader si CHIUDE nella bowl — ' +
+   'l\'intro al contrario, scrubbato — e il bianco delle sezioni pinnate sale sotto la bowl; a metà ' +
+   'handover entrambi a metà, e nulla è ancora disegnato',
+    v5.outro.ground.close > 0.2 && v5.outro.ground.close < 0.8 &&
+    // ...and the shader is still ON SCREEN while it closes — pinB's stage pins
+    // the frame the handover starts, and its "covers" cutoff used to kill the
+    // shader right there, before any of this could be seen
+    v5.outro.ground.on === true && v5.outro.groundCanvas !== 'none' &&
+    v5.outro.sheet > 0.2 && v5.outro.sheet < 0.8 &&
+    v5.outro.draw.a === 0 && v5.outro.wire.mix === 0 &&
+    v5.sheetBg === 'rgb(255, 255, 255)'],
+  ['...e quando il blocco comincia lo shader è COMPLETAMENTE sparito (canvas del ground nascosto) e ' +
+   'il fondo è bianco — "i cerchi iniziano a comparire dopo che lo shader è scomparso"',
+    v5.b0.ground.close >= 0.999 && v5.b0.sheet >= 0.999 && v5.b0.groundCanvas === 'none' &&
+    v5.b0.draw.a === 0 && v5.b0.bowlOpacity > 0.9],
+  ['beat 1: PRIMA il wireframe della bowl, da solo — un reticolo (14 anelli × 24 meridiani), non i ' +
+   'triangoli della mesh — e nessun cerchio ancora disegnato',
+    v5.b1.stage === 1 && v5.b1.wire.mix > 0 && v5.b1.wire.mix < 1 && v5.b1.wire.lines > 1000 &&
+    v5.b1.draw.a === 0 && v5.b1.dom.a === 0],
+  ['beat 2: i due cerchi si DISEGNANO (path reveal: dashoffset, non opacità) dal punto in cui si ' +
+   'toccano, grandi 0.32 del raggio della bowl, gap 0 — e le didascalie arrivano con loro',
+    v5.b2.stage === 2 && v5.b2.draw.a > 0.95 && v5.b2.dom.a > 0.95 && v5.b2.gapAB <= 0.5 &&
+    Math.abs(v5.b2.r / v5.b2.R - 0.32) < 0.01 && v5.b2.draw.union === 0 &&
+    v5.b2.wire.mix === 1 && Math.abs(v5.b2.wire.alpha - 0.15) < 0.01],
+  ['beat 3: si allontanano (gap > 0) e i due cerchi grandi si disegnano attorno — unione piena, lente ' +
+   'tratteggiata rivelata attraverso una maschera — un continuo col beat 2',
+    v5.b3.stage === 3 && v5.b3.gapAB > 5 && v5.b3.draw.union > 0.5 && v5.b3.dom.lensMasked &&
+    v5.b3.draw.c === 0],
+  ['beat 4: il terzo si disegna al centro, "in seguito, però un continuo" — stesso raggio dei due',
+    v5.b4.stage === 4 && v5.b4.draw.c > 0.5 && v5.b4.draw.union === 1 && v5.b4.draw.big === 0],
+  ['beat 5: il quarto È la bowl (stesso raggio, ±1.5px), si disegna attorno a tutto, e l\'unione dei ' +
+   'due grandi vi è tangente — "SVG lines che si intersecano perfettamente con la bowl" — col titolo',
+    v5.b5.stage === 5 && v5.b5.draw.big > 0.95 && v5.b5.dom.big > 0.95 && v5.b5.bigMatchesBowl &&
+    v5.b5.unionMatchesBowl && v5.b5.text.title > 0.9 && v5.b5.draw.c === 1],
+  ['...e tornando su al primo beat si RI-DISEGNA all\'indietro: tutto a zero, la bowl di nuovo ' +
+   'verso il solido — pura funzione dello scroll',
+    v5.back.stage === 1 && v5.back.draw.a === 0 && v5.back.draw.big === 0 && v5.back.wire.mix < 1],
   ['...e le versioni restano reversibili: la 4 riprende la rete e nasconde i cerchi, la 1 toglie ogni ' +
    'traccia di V5 e ridà alla stage il suo fondo',
     v5.to4.networkHidden === false && v5.to4.circlesHidden === true && v5.to4.v5 === false &&

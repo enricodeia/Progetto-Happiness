@@ -387,9 +387,17 @@ export function createGround({ mount, cfg, images = [] }) {
    * of a crossfade, so they match. A pure function of the scroll, so it
    * unwinds on the way up.
    */
+  // V5's outro (his ask, 2026-09-21 — "lo shader scomparisse con una
+  // chiusura... l'animazione al contrario rispetto all'intro"): the intro is
+  // the radius GROWING out of the bowl's centre (`open.v`, a tween fired at
+  // its mark); this is the same radius shrinking back into it — but scrubbed
+  // by the scroll, a pure function of it, so it unwinds on the way up.
+  let close = 0;
+  const setClose = (k) => { close = clamp01(k); };
+
   function frame(dt, at, act = {}) {
     const g = G();
-    const live = !hidden && cfg.v2.on && g.show && open.v > 0.001;
+    const live = !hidden && cfg.v2.on && g.show && open.v > 0.001 && close < 0.999;
     renderer.domElement.style.display = live ? "" : "none";
     if (!live) return;
     clock += dt;
@@ -418,7 +426,7 @@ export function createGround({ mount, cfg, images = [] }) {
       (at ? at.x / w : 0.5) + wx * (h / Math.max(1, w)),
       1 - (at ? at.y / h : 0.5) + wy
     );
-    uniforms.uRadius.value = g.scale * open.v;
+    uniforms.uRadius.value = g.scale * open.v * (1 - close);
     uniforms.uSoft.value = g.soft;
     uniforms.uFbm.value = g.fbm;
     uniforms.uFreq.value = g.freq;
@@ -489,9 +497,11 @@ export function createGround({ mount, cfg, images = [] }) {
       }
       return out;
     },
+    setClose,
     probe() {
       return {
         open: +open.v.toFixed(3),
+        close: +close.toFixed(3),
         radius: +uniforms.uRadius.value.toFixed(3),
         video: !!uniforms.uHasVideo.value,
         centre: [+uniforms.uCentre.value.x.toFixed(3), +uniforms.uCentre.value.y.toFixed(3)],

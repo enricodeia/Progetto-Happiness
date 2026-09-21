@@ -2579,10 +2579,57 @@ none` in V5 — *"non includere i testi del titolo e del paragrafo... voglio
 che sia un'esperienza pulita on scroll"*.
 
 Panel: "V5 — the circles (four beats)" in the `V` panel — radii, spread, the
-four stage marks, caption timing, stroke/dash/ink, the bowl's wireframe
-alpha, size and lean, and type sizes (all × R). `5` on the keyboard and the
-Version dropdown. Seven checks: the swap and the see-through stage, each of
-the four beats (touching at 0.32R; pulled apart with the union at full alpha
-and the lattice at 15%; the third growing; the fourth matching the bowl and
-the union tangent to it), the un-draw on the way back up, and reversibility
-to 4 and to 1. 218 checks now.
+beat marks, caption timing, stroke/dash/ink, the bowl's wireframe alpha, size
+and lean, and type sizes (all × R). `5` on the keyboard and the Version
+dropdown.
+
+### Reworked the same day: outro first, then the wireframe, then a path reveal
+
+*"Miglioriamolo, non mi piace."* His notes, and what each became:
+
+- *"lo shader scomparisse con una chiusura... l'animazione al contrario
+  rispetto all'intro"* — the ring act's ground shader opens as a radius
+  growing out of the bowl's centre (`uRadius = scale × open`). Its outro is
+  now the same radius shrinking back INTO the bowl: `ground.setClose(k)`
+  multiplies the radius by `(1 − k)`, and `k` is scrubbed by the scroll across
+  the handover into pinB (ring act's end → `canvasS0`), the same span the pose
+  hook brings the bowl home over. A pure function of the scroll, unlike the
+  intro's tween — so it unwinds on the way up.
+- *"la fine della sezione arrivi sempre con sfondo bianco"* — a white sheet
+  (`--right-bg`, the pinned sections' own white) fades in with `k`. It lives
+  INSIDE the bowl's fixed layer, under the canvas: above the ground (z 2),
+  below the bowl, and nothing above z 4 is touched, so V5's see-through stage
+  still shows the bowl on it.
+- One thing had to give way for the outro to be seen at all: pinB's stage
+  pins the very frame the handover begins, so the "stage B fully covers"
+  cutoff was hiding the shader BEFORE its close could run — the abrupt cut
+  he was reacting to. In V5 the ground's hide is gated on the outro having
+  finished (`outroNow() >= 0.999`) instead. The verify now asserts the
+  shader is still on screen at mid-handover, at half its radius.
+- *"prima il wireframe della ball e poi l'animazione dei cerchi"* — the
+  crossfade to the lattice is now the block's own first beat, alone on white;
+  nothing is drawn until it is done.
+- *"devono venire con una SVG path reveal... SVG lines che si intersecano
+  perfettamente con la bowl"* — every shape now DRAWS ON: `pathLength="1"`
+  plus `stroke-dashoffset = 1 − t`. The two base circles draw from the point
+  where they touch — A from its 3 o'clock, which IS the touch point, and B
+  turned half round so its start is the same point — then part company.
+  The dashed shapes (the lens, the bowl-sized fourth) cannot carry a second
+  dasharray, so each is revealed through a `<mask>` holding a fat solid copy
+  of itself that draws on the same way. The third and fourth start from
+  their tops.
+- *"prima le due sfere... il terzo che arriva in seguito, però deve essere un
+  continuo"* — five ABUTTING windows over the block's 0→1 (`marks.wire`,
+  `.ab`, `.spread`, `.third`, then 1): wireframe → two circles → pull apart
+  with the big circles → the third → the fourth. Each caption arrives over
+  the last `textReveal` share of its own shape's window.
+
+Ten V5 checks now: the swap and the see-through stage; the outro at
+mid-handover (shader on screen at half radius, white at half, nothing
+drawn); the block's first frame (shader gone, canvas hidden, white in, bowl
+opaque); then the five beats, reading both the drive value and the DOM's own
+`stroke-dashoffset` — wireframe alone; two circles drawn and touching at
+0.32R with the lattice at 15%; pulled apart with the union drawn and the lens
+masked; the third drawn; the fourth matching the bowl with the union tangent
+to it — the un-draw on the way back up, and reversibility to 4 and to 1.
+221 checks now.

@@ -152,11 +152,12 @@ export function createV3Panel({
     f.addBinding(K, "show").on("change", onCircles);
     f.addBinding(K, "radiusFrac", { min: 0.2, max: 0.7, step: 0.01, label: "circle (× bowl r)" }).on("change", onCircles);
     f.addBinding(K, "spreadFrac", { min: 0, max: 1.5, step: 0.01, label: "pull apart (× r)" }).on("change", onCircles);
-    const s = f.addFolder({ title: "Where each beat begins", expanded: false });
-    s.addBinding(K, "s2", { min: 0.05, max: 0.6, step: 0.01, label: "2 · pull apart" });
-    s.addBinding(K, "s3", { min: 0.2, max: 0.8, step: 0.01, label: "3 · third circle" });
-    s.addBinding(K, "s4", { min: 0.4, max: 0.95, step: 0.01, label: "4 · the bowl's own" });
-    s.addBinding(K, "textReveal", { min: 0.1, max: 1, step: 0.01, label: "captions take" });
+    const s = f.addFolder({ title: "Where each beat ends (of the block)", expanded: false });
+    s.addBinding(K.marks, "wire", { min: 0.02, max: 0.4, step: 0.01, label: "1 · wireframe" });
+    s.addBinding(K.marks, "ab", { min: 0.1, max: 0.6, step: 0.01, label: "2 · two circles" });
+    s.addBinding(K.marks, "spread", { min: 0.2, max: 0.8, step: 0.01, label: "3 · pull apart" });
+    s.addBinding(K.marks, "third", { min: 0.4, max: 0.95, step: 0.01, label: "4 · the third" });
+    s.addBinding(K, "textReveal", { min: 0.1, max: 1, step: 0.01, label: "captions, last share of" });
     const l = f.addFolder({ title: "The line and the bowl behind", expanded: false });
     l.addBinding(K, "strokeWidth", { min: 0.5, max: 3, step: 0.25, label: "stroke (px)" }).on("change", onCircles);
     l.addBinding(K, "ink", { label: "ink" }).on("change", onCircles);

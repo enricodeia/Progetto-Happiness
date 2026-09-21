@@ -788,11 +788,18 @@ export const CONFIG = {
       ink: "#0a0a0a",
       dashInner: "2 5",
       dashOuter: "2 6",
-      // where each stage BEGINS, as a fraction of the canvas's own 0→1 —
-      // stage 1 runs 0..s2, stage 2 s2..s3, stage 3 s3..s4, stage 4 s4..1
-      s2: 0.26, s3: 0.5, s4: 0.74,
+      // where each beat ENDS, as a fraction of the canvas's own 0→1 — five
+      // abutting windows, so the whole thing reads as one continuous draw:
+      //   0..wire      the bowl turns to wireframe, alone, on white
+      //   wire..ab     the two circles draw on, from the point they touch
+      //   ab..spread   they pull apart, the big circles draw around them
+      //   spread..third  the third draws on in the gap
+      //   third..1     the fourth — the bowl's own — draws on, title above
+      // (the shader's outro and the white come BEFORE 0: the handover into
+      // pinB, see the raf in main.js)
+      marks: { wire: 0.16, ab: 0.38, spread: 0.56, third: 0.74 },
       wireframeOpacity: 0.15, // the bowl's own opacity once fully turned to wireframe
-      textReveal: 0.55,       // share of a stage a caption takes to fully reveal
+      textReveal: 0.45,       // the LAST share of a beat over which its caption arrives
       // type, as shares of R too — measured off his frames: a name is ~0.03R
       // (three of them have to sit side by side, 0.4R apart, without touching)
       nameSize: 0.03, descSize: 0.021, descGap: 0.07,
