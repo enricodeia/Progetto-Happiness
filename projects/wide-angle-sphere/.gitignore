@@ -4,3 +4,4 @@ shots
 .DS_Store
 source-assets/models
 source-assets/fonts
+.vercel

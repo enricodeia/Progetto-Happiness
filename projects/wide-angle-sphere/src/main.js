@@ -273,6 +273,19 @@ function readProgress() {
   return clamp01(q);
 }
 
+// pinA's OWN clock (his ask, 2026-09-18 — the scroll bar should read the
+// first pinned module alone, not the combined six-step travel): 0 where
+// #pinA starts pinning, 1 where it releases (its own `vhA()`, not `pinVh`).
+// #pinA is always steps 0..canvasSteps — the ring act in V2/V3/V4, the
+// canvas in V1 — regardless of which content is parented into it.
+let rawProgressA = 0;
+function readProgressA() {
+  const travel = (vhA() / 100) * window.innerHeight;
+  const q = travel > 0 ? (window.scrollY - pinAEl.offsetTop) / travel : 0;
+  rawProgressA = q;
+  return clamp01(q);
+}
+
 // the hero's own scroll — it conducts the line, the drift and the paragraph
 function readHero() {
   const span = Math.max(1, (CONFIG.hero.vh / 100) * window.innerHeight);
@@ -822,6 +835,7 @@ function raf(now) {
     player.setScrollDir(scrollVel);
   }
   progress = readProgress();
+  readProgressA();
   bowlQ = readBowlProgress();
   applyLive();
   hero.heroSet(readHero());
@@ -979,8 +993,9 @@ function raf(now) {
   // with the reads, ahead of the frame's transform and opacity writes
   network.update(tl);
   ground.frame(dt, bowl.projected(), actBg);
-  // the scroll bar rides the UNCLAMPED clock, so it can fade in and out
-  scrollBar.set(rawProgress);
+  // the scroll bar rides pinA's own UNCLAMPED clock (his ask, 2026-09-18),
+  // so it can fade in and out across THAT module, not the combined one
+  scrollBar.set(rawProgressA);
 
   // the summary's own trigger, measured in applyLive above — no second read
   tl.evTopped = pinBTopPx <= 1;
@@ -1125,6 +1140,14 @@ window.__was = {
   scrollTo(p) {
     const vh = window.innerHeight;
     const y = pinAEl.offsetTop + clamp01(p) * (pinVh(CONFIG) / 100) * vh;
+    if (lenis) lenis.scrollTo(y, { immediate: true });
+    else window.scrollTo(0, y);
+  },
+  /** scroll to a fraction of pinA's OWN clock (his ask, 2026-09-18 — the
+   * scroll bar's span), distinct from `scrollTo`'s combined six-step one */
+  scrollToA(p) {
+    const vh = window.innerHeight;
+    const y = pinAEl.offsetTop + clamp01(p) * (vhA() / 100) * vh;
     if (lenis) lenis.scrollTo(y, { immediate: true });
     else window.scrollTo(0, y);
   },

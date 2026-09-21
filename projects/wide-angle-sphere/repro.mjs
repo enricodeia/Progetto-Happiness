@@ -125,18 +125,32 @@ pCol.reopened = await colRead()
 await page.evaluate(() => { window.__was.scrollTo(0); window.scrollTo(0, 0) })
 await wait(900)
 
-// the scroll bar: invisible before the pinned clock, half-full at its middle,
-// gone again once it is over
+// the scroll bar: invisible before pinA, half-full at ITS OWN middle (his
+// ask, 2026-09-18 — the first module's clock, not the combined six-step
+// one), gone again once pinA is over
 const barTop = await page.evaluate(() => window.__was.scrollBar.probe())
-await page.evaluate(() => window.__was.scrollTo(0.5))
+await page.evaluate(() => window.__was.scrollToA(0.5))
 await wait(400)
 const barMid = await page.evaluate(() => window.__was.scrollBar.probe())
 await page.evaluate(() => window.__was.scrollTo(1))
-// `fadeOut` is a share of a ~1180vh clock (0.03 ≈ 35vh), so a full viewport
-// past the end is comfortably beyond it
+// `fadeOut` is a share of pinA's own (much shorter) clock, so a full
+// viewport past the combined clock's end is comfortably beyond it too
 await page.evaluate(() => window.scrollBy(0, innerHeight * 1.0))
 await wait(400)
 const barAfter = await page.evaluate(() => window.__was.scrollBar.probe())
+
+// ...and it reads FULL exactly where pinA itself ends, well before the
+// combined six-step clock does — the proof this is pinA's own percentage,
+// not a slice cut out of the bigger one
+await page.evaluate(() => window.__was.scrollToA(1))
+await wait(400)
+const barEndA = await page.evaluate(() => ({
+  bar: window.__was.scrollBar.probe(),
+  combined: window.__was.state.progress,
+  step: window.__was.state.step,
+}))
+await page.evaluate(() => { window.__was.scrollTo(0); window.scrollTo(0, 0) })
+await wait(400)
 
 // ── the ring act's own background — one colour per step, the falling
 //    parallax, and the bowl sinking as the rings go (his ask, 2026-09-17) ───
@@ -145,7 +159,11 @@ await wait(300)
 // the pan is ALREADY moving in act two, from the moment the ground opens
 // (his ask, 2026-09-17: "la prima sezione inizi da subito a scendere")
 await page.evaluate(() => window.__was.scrollToUntil(0.5))
-await wait(700)
+// `ground.open` is a 2.6s power2.out tween (its `at` mark to `is-ground`
+// crossing 0.35 is the fast part of the ease, but still real wall-clock
+// time) and the stroke's own CSS transition is a further 0.35s on top —
+// generous margin so this never samples mid-transition
+await wait(1100)
 const panEarly = await page.evaluate(() => window.__was.ground.probe())
 // ...and with the shader under it the player's whole UI — its OUTLINE with it
 // (his ask, 2026-09-17) — is white instead of black
@@ -252,7 +270,8 @@ const ACT_BG = await page.evaluate(() => JSON.parse(JSON.stringify(window.__was.
 await page.evaluate(() => { window.__was.setVariant(1); window.__was.scrollTo(0); window.scrollTo(0, 0) })
 await wait(600)
 console.log('player:', { source: playerBoot.hasSource, label: playerBoot.label, deckGone: deckGone === 0 })
-console.log('scroll bar:', { top: barTop.alpha, mid: barMid.value, midAlpha: barMid.alpha, after: barAfter.alpha })
+console.log('scroll bar:', { top: barTop.alpha, mid: barMid.value, midAlpha: barMid.alpha, after: barAfter.alpha,
+  endA: barEndA.bar.value, endAlphaA: barEndA.bar.alpha, combinedAtEndA: barEndA.combined, stepAtEndA: barEndA.step })
 console.log('act bg:', { s0: actBg0.colorA, s1: actBg1.colorA, s2: actBg2.colorA,
                          pan: [actBg0.pan, actBg1.pan, actBg2.pan], zoom: actBg0.zoom,
                          bowlY: [actBg1.bowlY, actBgEnd.bowlY, actBgThrough.bowlY] })
@@ -2339,10 +2358,14 @@ const checks = [
    'e uscendo torna esattamente come lo scroll l\'aveva lasciata',
     pCol.rest.transform === 'none' && pCol.hoverOpen.v === 0 &&
     pCol.afterLeave.v === 1 && pCol.afterLeave.w === pCol.closed.w],
-  ['la scroll bar: invisibile prima del clock del canvas, a metà è mezza piena e accesa, ' +
-   'e dopo la fine è di nuovo sparita — 4px, bianca, in basso',
+  ['la scroll bar: invisibile prima del primo modulo, a metà DI QUEL modulo è mezza piena ' +
+   'e accesa (sua richiesta, 2026-09-18), e dopo la sua fine è di nuovo sparita — 4px, bianca, in basso',
     barTop.alpha === 0 && barMid.value > 0.45 && barMid.value < 0.55 && barMid.alpha > 0.99 &&
     barAfter.alpha < 0.05 && barTop.height === 4 && barTop.color === 'rgb(255, 255, 255)'],
+  ['...ed è piena esattamente dove finisce il PRIMO modulo (pinA), non dove finisce il ' +
+   'clock combinato di tutti e sei gli step — ancora molto prima della fine',
+    barEndA.bar.value > 0.98 && barEndA.bar.alpha > 0.9 &&
+    barEndA.combined < 0.9 && barEndA.step <= 3],
   // ── the ring act's own background + the bowl's exit (2026-09-17) ────────
   ['ring act: un colore per step — verde, arancione, blu — e il campo li attraversa ' +
    'davvero (tre colori distinti letti dallo shader)',

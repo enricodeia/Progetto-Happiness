@@ -2477,3 +2477,31 @@ boot — then adds two checks of its own at the very end, off a real
 `page.reload()` with nothing touched afterward: the fresh boot is on V4
 (`cfg.variant === 4`, `body.is-v4`), and every `.was-panel` computes
 `display: none` until `c` is simulated. 210 checks now, up from 208.
+
+## The scroll bar reads pinA's own clock, not the combined one (his ask, 2026-09-18)
+
+It used to ride `rawProgress` — 0 where `#pinA` starts pinning, 1 where the
+LAST of all six steps ends, across both sticky sections. He asked for it to
+track the first pinned module (`#pinA`, the ring act in V2/V3/V4) alone. A
+second reader, `readProgressA()`, mirrors `readProgress()` exactly but scales
+by `vhA()` — the vh-height of steps `0..canvasSteps`, which is always `#pinA`'s
+own travel regardless of which content (ring act or canvas) is parented into
+it — instead of `pinVh(cfg)`, the sum of all six. The bar's `set()` call in
+the raf loop now takes `rawProgressA`.
+
+`window.__was.scrollToA(p)` was added alongside the existing `scrollTo(p)` (the
+combined-clock one) so `repro.mjs` can target pinA's own fractions directly.
+Its scroll-bar section now asserts the bar is full — `value > 0.98` — right
+where `scrollToA(1)` lands, while the COMBINED clock (`state.progress`) is
+still under 0.9 and `state.step` is only 3 — proof this is pinA's own
+percentage, not a slice cut out of the bigger one. 211 checks now.
+
+Widening one unrelated wait paid for itself here: `ground.open`'s tween
+(2.6s, `power2.out`) crossing the 0.35 threshold that flips `body.is-ground`
+white, plus the player stroke's own 0.35s CSS transition on top, left the
+existing `wait(700)` in the "player turns white over the shader" check
+sitting right at its margin — comfortably passing before, but tipped into
+sampling mid-transition (`rgb(254,254,254)` instead of a settled
+`rgb(255,255,255)`) by the extra real time this pass's own new steps added
+earlier in the run. Raised to `wait(1100)`; nothing about the product
+changed, only how much slack the check gives the tween to settle.
