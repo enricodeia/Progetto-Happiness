@@ -135,9 +135,12 @@ const barMid = await page.evaluate(() => window.__was.scrollBar.probe())
 await page.evaluate(() => window.__was.scrollTo(1))
 // `fadeOut` is a share of pinA's own (much shorter) clock, so a full
 // viewport past the combined clock's end is comfortably beyond it too
+// (a native scrollBy under Lenis can take a beat to settle — give it one, and
+// read twice so a late frame cannot report the bar still up)
 await page.evaluate(() => window.scrollBy(0, innerHeight * 1.0))
 await wait(400)
-const barAfter = await page.evaluate(() => window.__was.scrollBar.probe())
+let barAfter = await page.evaluate(() => window.__was.scrollBar.probe())
+if (barAfter.alpha > 0.05) { await wait(700); barAfter = await page.evaluate(() => window.__was.scrollBar.probe()) }
 
 // ...and it reads FULL exactly where pinA itself ends, well before the
 // combined six-step clock does — the proof this is pinA's own percentage,
@@ -1934,6 +1937,7 @@ const exp = await page.evaluate(async () => {
     // the second line of the left half, stepped toward the bowl (his frame 1)
     line2Shift: (() => { const a = document.querySelector('.was-hero-half.is-a'); const l = a.querySelectorAll('.was-line'); if (l.length < 2) return 0; return Math.round(l[1].getBoundingClientRect().right - l[0].getBoundingClientRect().right) })(),
     top: W.cfg.v2.top.text, bottom: { text: W.cfg.v2.bottom.text, align: W.cfg.v2.bottom.align },
+    until: { show: W.cfg.v2.until.show, text: W.cfg.v2.until.text, align: W.cfg.v2.until.align, x: W.cfg.v2.until.x, at: W.cfg.v2.until.at, out: W.cfg.v2.until.out },
     act: W.cfg.steps.slice(0, 3).map((s) => s.text), actOut: W.cfg.steps.slice(0, 3).map((s) => s.textOut), actAlign: [...W.cfg.v2.act.copyAlign],
     evidence: {
       title: W.cfg.evidence.title, summary: W.cfg.evidence.summary, titleWidth: W.cfg.evidence.titleWidth,
@@ -1983,18 +1987,22 @@ const exp = await page.evaluate(async () => {
   // the shader is back: act two opens it, the ring act stands on it, the nav goes light
   W.scrollToStep(1, 0.5); await pause(1400)
   out.e2ring = { isGround: body().contains('is-ground'), groundOn: W.ground.probe().on, link: cs(document.querySelector('.was-nav-link')).color, pill: cs(document.querySelector('.was-nav-pill')).color }
-  // the act's THIRD step (his frame 7): the rings gone into the bowl, the added
-  // statement centred at the top of the open field, the white stage rising under it
-  { const r = W.tl.ranges[2]; W.scrollTo(r.s0 + 0.55 * r.len); await pause(1600) }
-  out.e2step3 = (() => {
-    const el = document.querySelector('.was-copy-box.is-act .was-copy[data-step="3"]')
-    const b = el ? el.getBoundingClientRect() : null
-    return { vis: el ? cs(el).visibility : 'none', opacity: el ? +cs(el).opacity : 0, text: el ? el.textContent : '',
-      centred: b ? Math.abs((b.left + b.right) / 2 - window.innerWidth / 2) < 40 : false, top: b ? Math.round(b.top) : 0,
-      align: cs(document.querySelector('.was-copy-box.is-act .was-copy')).textAlign,
-      stageTop: Math.round(document.getElementById('stageB').getBoundingClientRect().top), vh: window.innerHeight,
-      isGround: body().contains('is-ground'), groundOn: W.ground.probe().on, bowlHidden: W.bowl.hidden, close: W.ground.probe().close, sheet: W.bowl.sheet }
+  // act two's third beat (his frame 7, placed by his correction between "But
+  // we’ve never had…" and the ring act's "On a platform…"): late in act two,
+  // on the open shader, the added statement stands centred at the top
+  W.scrollToUntil(0.88); await pause(2600)
+  out.e2until = (() => {
+    const el = document.querySelector('.was-v2-until')
+    const b = el.getBoundingClientRect()
+    return { alpha: W.state.hero.v2Until, bottomAlpha: W.state.hero.v2Bottom, text: el.textContent, color: cs(el).color,
+      centred: Math.abs((b.left + b.right) / 2 - window.innerWidth / 2) < 40, top: Math.round(b.top), vh: window.innerHeight,
+      isGround: body().contains('is-ground'), groundOn: W.ground.probe().on, groundOpen: W.ground.probe().open,
+      ringCopy: W.cfg.steps[0].text }
   })()
+  // ...and the ring act's own first line follows it, top-left, with its third step silent
+  W.scrollToStep(0, 0.5); await pause(1400)
+  out.e2act1 = { text: document.querySelector('.was-copy-box.is-act .was-copy[data-step="1"]')?.textContent || '', vis: cs(document.querySelector('.was-copy-box.is-act .was-copy[data-step="1"]')).visibility,
+    untilAlpha: W.state.hero.v2Until, step3: W.cfg.steps[2].text }
   // the block's own 0→1
   const go = async (f) => { const tl = W.tl; W.scrollTo(tl.canvasS0 + f * (tl.canvasS1 - tl.canvasS0)); await pause(900) }
   const snap = () => ({ ...W.trio.probe(), wire: W.bowl.wireframe, bowlHidden: W.bowl.hidden, sheet: W.bowl.sheet, sheetColor: W.bowl.sheetColor, atlas: W.atlas.probe(), cardsDisplay: cs(document.getElementById('atlasCards')).display,
@@ -2034,7 +2042,7 @@ const exp = await page.evaluate(async () => {
   W.setVariant(1); await pause(600)
   return out
 })
-console.log('EXPERIENCES:', JSON.stringify({ e1: { ...exp.e1, nav: undefined, copy: undefined }, e1copy: exp.e1.copy, e1team: { style: exp.e1team.style, caps: exp.e1team.caps, bw: exp.e1team.bw, tooltip: exp.e1team.tooltipVisible, name: exp.e1team.tooltipName }, e1until: exp.e1until, e1ring: exp.e1ring, e2: { ...exp.e2, nav: undefined, atlas: undefined, copy: undefined }, e2copy: exp.e2.copy, e2ring: exp.e2ring, e2step3: exp.e2step3, key1: exp.key1, key2: exp.key2, key5: exp.key5, persist: exp.persist, legacy5: exp.legacy5 }, null, 1))
+console.log('EXPERIENCES:', JSON.stringify({ e1: { ...exp.e1, nav: undefined, copy: undefined }, e1copy: exp.e1.copy, e1team: { style: exp.e1team.style, caps: exp.e1team.caps, bw: exp.e1team.bw, tooltip: exp.e1team.tooltipVisible, name: exp.e1team.tooltipName }, e1until: exp.e1until, e1ring: exp.e1ring, e2: { ...exp.e2, nav: undefined, atlas: undefined, copy: undefined }, e2copy: exp.e2.copy, e2ring: exp.e2ring, e2until: exp.e2until, e2act1: exp.e2act1, key1: exp.key1, key2: exp.key2, key5: exp.key5, persist: exp.persist, legacy5: exp.legacy5 }, null, 1))
 console.log('TRIO frames:', JSON.stringify({ rise: { stageTop: exp.rise.stageTop, bowlHidden: exp.rise.bowlHidden, groundOn: exp.rise.groundOn, close: exp.rise.close, sheet: exp.rise.sheet, draw: exp.rise.draw },
   b0: { stage: exp.b0.stage, draw: exp.b0.draw, head: exp.b0.head, stageBg: exp.b0.stageBg, wire: exp.b0.wire.mix, bowlHidden: exp.b0.bowlHidden, arcs: exp.b0.arcsDisplay, descPx: exp.b0.descPx, namePx: exp.b0.namePx, subPx: exp.b0.subPx, source: exp.b0.source, shape: exp.b0.shape },
   b2: exp.b2.draw, b3: exp.b3.draw, b4: exp.b4.draw, b5: { draw: exp.b5.draw, side: exp.b5.text.side, paper: exp.b5.paper, head: exp.b5.head, stageBg: exp.b5.stageBg },
@@ -3074,10 +3082,11 @@ const checks = [
     exp.e1ring.copyInk === 'rgb(10, 10, 10)' && exp.e1ring.bar.color === 'rgb(10, 10, 10)' && exp.e1ring.bar.alpha > 0.9 &&
     exp.e1.bar === 'rgb(10, 10, 10)' && exp.e1globe.networkOn === true && exp.e1globe.networkHidden === false],
   ['...e la barra 1: Discover · Become a teacher · Clinical Resources · Research · About, la ricerca, "Log In"; ' +
-   'Discover e About hanno la tendina (con icona e puntino), le altre no',
+   'Discover e About hanno la tendina (col puntino, NESSUNA etichetta o icona ripetuta in testa), le altre no',
     exp.e1.nav.mode === 1 && exp.e1.nav.links.join('|') === 'Discover|Become a teacher|Clinical Resources|Research|About' &&
     exp.e1.nav.cta === 'Log In' && exp.e1.nav.pill === '' && exp.e1.nav.searchBowl &&
-    Object.keys(exp.e1.nav.items).join('|') === 'discover|about' && exp.e1.nav.items.discover.hasIcon && exp.e1.nav.items.about.hasIcon &&
+    Object.keys(exp.e1.nav.items).join('|') === 'discover|about' && exp.e1.nav.items.discover.hasIcon === false && exp.e1.nav.items.about.hasIcon === false &&
+    exp.e1.nav.items.discover.headText === '' && exp.e1.nav.items.about.headText === '' && exp.e1.nav.items.discover.hasDot &&
     exp.e1.nav.items.discover.rows.join('|') === 'Techniques|Teachers|Benefits' && exp.e1.nav.items.about.rows.join('|') === 'Mission|Research|Newsroom|Blog'],
   // ── il COPY dell'esperienza 1 (i suoi frame 1–6, 2026-09-21) ─────────────
   ['E1 · la hero legge "Where / practice" · la bowl · "makes / progress" (frame 1), la seconda riga di ' +
@@ -3119,10 +3128,10 @@ const checks = [
    '(link e pill color avorio)',
     exp.e2ring.isGround === true && exp.e2ring.groundOn === true && exp.e2ring.link !== 'rgb(10, 10, 10)' && exp.e2ring.pill === exp.e2ring.link],
   ['...la barra 2: Discover · About · Become a teacher, "For therapists" a contorno, la ricerca, "Get the app" — ' +
-   'stesse tendine, senza icone',
+   'stesse tendine, stessa testata muta',
     exp.e2.nav.mode === 2 && exp.e2.nav.links.join('|') === 'Discover|About|Become a teacher' &&
     exp.e2.nav.pill === 'For therapists' && exp.e2.nav.cta === 'Get the app' &&
-    exp.e2.nav.items.discover.hasIcon === false && exp.e2.nav.items.discover.rows.length === 3],
+    exp.e2.nav.items.discover.hasIcon === false && exp.e2.nav.items.discover.headText === '' && exp.e2.nav.items.discover.rows.length === 3],
   ['...l\'Atlas si è TRASFERITO nella stage B, trasparente, con #pinC nascosto; il blocco dura `blockVh` (720) ' +
    'e le card sono RISEDUTE sui lobi sotto i propri cerchi (Members alto-dx t=1/6, Therapists basso t=1/2, ' +
    'la library alto-sx t=5/6) — prima del knot le card non si vedono',
@@ -3133,23 +3142,26 @@ const checks = [
   // ── il COPY dell'esperienza 2 (i suoi frame 7–9) ─────────────────────────
   ['E2 · la hero tiene "Building space / to practice" ma il paragrafo è "We’re forming a better understanding…"; ' +
    'atto due "Across generations and cultures… feel grounded." e, mentre lo shader si apre, "But we’ve never had a ' +
-   'full picture…"; il ring act tiene i suoi due step e AGGIUNGE al terzo, CENTRATO, "Insight Timer is making the ' +
-   'impact of practice clear for everybody." che resta finché la sezione non lo copre (out 0)',
+   'full picture…"; poi il TERZO beat dell\'atto due — centrato, acceso solo qui — "Insight Timer is making the ' +
+   'impact of practice clear for everybody." (entra a 0.64, esce a 0.92, prima del ring act); il ring act tiene ' +
+   'le sue due righe e il terzo step muto',
     exp.e2.copy.hero.title === 'Building|space' && exp.e2.copy.hero.titleB === 'to|practice' && exp.e2.copy.hero.leftShift === 0 &&
     exp.e2.copy.hero.para === 'We’re forming a better understanding|of what helps people thrive.' &&
     exp.e2.copy.top === 'Across generations and cultures,|people have found practices|that help them feel grounded.' &&
     exp.e2.copy.bottom.text.startsWith('But we’ve never had a full picture') && exp.e2.copy.bottom.align === 'right' &&
+    exp.e2.copy.until.show === true && exp.e2.copy.until.text === 'Insight Timer is making the impact of|practice clear for everybody.' &&
+    exp.e2.copy.until.align === 'center' && exp.e2.copy.until.x === 50 && exp.e2.copy.until.at > 0.45 && exp.e2.copy.until.out > 0.8 &&
     exp.e2.copy.act[0] === 'On a platform|guided by people' && exp.e2.copy.act[1] === 'Practices that people|actually live by' &&
-    exp.e2.copy.act[2] === 'Insight Timer is making the impact of|practice clear for everybody.' &&
-    exp.e2.copy.actAlign.join(',') === 'left,left,center' && exp.e2.copy.actOut[2] === 0],
-  ['E2 · frame 7 dal vivo: a metà del terzo step il titolo aggiunto è VISIBILE, centrato in alto sullo shader ' +
-   '(is-ground, ground acceso, bowl ancora lì) mentre la stage bianca sta salendo da sotto — e NESSUN outro: ' +
-   'il ground non si chiude (close 0), il bianco della V5 non sale (sheet 0)',
-    exp.e2step3.vis === 'visible' && exp.e2step3.opacity > 0.95 && exp.e2step3.text.startsWith('Insight Timer is making the impact of') &&
-    exp.e2step3.centred === true && exp.e2step3.align === 'center' && exp.e2step3.top < exp.e2step3.vh * 0.3 &&
-    exp.e2step3.stageTop > 100 && exp.e2step3.stageTop < exp.e2step3.vh - 100 &&
-    exp.e2step3.isGround === true && exp.e2step3.groundOn === true && exp.e2step3.bowlHidden === false &&
-    exp.e2step3.close === 0 && exp.e2step3.sheet === 0],
+    exp.e2.copy.act[2] === '' && exp.e1.copy.until.show === false],
+  ['E2 · frame 7 dal vivo: a 0.88 dell\'atto due il titolo aggiunto è VISIBILE (alpha 1), centrato in alto sullo ' +
+   'shader aperto (is-ground, ground acceso e aperto), in chiaro, mentre "But we’ve never had…" è ancora lì in ' +
+   'basso a destra — è la frase TRA quella e "On a platform guided by people", che arriva dopo, in alto a sinistra, ' +
+   'col terzo step del ring act muto',
+    exp.e2until.alpha > 0.95 && exp.e2until.text.startsWith('Insight Timer is making the impact of') && exp.e2until.centred === true &&
+    exp.e2until.top < exp.e2until.vh * 0.3 && exp.e2until.isGround === true && exp.e2until.groundOn === true && exp.e2until.groundOpen > 0.9 &&
+    exp.e2until.color !== 'rgb(10, 10, 10)' && exp.e2until.bottomAlpha > 0.95 && exp.e2until.ringCopy === 'On a platform|guided by people' &&
+    exp.e2act1.text === 'On a platformguided by people' && exp.e2act1.vis === 'visible' && exp.e2act1.step3 === '' &&
+    exp.e2act1.untilAlpha < 0.05],
   ['E2 · sopra i cerchi l\'header del frame 8 — "Three sources of evidence come together on Insight Timer." con ' +
    'il suo sotto-paragrafo — e l\'header dell\'Atlas è la frase "We organize millions of context-rich data points…", ' +
    'SENZA sub e SENZA lo sketch sopra ("nessun tipo di icona"); il team è "The People / Leading Insight" in B/N ' +
@@ -3241,11 +3253,18 @@ const checks = [
     Math.abs(navHover.techniques.items.discover.mega.left - NAV_CFG.gap) <= 2 &&
     navHover.benefits.items.discover.mega.sub === 'benefits' && navHover.benefits.items.discover.mega.title === 'Benefits' && navHover.benefits.items.discover.mega.count === 20],
   ['...lasciando la barra tutto si richiude (card e tendina larga invisibili); su About la sua card: Mission · ' +
-   'Research · Newsroom · Blog, con l\'icona; nella barra 2, sullo shader, la card resta BIANCA con inchiostro nero',
+   'Research · Newsroom · Blog; nella barra 2, sullo shader, la card resta BIANCA con inchiostro nero',
     navHover.left.items.discover.open === false && navHover.left.items.discover.visible === false && navHover.left.items.discover.mega.visible === false &&
-    navHover.about.items.about.fullyOpen === true && navHover.about.items.about.rows.join('|') === 'Mission|Research|Newsroom|Blog' && navHover.about.items.about.hasIcon &&
+    navHover.about.items.about.fullyOpen === true && navHover.about.items.about.rows.join('|') === 'Mission|Research|Newsroom|Blog' &&
     navHover.bar2.mode === 2 && navHover.bar2.items.discover.fullyOpen === true && navHover.bar2.items.discover.hasIcon === false &&
     navHover.bar2Card.bg === 'rgb(255, 255, 255)' && navHover.bar2Card.ink === 'rgb(10, 10, 10)'],
+  ['...la card parte da DIETRO il testo su cui sono (sua richiesta, 2026-09-21): nessuna etichetta ripetuta in ' +
+   'testa (il testo visibile della testata è vuoto), il link resta al suo posto SOPRA la card (z-index maggiore) ' +
+   'ed è in inchiostro anche sullo shader della barra 2, dove sotto di lui c\'è la card bianca',
+    navHover.open.items.discover.headText === '' && navHover.open.items.discover.linkOnTop === true &&
+    navHover.open.items.discover.linkInk === 'rgb(10, 10, 10)' &&
+    navHover.bar2.items.discover.headText === '' && navHover.bar2.items.discover.linkOnTop === true &&
+    navHover.bar2.items.discover.linkInk === 'rgb(10, 10, 10)'],
   ['il boot vero è l\'ESPERIENZA 1: carta EBE9E5, barra 1 con "Log In", ground spento, la hero "Where / practice", ' +
    'il team a colori con il tooltip — e la bowl ha i SUOI valori (il JSON, 2026-09-21): shell esterna roughness ' +
    '0.555 con rilievo 0.0065, interno metalness 0.97, single-sided, ramp 0.34, studio "Studio warm"',

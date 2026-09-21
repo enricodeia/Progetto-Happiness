@@ -134,12 +134,16 @@ const navMode = () => {
 // and back. `COPY_LEGACY` is the page as first written, for a legacy version.
 const HERO_COPY_KEYS = ["title", "titleB", "para", "titleSize", "titleLh", "leftGap", "leftY", "leftShift", "rightGap", "rightY", "rightShift"];
 const ATLAS_COPY_KEYS = ["heading", "sub", "top", "size", "subSize", "maxWidth"];
+// act two's third beat — the "Until now" slot — is a whole statement in one
+// experience and off in the other
+const UNTIL_COPY_KEYS = ["show", "text", "mode", "align", "size", "width", "x", "y", "at", "out"];
 function snapCopy() {
   const H = CONFIG.hero, A = CONFIG.v2.act, E = CONFIG.evidence, T = CONFIG.atlas.title;
   return {
     hero: Object.fromEntries(HERO_COPY_KEYS.map((k) => [k, H[k]])),
     top: { text: CONFIG.v2.top.text },
     bottom: { text: CONFIG.v2.bottom.text, align: CONFIG.v2.bottom.align, y: CONFIG.v2.bottom.y },
+    until: Object.fromEntries(UNTIL_COPY_KEYS.map((k) => [k, CONFIG.v2.until[k]])),
     act: {
       steps: CONFIG.v2.steps.slice(0, 3).map((s) => s.text),
       out: CONFIG.v2.steps.slice(0, 3).map((s) => s.textOut),
@@ -167,6 +171,7 @@ function applyCopy() {
   if (c.hero) for (const k of HERO_COPY_KEYS) if (k in c.hero) CONFIG.hero[k] = c.hero[k];
   if (c.top) Object.assign(CONFIG.v2.top, c.top);
   if (c.bottom) Object.assign(CONFIG.v2.bottom, c.bottom);
+  if (c.until) for (const k of UNTIL_COPY_KEYS) if (k in c.until) CONFIG.v2.until[k] = c.until[k];
   // Everything is written IN PLACE — the same objects and arrays the panels
   // are bound to — never replaced, or a panel field would keep pointing at
   // the array the experience before had.

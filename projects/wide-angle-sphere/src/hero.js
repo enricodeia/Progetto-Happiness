@@ -117,7 +117,12 @@ export function createHero({ nav, heroEl, untilEl, underEl, cfg, bowl }) {
     { r: v2Bottom, k: "", clock: "v2", src: () => cfg.v2.bottom },
     ...(v2Until ? [{ r: v2Until, k: "", clock: "v2", src: () => cfg.v2.until }] : []),
   ];
-  for (const b of beats) { b.on = false; b.gone = false; }
+  // `entered`: has the ARRIVAL actually played? A scroll that jumps straight
+  // past a whole window lands the beat in `gone` without it — and coming
+  // back into the window must then play the arrival, not walk back an exit
+  // that never left anything visible (found 2026-09-21, with act two's third
+  // beat: jumped to the ring act and back, it stayed at 0 and stuck there)
+  for (const b of beats) { b.on = false; b.gone = false; b.entered = false; }
 
   const num = (v, fallback) => (Number.isFinite(v) ? v : fallback);
   // `left` + `At` → `leftAt`, and no prefix at all → `at`
@@ -142,7 +147,7 @@ export function createHero({ nav, heroEl, untilEl, underEl, cfg, bowl }) {
     // an explicit `show: false` pulls a beat out of the page entirely — used
     // to drop "Until now" from V2 without deleting the beat itself
     if (c.show === false) {
-      if (b.on || b.gone) { b.on = false; b.gone = false; b.r.reset(); }
+      if (b.on || b.gone) { b.on = false; b.gone = false; b.entered = false; b.r.reset(); }
       return;
     }
     const at = num(c[K(b.k, "at")], 0);
@@ -160,20 +165,29 @@ export function createHero({ nav, heroEl, untilEl, underEl, cfg, bowl }) {
       if (!b.gone) {
         b.on = true;
         b.gone = true;
-        b.r.playUnitsOut({ duration: outDur, stagger, ease });
+        // nothing to walk out if it never arrived — it is simply past
+        if (b.entered) b.r.playUnitsOut({ duration: outDur, stagger, ease });
       }
       return;
     }
     // 2 · scrolled back UP into the window it had already left — it comes
-    //     back DOWN the rail it left on, not by replaying its arrival.
+    //     back DOWN the rail it left on, not by replaying its arrival; unless
+    //     it never arrived at all (jumped straight past), in which case the
+    //     arrival is what is owed
     if (b.gone && q < out - 0.015) {
       b.gone = false;
-      b.r.playUnitsOut({ duration: outDur, stagger, ease, to: 0 });
+      if (b.entered) {
+        b.r.playUnitsOut({ duration: outDur, stagger, ease, to: 0 });
+      } else {
+        b.entered = true;
+        b.r.playStagger({ duration: dur, stagger, ease });
+      }
     }
     // 3 · should it be ON?
     if (!b.on && q >= at) {
       b.on = true;
       b.gone = false;
+      b.entered = true;
       b.r.playStagger({ duration: dur, stagger, ease });
     } else if (b.on && q < at - 0.015) {
       // Never visibly un-reveal: scrolled back up past its own mark, a block
@@ -187,6 +201,7 @@ export function createHero({ nav, heroEl, untilEl, underEl, cfg, bowl }) {
       if (!onscreen) {
         b.on = false;
         b.gone = false;
+        b.entered = false;
         b.r.reset();
       }
     }
@@ -364,6 +379,7 @@ export function createHero({ nav, heroEl, untilEl, underEl, cfg, bowl }) {
     for (const b of beats) {
       b.on = false;
       b.gone = false;
+      b.entered = false;
       b.r.reset();
     }
   }

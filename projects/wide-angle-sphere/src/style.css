@@ -100,6 +100,18 @@ body {
   transition: opacity 0.2s ease, color 0.5s ease;
 }
 .was-nav-link:hover { opacity: 0.72; }
+/* the card opens from BEHIND the link (his ask, 2026-09-21: "il panel deve
+   partire da dietro lo stesso testo") — the link itself stays put, above the
+   card, and is the card's title: nothing is repeated over it. In ink, even on
+   the open shader, since what is under it now is the white card. */
+.was-nav-item.is-open .was-nav-link {
+  position: relative;
+  z-index: 4;
+  opacity: 1;
+  color: var(--left-ink);
+  transition: opacity 0.2s ease, color 0.25s ease;
+}
+body.is-v2.is-ground .was-nav .was-nav-item.is-open .was-nav-link { color: var(--left-ink); }
 
 /* the right-hand cluster */
 .was-nav-right {
@@ -165,7 +177,10 @@ body {
   font-weight: 500;
   color: var(--left-ink);
 }
-.was-menu-ico { width: 18px; height: 18px; flex: 0 0 auto; }
+/* the head holds the LINK's own line — an invisible twin of its label keeps
+   the exact height and width, the real link shows through from above — and
+   the small dot at the right */
+.was-menu-ghost { visibility: hidden; }
 .was-menu-dot {
   margin-left: auto;
   width: 9px;

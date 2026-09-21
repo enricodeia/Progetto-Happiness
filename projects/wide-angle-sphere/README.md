@@ -2838,11 +2838,13 @@ that differs between the two — his frames 1–9 transcribed: the hero
 toward the bowl with `hero.leftShift` / `rightShift`, and its paragraph), act
 two's two statements (Experience 1's second one set LEFT low on the right, as
 in his frame 3), the ring act's step copy (Experience 1's first ring *"We
-connect people and trusted teachers"*; Experience 2 keeps its two and ADDS a
-third, centred at the top of the open field on the step that had none —
-*"Insight Timer is making the impact of practice clear for everybody."*, his
-frame 7: the rings gone into the bowl, the white stage rising under it — with
-`copyAlign` one per step now), the evidence panel (statement, the three
+connect people and trusted teachers"*; `copyAlign` is one per step now), act
+two's THIRD beat — the "Until now" slot on the layer under the bowl, centred —
+which Experience 2 turns on with *"Insight Timer is making the impact of
+practice clear for everybody."*, his frame 7, placed by his correction
+between *"But we've never had a full picture…"* and the ring act's *"On a
+platform guided by people"* (fired at 0.72 of act two on the open shader, it
+stays until the act scrolls away), the evidence panel (statement, the three
 sources in the globe's own order, the summary), the Atlas header, the team
 (*"The People / Leading Insight"* and the paragraph of the 70). `applyCopy()`
 writes the active table into the live slots the sections already read —
@@ -2862,8 +2864,25 @@ Verified: the EXPERIENCES block re-read for the cover mechanic (the handover
 frame, `b0` at 2% instead of the lattice, the arcs frame replaced by "three
 whole, no arcs, the paper warming", the header handover at the knot, the way
 back from the ring act's third step), plus ten new checks — Experience 1's
-hero/act-two/ring/evidence/team copy, Experience 2's copy, frame 7 live at
-mid-step-three, the header and team over the circles, the type inside the
+hero/act-two/ring/evidence/team copy, Experience 2's copy, frame 7 live late
+in act two, the header and team over the circles, the type inside the
 circles drawn at 16 / 14 px, the panel edit persisting per
 experience, the nav shadow's room — and the boot re-read (EBE9E5, "Where /
-practice", the team on hover). 255 checks.
+practice", the team on hover); the dropdown from behind the link, the statement on act two's third beat live at 0.88 and gone by the ring act, the type inside the circles at 16 / 14 px. 256 checks.
+
+**The dropdowns, from behind the link** (his ask, the same evening: *"non voglio
+che on hover si ripeta sopra il testo… il panel deve partire da dietro lo
+stesso testo"*). The card's head used to carry its own copy of the label (with
+an icon and the dot) over the hovered link; now the link itself stays put ABOVE
+the card (`z-index`, in ink even over the open shader) and is the card's title,
+the head holding only an invisible twin of the label — so the geometry is
+unchanged — and the dot. The `icons` flags are gone with it.
+
+**A latent bug in act two's beat driver**, found by the verify jumping from
+the ring act back into act two: a beat scrolled straight PAST its whole window
+landed in `gone` without its arrival ever having played, and coming back into
+the window "walked back down the rail it left on" — an exit that had never
+left anything visible — so the block stayed at 0 and its state stuck. The
+driver now remembers whether the arrival played (`entered`): a beat jumped
+past owes its arrival when the reader comes back, and has no exit to play
+when it never arrived.

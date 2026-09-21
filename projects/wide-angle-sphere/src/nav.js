@@ -24,9 +24,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import gsap from "gsap";
-import {
-  faGlobe, faBookOpen, faChevronDown, faMagnifyingGlass,
-} from "@fortawesome/pro-regular-svg-icons";
+import { faChevronDown, faMagnifyingGlass } from "@fortawesome/pro-regular-svg-icons";
 import { NAV_LINKS, NAV_SUBS } from "./data/nav.js";
 
 /** a Font Awesome Pro icon as an inline SVG — the page's default library */
@@ -34,10 +32,6 @@ const svgOf = (icon, cls = "") => {
   const [w, h, , , d] = icon.icon;
   const path = Array.isArray(d) ? d.join(" ") : d;
   return `<svg class="${cls}" viewBox="0 0 ${w} ${h}" aria-hidden="true" focusable="false"><path fill="currentColor" d="${path}"/></svg>`;
-};
-const ICONS = {
-  globe: svgOf(faGlobe, "was-menu-ico"),
-  book: svgOf(faBookOpen, "was-menu-ico"),
 };
 const CHEV = svgOf(faChevronDown, "was-menu-chev");
 const SEARCH = svgOf(faMagnifyingGlass, "was-search-ico");
@@ -60,7 +54,6 @@ export function createNav({ mount, cfg, mode }) {
     const rows = L.menu.map((r) =>
       `<a class="was-menu-row${r.sub ? " has-sub" : ""}" href="#" role="menuitem"${r.sub ? ` data-sub="${r.sub}"` : ""}>` +
       `<span>${r.label}</span>${r.sub ? CHEV : ""}</a>`).join("");
-    const icon = bar.icons && L.icon ? ICONS[L.icon] : "";
     const dot = N().dot ? `<i class="was-menu-dot"></i>` : "";
     const mega = L.menu.some((r) => r.sub)
       ? `<div class="was-mega" aria-hidden="true"><div class="was-mega-in">` +
@@ -70,7 +63,7 @@ export function createNav({ mount, cfg, mode }) {
       <div class="was-nav-item has-menu" data-key="${key}">
         <a class="was-nav-link" href="#" aria-haspopup="true" aria-expanded="false">${L.label}</a>
         <div class="was-menu" role="menu" aria-label="${L.label}">
-          <div class="was-menu-head">${icon}<span>${L.label}</span>${dot}</div>
+          <div class="was-menu-head"><span class="was-menu-ghost" aria-hidden="true">${L.label}</span>${dot}</div>
           <div class="was-menu-rows">${rows}</div>
         </div>
         ${mega}
@@ -381,6 +374,11 @@ export function createNav({ mount, cfg, mode }) {
           rowAlphas: it.rows.map((r) => +(+cs(r).opacity).toFixed(2)),
           hasIcon: !!it.head.querySelector(".was-menu-ico"),
           hasDot: !!it.head.querySelector(".was-menu-dot"),
+          // nothing readable is repeated over the link: the head's only text
+          // is the hidden twin that holds the line
+          headText: [...it.head.querySelectorAll("span")].filter((s) => cs(s).visibility !== "hidden").map((s) => s.textContent).join(""),
+          linkOnTop: it.open && (parseInt(cs(it.link).zIndex, 10) || 0) > (parseInt(cs(it.menu).zIndex, 10) || 0),
+          linkInk: cs(it.link).color,
           mega: it.mega ? {
             open: it.megaOpen, sub: it.sub,
             visible: cs(it.mega).visibility === "visible" && +cs(it.mega).opacity > 0.01,

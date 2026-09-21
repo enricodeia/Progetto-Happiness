@@ -193,6 +193,8 @@ export const CONFIG = {
       top: { text: "Across traditions and cultures,|people have found practices|that improve wellbeing." },
       // frame 3: the second statement sits low on the right, its lines set LEFT
       bottom: { text: "It’s time we help this wisdom|work for everybody.", align: "left", y: 78 },
+      // act two's third beat (the "Until now" slot) is not used here
+      until: { show: false },
       // the ring act: the first ring is the teachers' ("quando esce il primo
       // ring di Teachers")
       act: {
@@ -237,17 +239,26 @@ export const CONFIG = {
       top: { text: "Across generations and cultures,|people have found practices|that help them feel grounded." },
       // "di come si apre il nostro shader" — the statement the ground opens under
       bottom: { text: "But we’ve never had a full picture|of what works for each of us and why.", align: "right", y: 72 },
-      // frame 7 — "un altro titolo aggiuntivo... in alto al centro": the ring
-      // act's first two steps keep their copy, top-left; the THIRD step, which
-      // had none (the rings converge into the bowl and vanish), gets the added
-      // statement, centred at the top of the open field — the frame shows
-      // exactly that moment, the bowl alone on the shader — arriving once the
-      // rings have mostly gone (`delay`) and staying (`out` 0) until the next
-      // section has risen over it
+      // frame 7 — "un altro titolo aggiuntivo... in alto al centro", and it
+      // goes BETWEEN "But we’ve never had a full picture…" and the ring act's
+      // "On a platform guided by people" (his correction, later the same
+      // day): act two's THIRD beat — the "Until now" slot, on the layer under
+      // the bowl, centred — fired once the ground is open, and leaving on its
+      // own reveal run backwards over act two's last stretch: that layer is
+      // FIXED and simply switches off when act two has scrolled away, and a
+      // statement that was still up would be cut, not closed
+      until: {
+        show: true,
+        text: "Insight Timer is making the impact of|practice clear for everybody.",
+        mode: "lines", align: "center",
+        size: 2.0, width: 44, x: 50, y: 20,
+        at: 0.64, out: 0.92,
+      },
+      // ...so the ring act keeps its own two lines and a silent third step
       act: {
-        steps: ["On a platform|guided by people", "Practices that people|actually live by", "Insight Timer is making the impact of|practice clear for everybody."],
-        out: [0.16, 0.16, 0], delay: [0.04, 0.04, 0.28],
-        align: ["left", "left", "center"], x: [4, 4, 28], y: [18, 18, 18], width: [40, 40, 44],
+        steps: ["On a platform|guided by people", "Practices that people|actually live by", ""],
+        out: [0.16, 0.16, 0], delay: [0.04, 0.04, 0.04],
+        align: ["left", "left", "left"], x: [4, 4, 4], y: [18, 18, 18], width: [40, 40, 40],
       },
       // the Atlas over the circles: its header is this one sentence, no sub —
       // "il titolo deve essere scritto così nella sezione atlas appunto quando
@@ -273,10 +284,14 @@ export const CONFIG = {
     logo: "Insight Timer",
     search: "Search",
     // his first three frames: five links, the search, one black "Log In"
-    one: { links: ["discover", "teach", "clinical", "research", "about"], cta: "Log In", icons: true },
+    one: { links: ["discover", "teach", "clinical", "research", "about"], cta: "Log In" },
     // frames four to six: three links, "For therapists" outlined, the search, "Get the app"
-    two: { links: ["discover", "about", "teach"], cta: "Get the app", pill: "For therapists", icons: false },
-    dot: true,             // the small black dot at the head's right, as in his frames
+    two: { links: ["discover", "about", "teach"], cta: "Get the app", pill: "For therapists" },
+    // The card opens from BEHIND the hovered link (his ask, 2026-09-21: "non
+    // voglio che on hover si ripeta sopra il testo... il panel deve partire da
+    // dietro lo stesso testo"): the link stays where it is, above the card,
+    // and IS the card's title — no label, no icon repeated in the head.
+    dot: true,             // ...only the small black dot at the head's right, as in his frames
     // ── layout ───────────────────────────────────────────────────────────
     linkSize: 15,          // px — the bar's links
     itemGap: 44,           // px between them
