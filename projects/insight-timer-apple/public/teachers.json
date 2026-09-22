@@ -1,0 +1,242 @@
+[
+  {
+    "slug": "sarahblondin",
+    "name": "Sarah Blondin",
+    "loc": "British Columbia, Canada",
+    "followers": "787.8k",
+    "img": "teachers/001.jpg",
+    "src": 1
+  },
+  {
+    "slug": "davidji",
+    "name": "davidji",
+    "loc": "San Diego, CA, USA",
+    "followers": "460k",
+    "img": "teachers/002.jpg",
+    "src": 2
+  },
+  {
+    "slug": "tarabrach",
+    "name": "Tara Brach",
+    "loc": "Great Falls, VA",
+    "followers": "434.7k",
+    "img": "teachers/003.jpg",
+    "src": 3
+  },
+  {
+    "slug": "jenniferpiercy",
+    "name": "Jennifer Piercy",
+    "loc": "Victoria, BC, Canada",
+    "followers": "358.7k",
+    "img": "teachers/004.jpg",
+    "src": 4
+  },
+  {
+    "slug": "kennethsoares",
+    "name": "Kenneth Soares",
+    "loc": "Norway",
+    "followers": "333k",
+    "img": "teachers/005.jpg",
+    "src": 5
+  },
+  {
+    "slug": "crystaltreeroad",
+    "name": "Bethany Auriel-Hagan",
+    "loc": "Phoenix, AZ, USA",
+    "followers": "319.1k",
+    "img": "teachers/006.jpg",
+    "src": 6
+  },
+  {
+    "slug": "andrewjohnson",
+    "name": "Andrew Johnson",
+    "loc": "Faro, Portugal",
+    "followers": "233.6k",
+    "img": "teachers/007.jpg",
+    "src": 7
+  },
+  {
+    "slug": "jonathanlehmann",
+    "name": "Jonathan Lehmann",
+    "loc": "Lisbonne, Portugal",
+    "followers": "217.1k",
+    "img": "teachers/008.jpg",
+    "src": 8
+  },
+  {
+    "slug": "glennharrold",
+    "name": "Glenn Harrold",
+    "loc": "United Kingdom",
+    "followers": "186.9k",
+    "img": "teachers/009.jpg",
+    "src": 9
+  },
+  {
+    "slug": "jackkornfield",
+    "name": "Jack Kornfield",
+    "loc": "California, USA",
+    "followers": "185.6k",
+    "img": "teachers/010.jpg",
+    "src": 10
+  },
+  {
+    "slug": "jasonmcgrice",
+    "name": "Jason McGrice",
+    "loc": "Adelaide",
+    "followers": "176.2k",
+    "img": "teachers/011.jpg",
+    "src": 11
+  },
+  {
+    "slug": "meditationoasis",
+    "name": "Mary Maddux",
+    "loc": "USA",
+    "followers": "174.5k",
+    "img": "teachers/012.jpg",
+    "src": 12
+  },
+  {
+    "slug": "sonicyogi",
+    "name": "Sonic Yogi",
+    "loc": "Atlanta, GA, USA",
+    "followers": "157.6k",
+    "img": "teachers/013.jpg",
+    "src": 13
+  },
+  {
+    "slug": "andyhobson",
+    "name": "Andy Hobson",
+    "loc": "Newbury, UK",
+    "followers": "146.5k",
+    "img": "teachers/014.jpg",
+    "src": 14
+  },
+  {
+    "slug": "katejames",
+    "name": "Kate James",
+    "loc": "Melbourne VIC, Australia",
+    "followers": "142.6k",
+    "img": "teachers/015.jpg",
+    "src": 15
+  },
+  {
+    "slug": "corymorgan",
+    "name": "Cory Morgan (formerly Cory Cochiolo)",
+    "loc": "Chula Vista, CA, USA",
+    "followers": "141.3k",
+    "img": "teachers/016.jpg",
+    "src": 16
+  },
+  {
+    "slug": "indiemusicbox",
+    "name": "Chris Collins",
+    "loc": "Northampton, MA, USA",
+    "followers": "139.5k",
+    "img": "teachers/017.jpg",
+    "src": 17
+  },
+  {
+    "slug": "lizacolpa",
+    "name": "Liza Colpa",
+    "loc": "Queens, NY, USA",
+    "followers": "132.5k",
+    "img": "teachers/018.jpg",
+    "src": 18
+  },
+  {
+    "slug": "thichnhathanh",
+    "name": "Thich Nhat Hanh Legacy",
+    "loc": "Bordeaux, Nouvelle-Aquitaine, France",
+    "followers": "130.9k",
+    "img": "teachers/019.jpg",
+    "src": 19
+  },
+  {
+    "slug": "sadhguru",
+    "name": "Sadhguru Jaggi",
+    "loc": "McMinnville, TN, USA",
+    "followers": "125k",
+    "img": "teachers/020.jpg",
+    "src": 20
+  },
+  {
+    "slug": "DavidGandelman",
+    "name": "David Gandelman",
+    "loc": "Boulder, CO, USA",
+    "followers": "123.2k",
+    "img": "teachers/021.jpg",
+    "src": 21
+  },
+  {
+    "slug": "manojdias",
+    "name": "Manoj Dias",
+    "loc": "Los Angeles, CA, USA",
+    "followers": "121.9k",
+    "img": "teachers/022.jpg",
+    "src": 22
+  },
+  {
+    "slug": "pabloarellano",
+    "name": "Pablo Arellano",
+    "loc": "València, Valencia, Spain",
+    "followers": "105.2k",
+    "img": "teachers/023.jpg",
+    "src": 23
+  },
+  {
+    "slug": "alunamoonpublishing",
+    "name": "Aluna Moon",
+    "loc": "England, UK",
+    "followers": "104k",
+    "img": "teachers/024.jpg",
+    "src": 24
+  },
+  {
+    "slug": "lalahdelia",
+    "name": "Lalah Delia",
+    "loc": "Los Angeles, CA, USA",
+    "followers": "103k",
+    "img": "teachers/025.jpg",
+    "src": 25
+  },
+  {
+    "slug": "tomekwyczesany",
+    "name": "Tomek Wyczesany, Ph.D.",
+    "loc": "Sunshine Coast QLD, Australia",
+    "followers": "96k",
+    "img": "teachers/026.jpg",
+    "src": 26
+  },
+  {
+    "slug": "justinmwilliams",
+    "name": "Justin Michael Williams",
+    "loc": "Los Angeles, CA, USA",
+    "followers": "95.2k",
+    "img": "teachers/027.jpg",
+    "src": 27
+  },
+  {
+    "slug": "kristinneff",
+    "name": "Kristin Neff",
+    "loc": "Austin, TX, USA",
+    "followers": "91.2k",
+    "img": "teachers/028.jpg",
+    "src": 28
+  },
+  {
+    "slug": "glendacedarleaf",
+    "name": "Glenda Cedarleaf",
+    "loc": "New Bern, NC, USA",
+    "followers": "90.9k",
+    "img": "teachers/029.jpg",
+    "src": 29
+  },
+  {
+    "slug": "rickhanson",
+    "name": "Rick Hanson",
+    "loc": "San Rafael, CA, USA",
+    "followers": "18.1k",
+    "img": "teachers/030.jpg",
+    "src": 200
+  }
+]

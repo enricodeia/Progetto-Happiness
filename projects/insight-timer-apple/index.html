@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Insight Timer — Where practice makes progress</title>
+  <meta name="description" content="Insight Timer connects people and trusted teachers, and is building the science around what works and why." />
+  <meta name="color-scheme" content="light" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27%23b07a35%27/%3E%3Cpath d=%27M7 15h18a9 9 0 0 1-18 0z%27 fill=%27%23f5e6cf%27/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" id="nav">
+    <div class="nav-in">
+      <a class="nav-logo" href="#" aria-label="Insight Timer"></a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#guided">Discover</a>
+        <a href="#teachers">Teachers</a>
+        <a href="#evidence">Research</a>
+        <a href="#numbers">For therapists</a>
+        <a href="#team">About</a>
+      </nav>
+      <div class="nav-right">
+        <button class="nav-icon" type="button" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        </button>
+        <a class="nav-cta" href="#">Get the app</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ── 1 · Hero ─────────────────────────────────────────────────────── -->
+    <section class="hero" id="hero">
+      <div class="hero-copy">
+        <h1 class="display" data-reveal>Where practice<br>makes progress.</h1>
+        <p class="lead" data-reveal style="--i:1">As users find practices that help them, we’re building the science around what works and why.</p>
+        <div class="links" data-reveal style="--i:2">
+          <a class="link" href="#">Get the app<span class="chev">›</span></a>
+          <a class="link" href="#teachers">Become a teacher<span class="chev">›</span></a>
+        </div>
+      </div>
+      <div class="hero-stage" id="heroStage">
+        <canvas class="hero-canvas" id="bowl" aria-label="A hand-hammered singing bowl"></canvas>
+      </div>
+    </section>
+
+    <!-- ── 2 · Statement, on black ──────────────────────────────────────── -->
+    <section class="chapter chapter-dark" id="statement">
+      <div class="wrap narrow center">
+        <h2 class="headline" data-reveal>Across traditions and cultures, people have found practices that improve wellbeing.</h2>
+        <p class="lead" data-reveal style="--i:1">But we’ve never had a full picture of what works for each of us and why. It’s time we help this wisdom work for everybody.</p>
+      </div>
+    </section>
+
+    <!-- ── 3 · Guided by people — sticky chapter ────────────────────────── -->
+    <section class="guided" id="guided">
+      <div class="guided-sticky">
+        <div class="guided-copy">
+          <p class="eyebrow">Discover</p>
+          <div class="guided-steps">
+            <div class="guided-step is-active" data-step="0">
+              <h2 class="headline">We connect people and trusted teachers.</h2>
+              <p class="lead">26,000 teachers, from psychologists to Buddhist monks, sharing the practices they live by.</p>
+            </div>
+            <div class="guided-step" data-step="1">
+              <h2 class="headline">With thousands of ways to feel good.</h2>
+              <p class="lead">Breathwork, sound healing, somatics, yoga nidra — 970 techniques, each mapped to what it helps with.</p>
+            </div>
+            <div class="guided-step" data-step="2">
+              <h2 class="headline">Practices that people actually live by.</h2>
+              <p class="lead">Thirty million members practise here every day. What helps them is what we learn from.</p>
+            </div>
+          </div>
+          <ol class="guided-dots" aria-hidden="true">
+            <li class="is-active"></li><li></li><li></li>
+          </ol>
+        </div>
+        <div class="guided-visual">
+          <div class="mosaic is-active" data-layer="0" id="mosaicTeachers"></div>
+          <div class="mosaic" data-layer="1" id="mosaicExperiences"></div>
+          <div class="mosaic" data-layer="2" id="mosaicPeople"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 4 · Teachers carousel ────────────────────────────────────────── -->
+    <section class="chapter" id="teachers">
+      <div class="wrap">
+        <p class="eyebrow" data-reveal>Teachers</p>
+        <h2 class="headline" data-reveal style="--i:1">Real people. Real practice.</h2>
+        <p class="lead" data-reveal style="--i:2">The most followed teachers on Insight Timer, in their own words and voices.</p>
+      </div>
+      <div class="rail-wrap" data-reveal style="--i:3">
+        <div class="rail" id="teacherRail" tabindex="0" aria-label="Teachers"></div>
+        <div class="rail-nav">
+          <button type="button" class="rail-btn" data-dir="-1" aria-label="Previous">‹</button>
+          <button type="button" class="rail-btn" data-dir="1" aria-label="Next">›</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 5 · Techniques ───────────────────────────────────────────────── -->
+    <section class="chapter chapter-gray" id="techniques">
+      <div class="wrap narrow center">
+        <p class="eyebrow" data-reveal>Techniques</p>
+        <h2 class="headline" data-reveal style="--i:1">Thousands of ways to feel good.</h2>
+        <p class="lead" data-reveal style="--i:2">970 techniques across 45 categories, from box breathing to Tibetan singing bowls, each one described, taught and tracked.</p>
+      </div>
+      <div class="marquee" data-reveal style="--i:3" id="marquee">
+        <div class="marquee-row" data-row="0"></div>
+        <div class="marquee-row is-reverse" data-row="1"></div>
+      </div>
+    </section>
+
+    <!-- ── 6 · The science — bento ──────────────────────────────────────── -->
+    <section class="chapter" id="evidence">
+      <div class="wrap">
+        <p class="eyebrow" data-reveal>The science</p>
+        <h2 class="headline" data-reveal style="--i:1">By combining research and individual outcomes at scale, we can understand which practice will help someone and when.</h2>
+      </div>
+      <div class="wrap bento" data-reveal style="--i:2">
+        <article class="tile">
+          <span class="tile-num">01</span>
+          <h3>Validated practices</h3>
+          <p>Data from peer-reviewed research is mapped to every technique in our library.</p>
+        </article>
+        <article class="tile">
+          <span class="tile-num">02</span>
+          <h3>Member feedback</h3>
+          <p>Self-reported data from users shows impact over time.</p>
+        </article>
+        <article class="tile">
+          <span class="tile-num">03</span>
+          <h3>Therapist reporting</h3>
+          <p>Clinical observation tells us what works in context.</p>
+        </article>
+        <article class="tile tile-wide">
+          <div class="tile-wide-copy">
+            <h3>Three sources of evidence come together on Insight Timer.</h3>
+            <p>Together, they show which practice works best in real circumstances. Insight Timer connects three data sources to build a first-of-its-kind map: a model of helpful practices and when to use them.</p>
+          </div>
+          <svg class="trio" viewBox="0 0 440 400" aria-hidden="true">
+            <g class="trio-circles">
+              <circle cx="270" cy="150" r="110" pathLength="1"></circle>
+              <circle cx="220" cy="250" r="110" pathLength="1"></circle>
+              <circle cx="170" cy="150" r="110" pathLength="1"></circle>
+            </g>
+            <g class="trio-labels">
+              <text x="318" y="24">Member feedback</text>
+              <text x="220" y="386">Therapist reports</text>
+              <text x="122" y="24">Clinical research</text>
+            </g>
+          </svg>
+        </article>
+      </div>
+    </section>
+
+    <!-- ── 7 · Numbers, on black ────────────────────────────────────────── -->
+    <section class="chapter chapter-dark" id="numbers">
+      <div class="wrap narrow center">
+        <h2 class="headline" data-reveal>We organize millions of context‑rich data points into a clearer understanding of what works.</h2>
+      </div>
+      <div class="wrap stats" data-reveal style="--i:1">
+        <div class="stat"><b data-count="30M+">0</b><span>members</span></div>
+        <div class="stat"><b data-count="26,000">0</b><span>teachers</span></div>
+        <div class="stat"><b data-count="350,000">0</b><span>recordings</span></div>
+        <div class="stat"><b data-count="970">0</b><span>techniques</span></div>
+        <div class="stat"><b data-count="125,000">0</b><span>therapists</span></div>
+        <div class="stat"><b data-count="17">0</b><span>years of practice</span></div>
+      </div>
+    </section>
+
+    <!-- ── 8 · Team ─────────────────────────────────────────────────────── -->
+    <section class="chapter" id="team">
+      <div class="wrap team-head">
+        <div>
+          <p class="eyebrow" data-reveal>About</p>
+          <h2 class="headline" data-reveal style="--i:1">The People<br>Leading Insight</h2>
+        </div>
+        <p class="lead" data-reveal style="--i:2">Our small but dedicated team of 70 people has transformed a basic meditation timer into a community of 30 million people and 20,000 teachers.</p>
+      </div>
+      <div class="wrap people" id="teamGrid" data-reveal style="--i:3"></div>
+      <div class="wrap">
+        <h3 class="sub" data-reveal>Partners</h3>
+      </div>
+      <div class="wrap people people-partners" id="partnersGrid" data-reveal style="--i:1"></div>
+    </section>
+
+    <!-- ── 9 · Close ────────────────────────────────────────────────────── -->
+    <section class="chapter chapter-gray close" id="close">
+      <div class="wrap narrow center">
+        <h2 class="headline" data-reveal>Insight Timer is making the impact of practice clear for everybody.</h2>
+        <div class="links center" data-reveal style="--i:1">
+          <a class="btn" href="#">Get the app</a>
+          <a class="link" href="#teachers">Become a teacher<span class="chev">›</span></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-cols" id="footerCols"></div>
+    <div class="wrap footer-bottom">
+      <p>Copyright © <span id="year"></span> Insight Network Inc. All rights reserved.</p>
+      <nav aria-label="Legal"><a href="#">Terms &amp; Conditions</a><a href="#">Privacy Policy</a><a href="#">Cookie Policy</a></nav>
+    </div>
+  </footer>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
