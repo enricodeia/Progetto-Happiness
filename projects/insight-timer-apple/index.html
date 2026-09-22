@@ -7,7 +7,12 @@
   <meta name="description" content="Insight Timer connects people and trusted teachers, and is building the science around what works and why." />
   <meta name="color-scheme" content="light" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27%23b07a35%27/%3E%3Cpath d=%27M7 15h18a9 9 0 0 1-18 0z%27 fill=%27%23f5e6cf%27/%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/src/styles.css" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta property="og:title" content="Insight Timer — Where practice makes progress" />
+  <meta property="og:description" content="Insight Timer connects people and trusted teachers, and is building the science around what works and why." />
+  <link rel="preload" as="fetch" href="/models/bowl-option-c.glb" crossorigin />
+  <link rel="preload" as="image" href="/images/bowl-normal.webp" />
+  <link rel="stylesheet" href="/src/v1.css" />
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -96,9 +101,12 @@
       </div>
       <div class="rail-wrap" data-reveal style="--i:3">
         <div class="rail" id="teacherRail" tabindex="0" aria-label="Teachers"></div>
-        <div class="rail-nav">
-          <button type="button" class="rail-btn" data-dir="-1" aria-label="Previous">‹</button>
-          <button type="button" class="rail-btn" data-dir="1" aria-label="Next">›</button>
+        <div class="rail-foot">
+          <a class="link" href="#">See all 26,000 teachers<span class="chev">›</span></a>
+          <div class="rail-nav">
+            <button type="button" class="rail-btn" data-dir="-1" aria-label="Previous">‹</button>
+            <button type="button" class="rail-btn" data-dir="1" aria-label="Next">›</button>
+          </div>
         </div>
       </div>
     </section>

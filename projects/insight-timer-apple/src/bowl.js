@@ -14,12 +14,14 @@ import { BOWL_PRESET as P } from "./data/bowlPreset.js";
 const rad = (d) => (d * Math.PI) / 180;
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-export function createBowl({ canvas, host, size = 0.66 }) {
+export function createBowl({ canvas, host, size = 0.66, exposure = 1, lean = 14, shrink = 0.18 }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setClearColor(0x000000, 0);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = P.render?.exposure ?? 1;
+  // `exposure` scales his preset's own — the second edition asks for a
+  // touch more light on the metal
+  renderer.toneMappingExposure = (P.render?.exposure ?? 1) * exposure;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   const scene = new THREE.Scene();
@@ -48,7 +50,7 @@ export function createBowl({ canvas, host, size = 0.66 }) {
   relief.userData.kind = "normal";
   relief.userData.name = "bowl-normal.webp";
 
-  const state = { ready: false, q: 0, spin: 0, visible: true };
+  const state = { ready: false, shown: false, q: 0, spin: 0, visible: true };
 
   bowlGeometries(P.model).then((parts) => {
     const box = new THREE.Box3();
@@ -73,6 +75,9 @@ export function createBowl({ canvas, host, size = 0.66 }) {
   });
 
   const worldH = () => 2 * P.cam.dist * Math.tan(rad(P.cam.fov) / 2);
+  // the shorter side of the stage, in world units — so a phone gets a bowl
+  // sized to its width, not to a height it cannot show
+  const worldMin = () => { const H = worldH(); return Math.min(H, H * camera.aspect); };
 
   function resize() {
     const r = host.getBoundingClientRect();
@@ -93,13 +98,15 @@ export function createBowl({ canvas, host, size = 0.66 }) {
       // the diameter as a share of the visible height; it eases down a touch
       // as the hero scrolls away, and leans forward with it
       const H = worldH();
-      const s = size * (1 - 0.18 * q);
-      group.scale.setScalar(s * H);
-      group.rotation.x = rad(P.model.rotX + 14 * q);
+      const s = size * (1 - shrink * q);
+      group.scale.setScalar(s * worldMin());
+      group.rotation.x = rad(P.model.rotX + lean * q);
       group.rotation.z = rad(P.model.rotZ || 0);
       group.position.y = 0.06 * H * q;
       norm.rotation.y = state.spin;
       renderer.render(scene, camera);
+      // the first frame with the metal on it: let the canvas fade in
+      if (state.ready && !state.shown) { state.shown = true; canvas.classList.add("is-ready"); }
     }
     requestAnimationFrame(frame);
   }

@@ -1,0 +1,231 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Edition 2 — the exposure (2026-09-22). Black page, Exposure for every
+   title, its EXPO axis doing the one thing this edition does with motion:
+   text arrives over-exposed and develops to rest, on entry or under the
+   scroll. Photographs black and white until you reach for them.
+   ═══════════════════════════════════════════════════════════════════════ */
+@import "./base.css";
+
+@font-face {
+  font-family: "Exposure";
+  src: url("/fonts/ExposureTrialVAR.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  --paper: #000000;
+  --ink: #f5f5f7;
+  --ink-2: #a1a1a6;
+  --ink-3: #6e6e73;
+  --gray: #0c0c0e;
+  --line: rgba(255, 255, 255, 0.12);
+  --accent: #d6a75f;
+  --accent-ink: #d9ad6a;
+  --nav-bg: rgba(0, 0, 0, 0.72);
+  --nav-bg-scrolled: rgba(0, 0, 0, 0.84);
+  --nav-link: rgba(255, 255, 255, 0.82);
+  --nav-link-hover: #fff;
+  --btn-bg: #f5f5f7;
+  --btn-ink: #000;
+  --btn-bg-hover: #fff;
+  --font-display: "Exposure", Georgia, "Times New Roman", serif;
+  --display-weight: 400;
+  --display-tracking: -0.015em;
+  --display-lh: 1.0;
+  --headline-weight: 400;
+  --headline-tracking: -0.012em;
+  --headline-lh: 1.06;
+  --expo-from: 100;   /* over-exposed on arrival; 0 is the face at rest */
+}
+::selection { background: var(--accent); color: #000; }
+.eyebrow { font-weight: 500; }
+
+/* ── develop: EXPO from over-exposed to rest as the block reveals ──────── */
+.display, .headline, .num { font-variation-settings: "EXPO" 0; }
+.dev {
+  font-variation-settings: "EXPO" var(--expo-from);
+  transition: font-variation-settings 1.7s var(--ease);
+  transition-delay: calc(var(--i, 0) * 110ms);
+}
+.is-in.dev, .is-in .dev { font-variation-settings: "EXPO" 0; }
+@media (prefers-reduced-motion: reduce) {
+  .dev { font-variation-settings: "EXPO" 0; transition: none; }
+}
+
+/* ── hero ──────────────────────────────────────────────────────────────── */
+.hero2 { padding: 64px 0 0; text-align: center; position: relative; overflow: hidden; }
+.hero2-copy { width: min(var(--narrow), calc(100% - 48px)); margin: 0 auto; position: relative; z-index: 2; }
+.hero2 .display { margin-top: 6px; }
+.hero2 .lead { margin-left: auto; margin-right: auto; }
+.hero2 .links { justify-content: center; }
+.hero2-stage { position: relative; height: min(64vh, 700px); margin-top: -4px; }
+.hero2-stage .glow {
+  position: absolute; left: 50%; top: 54%;
+  width: 78vmin; height: 78vmin; transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(214, 167, 95, 0.20), rgba(214, 167, 95, 0.06) 52%, transparent 72%);
+  filter: blur(12px);
+  pointer-events: none;
+}
+.hero-canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+  opacity: 0; transition: opacity 1.4s var(--ease);
+}
+.hero-canvas.is-ready { opacity: 1; }
+
+/* ── manifesto — words develop under the scroll ────────────────────────── */
+.manifesto { position: relative; height: 260vh; }
+.manifesto-sticky { position: sticky; top: 0; height: 100vh; display: grid; place-items: center; }
+.manifesto-text {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 4.2vw, 60px);
+  line-height: 1.12;
+  letter-spacing: -0.012em;
+  text-wrap: pretty;
+  width: min(980px, calc(100% - 48px));
+  text-align: center;
+}
+.manifesto-text .w {
+  display: inline-block;
+  opacity: 0.16;
+  font-variation-settings: "EXPO" 100;
+  will-change: font-variation-settings, opacity;
+}
+
+/* ── three ways in — photographs as cards ──────────────────────────────── */
+.ways-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 56px; }
+.way { position: relative; border-radius: var(--radius); overflow: hidden; aspect-ratio: 3 / 4; background: var(--gray); }
+.way img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.4s var(--ease), filter 0.8s var(--ease); filter: grayscale(0.35); }
+.way:hover img { transform: scale(1.04); filter: none; }
+.way::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.28) 45%, transparent 70%);
+}
+.way-copy { position: absolute; left: 0; right: 0; bottom: 0; padding: 28px; z-index: 1; }
+.way-copy .k { font-size: 13px; color: var(--accent-ink); font-weight: 600; letter-spacing: 0.02em; }
+.way-copy h3 {
+  font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(24px, 2.2vw, 32px); line-height: 1.1; letter-spacing: -0.01em;
+  margin-top: 8px; color: #fff;
+}
+.way-copy p { color: rgba(255, 255, 255, 0.72); font-size: 15px; margin-top: 8px; }
+
+/* ── the wall of teachers ──────────────────────────────────────────────── */
+.wall-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 12px; margin-top: 56px; }
+.face {
+  position: relative; aspect-ratio: 1; border-radius: 50%; overflow: hidden;
+  background: var(--gray); cursor: default; margin: 0;
+  transition: transform 0.5s var(--ease), opacity 0.5s var(--ease);
+}
+.face img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.05); transition: filter 0.5s var(--ease); }
+.face:hover, .face:focus-visible { transform: scale(1.1); z-index: 2; outline: none; }
+.face:hover img, .face:focus-visible img { filter: none; }
+.wall-grid:hover .face:not(:hover) { opacity: 0.55; }
+.wall-caption { margin-top: 28px; color: var(--ink-2); font-size: 17px; min-height: 1.5em; }
+.wall-caption b { color: var(--ink); font-weight: 600; }
+
+/* ── the index of techniques ───────────────────────────────────────────── */
+.index-head { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: end; }
+.index-preview { color: var(--ink-2); font-size: 17px; line-height: 1.45; min-height: 3em; }
+.index-preview b { color: var(--ink); font-weight: 600; }
+.index-list { list-style: none; padding: 0; margin: 56px auto 0; columns: 3; column-gap: 40px; }
+.index-list li {
+  break-inside: avoid;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding: 11px 0; border-bottom: 1px solid var(--line);
+  font-size: 16px; color: var(--ink-2); cursor: default;
+  transition: color 0.2s var(--ease);
+}
+.index-list li b { font-family: var(--font-display); font-weight: 400; font-size: 20px; color: var(--ink-3); font-variant-numeric: tabular-nums; transition: color 0.2s var(--ease); }
+.index-list li:hover, .index-list li.is-on { color: var(--ink); }
+.index-list li.is-on b { color: var(--accent-ink); }
+
+/* ── the science — circles drawn by the scroll ─────────────────────────── */
+.science { position: relative; height: 260vh; background: var(--gray); }
+.science-sticky { position: sticky; top: 0; height: 100vh; display: grid; align-items: center; }
+.science-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+.sources { list-style: none; padding: 0; margin: 40px 0 0; border-top: 1px solid var(--line); }
+.sources li {
+  display: grid; grid-template-columns: 28px 1fr; gap: 14px;
+  padding: 16px 0; border-bottom: 1px solid var(--line);
+  color: var(--ink-3); transition: color 0.4s var(--ease);
+}
+.sources li i { font-style: normal; font-family: var(--font-display); font-size: 18px; color: var(--ink-3); transition: color 0.4s var(--ease); }
+.sources li b { display: block; font-weight: 600; }
+.sources li span { display: block; font-size: 15px; margin-top: 4px; }
+.sources li.is-on { color: var(--ink); }
+.sources li.is-on i { color: var(--accent-ink); }
+.trio2 { width: 100%; max-width: 520px; margin: 0 auto; display: block; overflow: visible; }
+.trio2 circle { fill: none; stroke: rgba(255, 255, 255, 0.85); stroke-width: 1.2; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.trio2 text { fill: rgba(255, 255, 255, 0.72); font-family: var(--font); font-size: 13px; font-weight: 500; text-anchor: middle; opacity: 0; transition: opacity 0.5s var(--ease); }
+.trio2 text.is-on { opacity: 1; }
+
+/* ── the ledger of numbers ─────────────────────────────────────────────── */
+.ledger-rows { margin: 72px auto 0; border-top: 1px solid var(--line); }
+.ledger-rows .row {
+  display: grid; grid-template-columns: 1fr 1fr; align-items: baseline; gap: 24px;
+  padding: 22px 0; border-bottom: 1px solid var(--line);
+}
+.ledger-rows dt {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 7vw, 112px); line-height: 0.95; letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  font-variation-settings: "EXPO" 100;
+  margin: 0;
+}
+.ledger-rows dd { margin: 0; color: var(--ink-2); font-size: clamp(17px, 1.4vw, 21px); }
+
+/* ── the roster ────────────────────────────────────────────────────────── */
+.team2-head { display: grid; grid-template-columns: 1.2fr 1fr; gap: 48px; align-items: end; }
+.team2-head .lead { margin-top: 0; }
+.roster {
+  list-style: none; padding: 0; margin: 56px auto 0;
+  display: grid; grid-template-columns: 1fr 1fr; column-gap: 48px;
+  border-top: 1px solid var(--line);
+}
+.roster li { display: grid; grid-template-columns: 48px 1fr auto; gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.roster img, .roster .initials { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #1a1a1c; }
+.roster img { filter: grayscale(1); transition: filter 0.4s var(--ease); }
+.roster li:hover img { filter: none; }
+.roster .initials { display: grid; place-items: center; font-size: 15px; font-weight: 600; color: var(--ink-3); }
+.roster b { font-weight: 600; font-size: 17px; }
+.roster span { color: var(--ink-2); font-size: 14px; text-align: right; }
+.roster-partners { margin-top: 0; }
+
+/* ── close ─────────────────────────────────────────────────────────────── */
+.close2 { padding: 180px 0; }
+.close2 .display { font-size: clamp(38px, 5.6vw, 80px); max-width: 980px; margin: 0 auto; }
+
+/* ── responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 1000px) {
+  .wall-grid { grid-template-columns: repeat(6, 1fr); }
+  .index-head { grid-template-columns: 1fr; }
+  .index-list { columns: 2; }
+  .science-grid { grid-template-columns: 1fr; }
+  .trio2 { max-width: 380px; }
+  .roster { grid-template-columns: 1fr; }
+  .team2-head { grid-template-columns: 1fr; align-items: start; }
+  .team2-head .lead { margin-top: 20px; }
+}
+@media (max-width: 760px) {
+  .hero2 { padding-top: 52px; }
+  .hero2-stage { height: 46vh; }
+  .manifesto { height: 220vh; }
+  .manifesto-text { font-size: 28px; }
+  .ways-grid {
+    display: flex; gap: 12px; width: 100%; margin-left: 0; margin-right: 0;
+    overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-left: 24px;
+    padding: 0 24px 8px; scrollbar-width: none;
+  }
+  .ways-grid::-webkit-scrollbar { display: none; }
+  .way { flex: 0 0 76%; scroll-snap-align: start; }
+  .wall-grid { grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .index-list { columns: 1; }
+  .science { height: 220vh; }
+  .science-sticky { align-items: start; padding-top: 72px; }
+  .sources li span { display: none; }
+  .trio2 { max-width: 300px; }
+  .ledger-rows .row { grid-template-columns: 1fr; gap: 4px; }
+  .close2 { padding: 120px 0; }
+}
