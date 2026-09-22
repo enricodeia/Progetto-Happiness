@@ -14,8 +14,12 @@ photographs, same bowl, none of the choreography.
 - **Edition 3** (`/v3`, key `3`) — the bento. Apple's keynote grammar: light
   grey page, everything said in white tiles, one fact per tile — the bowl
   alive in one, the numbers in Exposure in others, faces, pills, circles.
+- **Edition 4** (`/v4`, key `4`) — the object. Apple's product-page grammar:
+  the bowl pinned on the left for the whole read, turning three quarters,
+  leaning to show its inside and taking more light as the chapters pass on
+  the right. Warm paper, system sans, Exposure only for numerals.
 
-Keys `1` / `2` / `3` switch edition (also the small switch bottom left).
+Keys `1` / `2` / `3` / `4` switch edition (also the small switch bottom left).
 
 ## Run
 
@@ -26,6 +30,7 @@ npm run build      # dist/
 node shots/tour.mjs [url]                   # edition 1, every chapter + a probe (needs Chrome)
 node shots/tour2.mjs [url] [w] [h] [outDir] # edition 2 (append ?theme=light for light)
 node shots/tour3.mjs [url] [w] [h] [outDir] # edition 3
+node shots/tour4.mjs [url] [w] [h] [outDir] # edition 4
 node shots/mobile.mjs [url] 390 844         # edition 1 at phone width
 node shots/fontprobe.mjs [url...]           # is Exposure actually loaded + which family the h1 got
 ```
@@ -81,6 +86,17 @@ node shots/fontprobe.mjs [url...]           # is Exposure actually loaded + whic
    developing as they count.
 7. **About** — leadership tile, partners tile, dark closing tile with the CTA.
 
+## Edition 4, top to bottom
+
+Left: the pinned object (sticky for the whole read) with a chapter index
+underneath that follows the scroll. Right: eight chapters, each a viewport
+tall — 00 Practice (hero), 01 Wisdom (statement), 02 People (ten faces,
+count-up), 03 Ways (the whole directory as one running index), 04 Science
+(sources + circles), 05 Numbers (six stats developing), 06 Team (roster in
+two columns + partners), 07 Everybody (close + CTA). The bowl's turn, lean,
+light and ground shadow are all pure functions of the chapters' progress.
+On phones the object pins on top and the chapters slide under it.
+
 ## Motion budget
 
 Reveal-on-enter (IntersectionObserver → `.is-in`, `--i` stagger), the sticky
@@ -100,17 +116,18 @@ the marquee (edition 1), the EXPO develop (edition 2). Nothing else moves.
   1 · 2 switch, the scroll loop, the photo globs.
 - `src/exposure.css` — the Exposure `@font-face` and the `.dev` develop rules,
   imported by editions 2 and 3.
-- `src/main.js` / `src/v2.js` / `src/v3.js` — each edition's own stamping and
-  scroll states. `window.__it` for scripted checks. `v2.js` also owns the
+- `src/main.js` / `src/v2.js` / `src/v3.js` / `src/v4.js` — each edition's own
+  stamping and scroll states. `window.__it` for scripted checks. `v2.js` also owns the
   dark/light theme (`data-theme` on `<html>`, set before paint by an inline
   script in `v2.html`).
 - `src/bowl.js` — slim renderer around the scroll piece's `bowlGeo` /
   `bowlMaterial` / `env` modules and `data/bowlPreset.js` (all copied,
   untouched). Sizes the bowl on the stage's shorter side; `exposure`, `lean`,
-  `shrink` options.
+  `shrink` options; `setScroll(q)`, `setTurn(rad)`, `setExposure(mult)` at
+  runtime.
 - `public/` — bowl GLB (Draco), normal map, teacher portraits, `teachers.json`,
   `fonts/ExposureTrialVAR.woff2`.
-- `vercel.json` — `cleanUrls` so `/v2` and `/v3` serve `v2.html` / `v3.html`;
+- `vercel.json` — `cleanUrls` so `/v2`, `/v3`, `/v4` serve the matching html;
   `vite.config.js` does the same rewrite in dev.
 
 ## Deploy

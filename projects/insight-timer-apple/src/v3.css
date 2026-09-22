@@ -22,9 +22,9 @@
   --headline-weight: 400;
   --headline-tracking: -0.012em;
   --headline-lh: 1.06;
-  --gap: 16px;
+  --gap: 18px;
 }
-.footer { background: var(--paper); }
+.footer { background: var(--paper); border-top: 1px solid var(--line); }
 .vswitch { background: rgba(255, 255, 255, 0.9); }
 
 /* ── hero ──────────────────────────────────────────────────────────────── */
@@ -41,6 +41,9 @@
   grid-auto-flow: dense;
   gap: var(--gap);
 }
+/* one grid after another: the same gap between grids as between tiles */
+.bento3 + .bento3 { margin-top: var(--gap); }
+main { padding-bottom: 96px; }
 .bento-head { padding: 96px 0 32px; }
 .bento-head .lead { margin-top: 14px; }
 .bento-head.center .lead { margin-left: auto; margin-right: auto; }
@@ -83,17 +86,29 @@
 
 /* the bowl, alive in its tile */
 .t-bowl { min-height: 480px; }
+.t-bowl::before {
+  /* a soft ground under the metal, so it sits rather than floats */
+  content: ""; position: absolute; left: 50%; bottom: 26%;
+  width: 46%; height: 8%; transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.12), transparent);
+  filter: blur(6px);
+  pointer-events: none;
+}
 .t-bowl canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 1.2s var(--ease); }
 .t-bowl canvas.is-ready { opacity: 1; }
 .t-bowl .t-caption { position: absolute; left: 30px; bottom: 26px; right: 30px; display: flex; justify-content: space-between; gap: 16px; font-size: 13px; color: var(--ink-3); z-index: 2; }
 
 /* photos */
-.t-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.t-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 1.4s var(--ease); }
+.t-photo:hover img { transform: scale(1.04); }
 .t-photo .t-cap { position: absolute; left: 24px; bottom: 22px; right: 24px; color: #fff; font-size: 14px; font-weight: 500; text-shadow: 0 1px 12px rgba(0, 0, 0, 0.4); z-index: 1; }
 .t-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.45), transparent 45%); }
 
 /* a card: photo on top, words beneath */
-.t-card img { width: 100%; aspect-ratio: 16 / 11; object-fit: cover; display: block; }
+.t-card .t-media { overflow: hidden; }
+.t-card img { width: 100%; aspect-ratio: 16 / 11; object-fit: cover; display: block; transition: transform 1.4s var(--ease); }
+.t-card:hover img { transform: scale(1.04); }
 .t-card .t-body { padding: 22px 26px 26px; }
 .t-card .t-body .k { font-size: 13px; color: var(--accent-ink); font-weight: 600; letter-spacing: 0.02em; }
 .t-card .t-body h3 { font-family: var(--font-display); font-weight: 400; font-size: clamp(22px, 1.9vw, 28px); line-height: 1.1; margin-top: 8px; letter-spacing: -0.01em; }
@@ -105,7 +120,9 @@
 .mini-face { aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: #e6e6ea; margin: 0; transition: transform 0.4s var(--ease); }
 .mini-face img { width: 100%; height: 100%; object-fit: cover; }
 .mini-face:hover { transform: scale(1.1); }
-.faces-caption { margin-top: 18px; font-size: 15px; color: var(--ink-2); min-height: 1.5em; }
+.faces-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-top: 18px; flex-wrap: wrap; }
+.faces-caption { font-size: 15px; color: var(--ink-2); min-height: 1.5em; margin: 0; }
+.faces-foot .link { font-size: 15px; }
 .faces-caption b { color: var(--ink); font-weight: 600; }
 
 /* pills — one slow row inside its tile */
@@ -154,7 +171,9 @@
 @media (max-width: 760px) {
   .hero3 { padding: 64px 0 40px; }
   .bento-head { padding: 72px 0 24px; }
-  .bento3 { grid-template-columns: repeat(2, 1fr); grid-auto-rows: minmax(160px, auto); gap: 12px; }
+  :root { --gap: 12px; }
+  .bento3 { grid-template-columns: repeat(2, 1fr); grid-auto-rows: minmax(160px, auto); gap: var(--gap); }
+  main { padding-bottom: 64px; }
   .tile3 { grid-column: span var(--cm, 2); grid-row: span 1; padding: 22px 22px; }
   .t-bowl { min-height: 360px; }
   .t-num { font-size: 48px; }

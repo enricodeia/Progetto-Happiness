@@ -50,7 +50,8 @@ export function createBowl({ canvas, host, size = 0.66, exposure = 1, lean = 14,
   relief.userData.kind = "normal";
   relief.userData.name = "bowl-normal.webp";
 
-  const state = { ready: false, shown: false, q: 0, spin: 0, visible: true };
+  const state = { ready: false, shown: false, q: 0, spin: 0, turn: 0, exposure: 1, visible: true };
+  const baseExposure = renderer.toneMappingExposure;
 
   bowlGeometries(P.model).then((parts) => {
     const box = new THREE.Box3();
@@ -103,7 +104,8 @@ export function createBowl({ canvas, host, size = 0.66, exposure = 1, lean = 14,
       group.rotation.x = rad(P.model.rotX + lean * q);
       group.rotation.z = rad(P.model.rotZ || 0);
       group.position.y = 0.06 * H * q;
-      norm.rotation.y = state.spin;
+      norm.rotation.y = state.spin + state.turn;
+      renderer.toneMappingExposure = baseExposure * state.exposure;
       renderer.render(scene, camera);
       // the first frame with the metal on it: let the canvas fade in
       if (state.ready && !state.shown) { state.shown = true; canvas.classList.add("is-ready"); }
@@ -122,6 +124,10 @@ export function createBowl({ canvas, host, size = 0.66, exposure = 1, lean = 14,
   return {
     /** 0 at the top of the page, 1 once the hero has scrolled past */
     setScroll(q) { state.q = clamp01(q); },
+    /** an extra turn about the vertical axis, in radians, on top of the idle spin */
+    setTurn(rad) { state.turn = rad || 0; },
+    /** a multiplier on the preset's exposure — 1 is his light as dialled */
+    setExposure(mult) { state.exposure = Math.max(0.05, mult || 1); },
     resize,
     get ready() { return state.ready; },
     probe() { return { ready: state.ready, q: state.q, meshes: norm.children.length, size: group.scale.x }; },

@@ -50,7 +50,7 @@ const faces = $("#faces");
 const facesCaption = $("#facesCaption");
 const FACES_IDLE = "Hover a face.";
 fetch("/teachers.json").then((r) => r.json()).then((list) => {
-  const face = (t, i) => `<figure class="mini-face" tabindex="0" data-i="${i}" aria-label="${t.name}"><img src="/${t.img}" alt="" loading="lazy" decoding="async" draggable="false"></figure>`;
+  const face = (t, i) => `<figure class="mini-face" tabindex="0" data-i="${i}" aria-label="${t.name}"><img src="/${t.img}" alt="" loading="eager" decoding="async" draggable="false"></figure>`;
   faces.innerHTML = list.slice(0, 30).map(face).join("");
   $("#miniFaces").innerHTML = list.slice(0, 6).map(face).join("");
   const caption = (i) => {

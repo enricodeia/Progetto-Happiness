@@ -1,0 +1,166 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Edition 4 — the object (2026-09-22). Apple's product-page grammar: the
+   bowl pinned on the left for the whole read, turning, leaning and taking
+   more light as the chapters pass on the right. Warm paper, the system sans
+   for words, Exposure only for the numerals.
+   ═══════════════════════════════════════════════════════════════════════ */
+@import "./base.css";
+@import "./exposure.css";
+
+:root {
+  --paper: #f3f0ea;
+  --gray: #eae6df;
+  --line: rgba(0, 0, 0, 0.09);
+  --nav-bg: rgba(243, 240, 234, 0.72);
+  --nav-bg-scrolled: rgba(243, 240, 234, 0.9);
+  --font-num: "Exposure", Georgia, "Times New Roman", serif;
+}
+.footer { background: var(--paper); border-top: 1px solid var(--line); }
+.vswitch { background: rgba(255, 255, 255, 0.7); }
+
+/* ── the split: pinned object left, chapters right ─────────────────────── */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  width: min(1400px, 100%);
+  margin: 0 auto;
+}
+.pin {
+  position: sticky;
+  top: var(--nav-h);
+  height: calc(100vh - var(--nav-h));
+  display: grid;
+  grid-template-rows: 1fr auto;
+  z-index: 2;
+}
+.pin-stage { position: relative; }
+.pin-stage::before {
+  /* a soft ground under the metal */
+  content: ""; position: absolute; left: 50%; bottom: 25%;
+  width: 44%; height: 8%;
+  /* follows the object as it settles and shrinks across the read (set by JS) */
+  transform: translate(-50%, var(--gy, 0px)) scale(var(--gs, 1));
+  opacity: var(--go, 1);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.13), transparent);
+  filter: blur(7px);
+  pointer-events: none;
+}
+.pin-canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+  opacity: 0; transition: opacity 1.2s var(--ease);
+}
+.pin-canvas.is-ready { opacity: 1; }
+.toc {
+  list-style: none; margin: 0; padding: 0 48px 40px;
+  display: flex; flex-wrap: wrap; gap: 8px 22px;
+}
+.toc li {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 13px; color: var(--ink-3);
+  transition: color 0.3s var(--ease);
+}
+.toc li i { font-style: normal; font-family: var(--font-num); font-size: 15px; font-variation-settings: "EXPO" 0; }
+.toc li.is-on { color: var(--ink); }
+.toc li.is-on i { color: var(--accent-ink); }
+
+/* ── chapters ──────────────────────────────────────────────────────────── */
+.chapters { padding: 0 0 0 48px; border-left: 1px solid var(--line); }
+.ch {
+  min-height: calc(100vh - var(--nav-h));
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 96px 48px 96px 0;
+  max-width: 640px;
+}
+.ch + .ch { border-top: 1px solid var(--line); }
+.ch .k {
+  font-family: var(--font-num);
+  font-size: 40px; line-height: 1;
+  color: var(--accent-ink);
+  font-variation-settings: "EXPO" 0;
+  margin-bottom: 22px;
+}
+.ch .display { font-size: clamp(44px, 4.6vw, 72px); }
+.ch .headline { font-size: clamp(30px, 3.1vw, 46px); }
+.ch .lead { font-size: 19px; margin-top: 18px; }
+.ch .links { margin-top: 26px; }
+
+/* people */
+.faces-row { display: flex; gap: 8px; margin-top: 28px; flex-wrap: wrap; }
+.faces-row .mini-face {
+  width: 48px; height: 48px; border-radius: 50%; overflow: hidden;
+  background: #e2ded7; margin: 0; transition: transform 0.4s var(--ease);
+}
+.faces-row .mini-face img { width: 100%; height: 100%; object-fit: cover; }
+.faces-row .mini-face:hover, .faces-row .mini-face:focus-visible { transform: scale(1.12); outline: none; }
+.faces-cap { margin-top: 14px; font-size: 15px; color: var(--ink-2); min-height: 1.5em; }
+.faces-cap b { color: var(--ink); font-weight: 600; }
+
+/* the running index of techniques */
+.runindex { margin-top: 26px; font-size: 19px; line-height: 1.75; letter-spacing: -0.01em; color: var(--ink); }
+.runindex span { white-space: nowrap; margin-right: 14px; }
+.runindex i { font-style: normal; font-family: var(--font-num); font-size: 15px; color: var(--ink-3); margin-left: 4px; transition: color 0.2s var(--ease); }
+.runindex span:hover i { color: var(--accent-ink); }
+
+/* the science */
+.sci { display: grid; grid-template-columns: 1fr 220px; gap: 32px; align-items: center; margin-top: 28px; }
+.sources4 { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--line); }
+.sources4 li {
+  display: grid; grid-template-columns: 26px 1fr; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--line);
+  font-size: 15px; color: var(--ink-2);
+}
+.sources4 li i { font-style: normal; font-family: var(--font-num); color: var(--accent-ink); font-variation-settings: "EXPO" 0; }
+.sources4 li b { display: block; color: var(--ink); font-weight: 600; }
+.trio { width: 100%; display: block; overflow: visible; }
+.trio circle { fill: none; stroke: rgba(0, 0, 0, 0.75); stroke-width: 1.2; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.6s var(--ease); }
+.is-in .trio circle:nth-child(1) { stroke-dashoffset: 0; transition-delay: 0.2s; }
+.is-in .trio circle:nth-child(2) { stroke-dashoffset: 0; transition-delay: 0.7s; }
+.is-in .trio circle:nth-child(3) { stroke-dashoffset: 0; transition-delay: 1.2s; }
+.trio text { fill: var(--ink-2); font-family: var(--font); font-size: 13px; font-weight: 500; text-anchor: middle; opacity: 0; transition: opacity 0.8s var(--ease) 1.9s; }
+.is-in .trio text { opacity: 1; }
+
+/* the numbers */
+.stats4 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px 20px; margin-top: 32px; }
+.stats4 b {
+  display: block;
+  font-family: var(--font-num); font-weight: 400;
+  font-size: clamp(36px, 3.2vw, 56px); line-height: 1;
+  font-variation-settings: "EXPO" 100;
+  font-variant-numeric: tabular-nums;
+}
+.stats4 span { display: block; margin-top: 8px; font-size: 14px; color: var(--ink-2); }
+
+/* the roster */
+.roster4 { list-style: none; padding: 0; margin: 28px 0 0; border-top: 1px solid var(--line); columns: 2; column-gap: 32px; }
+.roster4 li { break-inside: avoid; display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.roster4 img, .roster4 .initials { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: #e2ded7; flex: none; }
+.roster4 .initials { display: grid; place-items: center; font-size: 12px; font-weight: 600; color: var(--ink-3); }
+.roster4 b { font-weight: 600; display: block; }
+.roster4 span { display: block; font-size: 13px; color: var(--ink-2); }
+.partners4 { margin-top: 32px; }
+.partners4 .sub { margin: 0; font-size: 15px; color: var(--ink-2); font-weight: 500; }
+.partners4 .roster4 { margin-top: 10px; }
+
+/* ── responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 1000px) {
+  .split { grid-template-columns: 1fr; }
+  .pin { height: 46vh; grid-template-rows: 1fr; background: var(--paper); }
+  .pin::after {
+    /* a soft edge where the chapters slide under the object */
+    content: ""; position: absolute; left: 0; right: 0; bottom: -28px; height: 28px;
+    background: linear-gradient(var(--paper), transparent); pointer-events: none;
+  }
+  .toc { display: none; }
+  .chapters { border-left: none; padding: 0 24px; }
+  .ch { min-height: 0; padding: 72px 0; max-width: none; }
+  .sci { grid-template-columns: 1fr; }
+  .sci .trio { max-width: 260px; margin: 0 auto; }
+  .roster4 { columns: 1; }
+}
+@media (max-width: 760px) {
+  .pin { height: 40vh; }
+  .stats4 { grid-template-columns: 1fr 1fr; }
+  .runindex { font-size: 17px; }
+  .ch .display { font-size: 40px; }
+}
