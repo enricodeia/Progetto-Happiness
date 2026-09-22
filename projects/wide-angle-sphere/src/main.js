@@ -15,6 +15,7 @@ import { createAtlas, ATLAS_STATE } from "./atlas/atlas.js";
 import { createTeam } from "./team.js";
 import { createFooter } from "./footer.js";
 import { createV3Panel } from "./v3Panel.js";
+import { createV2ActPanel } from "./v2ActPanel.js";
 import { createCircles } from "./circles.js";
 import { createTrio } from "./trio.js";
 import { createNav } from "./nav.js";
@@ -134,19 +135,19 @@ const navMode = () => {
 // and back. `COPY_LEGACY` is the page as first written, for a legacy version.
 const HERO_COPY_KEYS = ["title", "titleB", "para", "titleSize", "titleLh", "leftGap", "leftY", "leftShift", "rightGap", "rightY", "rightShift"];
 const ATLAS_COPY_KEYS = ["heading", "sub", "top", "size", "subSize", "maxWidth"];
-// act two's third beat — the "Until now" slot — is a whole statement in one
-// experience and off in the other
-const UNTIL_COPY_KEYS = ["show", "text", "mode", "align", "size", "width", "x", "y", "at", "out"];
+// act two's three beats — Top, Bottom, and Until (the one behind the bowl,
+// off in one experience, on in the other) — carry their FULL field set now
+// (2026-09-22, the v2ActPanel): text through to the exit duration, so the
+// panel can perfect one experience's sequence without touching the other's.
+const V2_BEAT_KEYS = ["text", "mode", "align", "side", "size", "width", "x", "y", "at", "dur", "stagger", "out", "outDur", "ease"];
+const V2_UNTIL_KEYS = ["show", ...V2_BEAT_KEYS.filter((k) => k !== "side")];
 function snapCopy() {
   const H = CONFIG.hero, A = CONFIG.v2.act, E = CONFIG.evidence, T = CONFIG.atlas.title;
   return {
     hero: Object.fromEntries(HERO_COPY_KEYS.map((k) => [k, H[k]])),
-    top: { text: CONFIG.v2.top.text },
-    bottom: {
-      text: CONFIG.v2.bottom.text, align: CONFIG.v2.bottom.align, y: CONFIG.v2.bottom.y,
-      out: CONFIG.v2.bottom.out, outDur: CONFIG.v2.bottom.outDur,
-    },
-    until: Object.fromEntries(UNTIL_COPY_KEYS.map((k) => [k, CONFIG.v2.until[k]])),
+    top: Object.fromEntries(V2_BEAT_KEYS.map((k) => [k, CONFIG.v2.top[k]])),
+    bottom: Object.fromEntries(V2_BEAT_KEYS.map((k) => [k, CONFIG.v2.bottom[k]])),
+    until: Object.fromEntries(V2_UNTIL_KEYS.map((k) => [k, CONFIG.v2.until[k]])),
     act: {
       steps: CONFIG.v2.steps.slice(0, 3).map((s) => s.text),
       out: CONFIG.v2.steps.slice(0, 3).map((s) => s.textOut),
@@ -174,7 +175,7 @@ function applyCopy() {
   if (c.hero) for (const k of HERO_COPY_KEYS) if (k in c.hero) CONFIG.hero[k] = c.hero[k];
   if (c.top) Object.assign(CONFIG.v2.top, c.top);
   if (c.bottom) Object.assign(CONFIG.v2.bottom, c.bottom);
-  if (c.until) for (const k of UNTIL_COPY_KEYS) if (k in c.until) CONFIG.v2.until[k] = c.until[k];
+  if (c.until) for (const k of V2_UNTIL_KEYS) if (k in c.until) CONFIG.v2.until[k] = c.until[k];
   // Everything is written IN PLACE — the same objects and arrays the panels
   // are bound to — never replaced, or a panel field would keep pointing at
   // the array the experience before had.
@@ -737,6 +738,19 @@ const titlesPanel = createTitlesPanel({
   onReplayBeats: () => hero.playUntil(),
 });
 
+// The ONE panel (his ask, 2026-09-22 — "togliere tutti i control panel per
+// ora e lavorare esclusivamente su questi testi... un control panel che sia
+// solido"): act two's three beats — Top, Bottom, Until — on a real timeline,
+// full width/position/size control, nothing reused from the panels above.
+// Every other panel stays instantiated (nothing else that reaches into them
+// has to change) but stops being shown — see `setClean()` below.
+const v2ActPanel = createV2ActPanel({
+  cfg: CONFIG,
+  onRebuild: () => { copyBack(); hero.rebuildV2(); },
+  onStyle: () => { copyBack(); hero.style(); },
+  onClose: () => setClean(true),
+});
+
 // ── 1 / 2 — the two versions ───────────────────────────────────────────────
 // ONE switch, and it changes the SHAPE of the middle of the page, not just what
 // act two says:
@@ -941,6 +955,7 @@ function applyVariant() {
     team.retitle();
     styleAtlasTitle();
     titlesPanel?.refresh();
+    v2ActPanel?.refresh();
   }
   trio.style();
   for (const r of rings) r.build();
@@ -1122,30 +1137,28 @@ bowl.setPoseHook((pose, ctx) => {
 /** what V5's own pose step last decided, for the assertions */
 let poseDebug = null;
 
-// C — the clean frame: both panels, the markers and the legend, gone. It is a
+// C — the clean frame: the panel, the markers and the legend, gone. It is a
 // single body class, so nothing can be left behind by a panel that happened to
 // be open when it was pressed.
 // Shipped default is CLEAN (his ask, 2026-09-18 — "lascami la possibilità di
 // vedere tutti i control panel solo se schiaccio 'c'"): every load boots with
-// every panel hidden, and `c` is the only way to bring any of them back. The
-// per-panel keys (`v`/`b`/`t`) only answer once `c` has already opened the door.
+// the panel hidden, and `c` is the only way to bring it back.
+//
+// ONLY the v2ActPanel shows now (his ask, 2026-09-22 — "togliere tutti i
+// control panel per ora... mettimene uno solo"). Titles/Bowl/V stay
+// instantiated — nothing that reaches into them elsewhere has to change —
+// but are force-hidden here rather than ever shown, so `body.is-clean`
+// coming off never brings them back with it. `v`/`b`/`t` are off for the
+// same reason: one panel, one key.
 let clean = true;
 function setClean(v) {
   clean = v;
   document.body.classList.toggle("is-clean", clean);
-  if (clean) {
-    bowlPanel.hide();
-    titlesPanel.hide();
-  } else {
-    // `c` opens ALL of them (his ask, 2026-09-18 — "tutti i control panel...
-    // solo se schiaccio c"): with clean the boot state, the hides above had
-    // left Bowl and Titles `is-hidden` behind the body class, so `c` was
-    // only ever bringing back the V panel ("il control panel della bowl che
-    // ancora non vedo", 2026-09-21). The per-panel keys still toggle each.
-    bowlPanel.show();
-    titlesPanel.show();
-    v3Panel.show();
-  }
+  bowlPanel.hide();
+  titlesPanel.hide();
+  v3Panel.hide();
+  if (clean) v2ActPanel.hide();
+  else { v2ActPanel.show(); v2ActPanel.refresh(); }
 }
 setClean(true);
 
@@ -1155,13 +1168,12 @@ addEventListener("keydown", (e) => {
   if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
   const k = e.key.toLowerCase();
   // 1 / 2 are the two EXPERIENCES now (his ask, 2026-09-21); the legacy
-  // versions are in the V panel's own dropdown, behind `c`
+  // versions are in the V panel's own dropdown, behind `c` — reachable again
+  // once the panel it lives in is (his ask, 2026-09-22 — v/b/t are off
+  // while this is the one panel; the code stays, just unreached)
   if (k === "1" || k === "2") { setExperience(k); return; }
   if (k === "c") { setClean(!clean); return; }
-  if (clean) return;              // nothing else answers while it is clean — panels included
-  if (k === "v") v3Panel.toggle();
-  if (k === "b") bowlPanel.toggle();
-  if (k === "t") titlesPanel.toggle();
+  if (clean) return;              // nothing else answers while it is clean — the panel included
   if (k === "m") debug.toggle();
 });
 
@@ -1213,6 +1225,8 @@ function raf(now) {
   const atlasQ = readAtlas();
   const untilRect = CONFIG.v2.on ? untilEl.getBoundingClientRect() : null;
   hero.untilSet(untilQ);
+  // the panel's playhead — only while it is actually open, real work else not
+  if (!clean) v2ActPanel.setPlayhead(untilQ);
 
   // the clock first: everything V2 does on the pinned scroll is measured off it
   tl = timeline(CONFIG, progress);
@@ -1609,6 +1623,8 @@ window.__was = {
   /** which stage the Atlas's view is in right now — `stageB` in Experience 2 */
   get atlasHost() { return atlasViewEl.parentElement?.id || null; },
   v3Panel,
+  v2ActPanel,
+  get clean() { return clean; },
   /** re-decide which of the sphere box / trust network occupies the corner —
       exposed so the verify can flip `cfg.v2.network.show` and confirm the
       sphere fallback still works without a full version round-trip */

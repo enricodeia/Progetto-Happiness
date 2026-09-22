@@ -2923,3 +2923,61 @@ version switch — now resets `entered` alongside them too, which it had
 missed.
 
 Verified: 256/256, re-pointed at the new sequence and the new ring line; build clean.
+
+## The ONE panel — act two's three beats (his ask, 2026-09-22)
+
+*"Non ci siamo... togliere tutti i control panel per ora e di lavorare
+esclusivamente su questi testi qua... voglio un control panel che sia
+solido... questo stile mi fa cagare... mettimene uno solo e basta a destra
+per la V2."* Titles, Bowl and V stay instantiated — nothing that reaches into
+them elsewhere has to change — but `setClean()` now force-`hide()`s all three
+on every call and only ever shows the new one; `v`/`b`/`t` are off (the code
+paths are still there, just unreached). The legend says so now: *"1 / 2 —
+experience · C — act two panel · M — markers"*.
+
+`src/v2ActPanel.js`, custom vanilla DOM and its own CSS (`.wa-*` in
+`style.css`) — nothing Tweakpane. The two bugs that got us here — two beats
+standing on screen together with no gap, a beat firing before its own mark —
+are both about a SEQUENCE, and a slider with a number next to it cannot show
+a sequence. The panel's spine is a real timeline: Top, Bottom and Until (the
+one behind the bowl) each a coloured bar spanning `[at, out)` on one shared
+0→1 track — act two's own scroll — with a live playhead that moves as he
+scrolls the real page, so "where am I right now, relative to what fires when"
+is always on screen instead of something he has to hold in his head. Drag a
+bar's own edge to move `at` or `out`; drag its body to move the whole window
+without changing its span; a "stays (never leaves)" checkbox is the `out: 0`
+convention the driver already used, given a real UI instead of a sentinel
+value in a number field. Dragging writes straight into `cfg` — the driver
+(`hero.js`'s `drive()`, untouched) already reads `at`/`out` fresh every
+frame, so nothing here owns the timing, it only edits the same numbers — and
+commits (`copyBack()`, into the copy table) once on pointerup, not on every
+pixel of the drag.
+
+Below the timeline, one full card per beat: the text (debounced ~380ms so
+typing doesn't replay the reveal on every keystroke), the split (line / word
+/ char / fade), the align, which edge it is anchored to (top/bottom only —
+"until" is always centred), and the three numbers that were the actual ask —
+**container width, x, y, all in the vw/% the CSS itself reads** — so the
+measure is his to set, not a guess. Duration / stagger / exit-duration / ease
+sit under "Advanced", closed by default.
+
+Every field is now copy-tracked per experience (`V2_BEAT_KEYS` /
+`V2_UNTIL_KEYS` in `main.js`, extended from text-only to the full field set),
+and `config.js`'s `copy[1]`/`copy[2]` entries for `top`/`bottom`/`until` are
+now fully explicit rather than partially inheriting the base object — the
+same trap as `bottom.out` two passes ago, generalised: a field left out of
+one experience's table entry does not get reset on a switch, and silently
+carries the other experience's value across.
+
+**A real layout bug, caught by screenshot rather than by numbers being
+"wrong"**: the playhead's first version used `left: X%` measured against the
+whole row (label column included), which put the line under the row LABELS
+instead of on the timeline the moment the page had any real width. Fixed by
+measuring the actual track rect in pixels each call, rather than trusting a
+percentage of the wrong box.
+
+**Known, expected fallout for now**: `repro.mjs`'s panel-COUNT checks
+(`dockInfo.count === 3`, `panelsOpen.total === 3 && panelsOpen.shown === 3`)
+are stale — there are 4 `.was-panel`s now and only 1 opens with `c` — by
+design, not a regression to chase down this pass; a follow-up once the
+"one panel for now" question resolves either way.

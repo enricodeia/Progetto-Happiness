@@ -190,12 +190,30 @@ export const CONFIG = {
         leftGap: 14.5, leftY: 46, leftShift: 8.5,
         rightGap: 9.5, rightY: 59, rightShift: -2,
       },
-      top: { text: "Across traditions and cultures,|people have found practices|that improve wellbeing." },
+      // every field of the three beats is explicit here now (2026-09-22, the
+      // v2ActPanel) — matching the base `v2.top/bottom/until` object exactly
+      // where he hasn't touched them yet, so a switch between experiences
+      // always lands on a COMPLETE state rather than one field of the other
+      // experience's tuning leaking through
+      top: {
+        text: "Across traditions and cultures,|people have found practices|that improve wellbeing.",
+        mode: "lines", align: "left", side: "left", size: 2, width: 36, x: 4, y: 18,
+        at: 0.05, dur: 1.15, stagger: 0.19, out: 0.34, outDur: 0.9, ease: "power2.out",
+      },
       // frame 3: the second statement sits low on the right, its lines set LEFT
       // `out: 0` — it stays: nothing on this layer follows it in Experience 1
-      bottom: { text: "It’s time we help this wisdom|work for everybody.", align: "left", y: 78, out: 0, outDur: 0.9 },
-      // act two's third beat (the "Until now" slot) is not used here
-      until: { show: false },
+      bottom: {
+        text: "It’s time we help this wisdom|work for everybody.",
+        mode: "lines", align: "left", side: "right", size: 2, width: 36, x: 5, y: 78,
+        at: 0.45, dur: 1.3, stagger: 0.22, out: 0, outDur: 0.9, ease: "power2.out",
+      },
+      // act two's third beat (the "Until now" slot) is not used here — the
+      // rest is the page's own default, ready the moment he turns it on
+      until: {
+        show: false, text: "Until now",
+        mode: "words", align: "center", size: 2.6, width: 60, x: 50, y: 35,
+        at: 0.66, dur: 1.3, stagger: 0.3, out: 0, outDur: 0.85, ease: "power2.out",
+      },
       // the ring act: the first ring is the teachers' ("quando esce il primo
       // ring di Teachers")
       // the second ring — his correction, same day: "With thousands of ways
@@ -239,7 +257,14 @@ export const CONFIG = {
         leftGap: 13, leftY: 46, leftShift: 0,
         rightGap: 13, rightY: 56, rightShift: 0,
       },
-      top: { text: "Across generations and cultures,|people have found practices|that help them feel grounded." },
+      // every field explicit now (2026-09-22, the v2ActPanel) — this is the
+      // sequence he keeps correcting, so it is the one that most needs to
+      // never leak a stale field from the other experience on a switch
+      top: {
+        text: "Across generations and cultures,|people have found practices|that help them feel grounded.",
+        mode: "lines", align: "left", side: "left", size: 2, width: 36, x: 4, y: 18,
+        at: 0.05, dur: 1.15, stagger: 0.19, out: 0.34, outDur: 0.9, ease: "power2.out",
+      },
       // "di come si apre il nostro shader" — the statement the ground opens
       // under. It LEAVES here (his ask, later the same day — "abbastanza
       // spazio di scroll" between one beat and the next): the base
@@ -250,7 +275,8 @@ export const CONFIG = {
       // than the two standing on screen together.
       bottom: {
         text: "But we’ve never had a full picture|of what works for each of us and why.",
-        align: "right", y: 72, out: 0.53, outDur: 0.06,
+        mode: "lines", align: "right", side: "right", size: 2, width: 36, x: 5, y: 72,
+        at: 0.45, dur: 1.3, stagger: 0.22, out: 0.53, outDur: 0.06, ease: "power2.out",
       },
       // frame 7 — "un altro titolo aggiuntivo... in alto al centro", and it
       // goes BETWEEN "But we’ve never had a full picture…" and the ring act's
@@ -264,9 +290,8 @@ export const CONFIG = {
       until: {
         show: true,
         text: "Insight Timer is making the impact of|practice clear for everybody.",
-        mode: "lines", align: "center",
-        size: 2.0, width: 44, x: 50, y: 20,
-        at: 0.64, out: 0.92,
+        mode: "lines", align: "center", size: 2.0, width: 44, x: 50, y: 20,
+        at: 0.64, dur: 1.3, stagger: 0.3, out: 0.92, outDur: 0.85, ease: "power2.out",
       },
       // ...so the ring act keeps its own two lines and a silent third step
       act: {
