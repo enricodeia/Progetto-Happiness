@@ -9,9 +9,13 @@ photographs, same bowl, none of the choreography.
 - **Edition 2** (`/v2`, key `2`) — the exposure. Black page, the Exposure
   variable serif for every title, its EXPO axis as the one motion: text
   arrives over-exposed and develops to rest, on entry or under the scroll.
-  Photographs black and white until you reach for them.
+  Photographs black and white until you reach for them. Also in light:
+  `/v2?theme=light`, key `L`, or the half-moon in the switch (remembered).
+- **Edition 3** (`/v3`, key `3`) — the bento. Apple's keynote grammar: light
+  grey page, everything said in white tiles, one fact per tile — the bowl
+  alive in one, the numbers in Exposure in others, faces, pills, circles.
 
-Keys `1` / `2` switch edition (also the small 1 · 2 switch bottom left).
+Keys `1` / `2` / `3` switch edition (also the small switch bottom left).
 
 ## Run
 
@@ -20,8 +24,10 @@ npm install
 npm run dev        # http://localhost:5205
 npm run build      # dist/
 node shots/tour.mjs [url]                   # edition 1, every chapter + a probe (needs Chrome)
-node shots/tour2.mjs [url] [w] [h] [outDir] # edition 2
+node shots/tour2.mjs [url] [w] [h] [outDir] # edition 2 (append ?theme=light for light)
+node shots/tour3.mjs [url] [w] [h] [outDir] # edition 3
 node shots/mobile.mjs [url] 390 844         # edition 1 at phone width
+node shots/fontprobe.mjs [url...]           # is Exposure actually loaded + which family the h1 got
 ```
 
 ## Edition 1, top to bottom
@@ -61,6 +67,20 @@ node shots/mobile.mjs [url] 390 844         # edition 1 at phone width
 8. **About** — the roster: two-column list, round photos, roles.
 9. **Close** + footer.
 
+## Edition 3, top to bottom
+
+1. **Hero** — Exposure title developing on load, no object.
+2. **Bento 1** — the bowl alive in a 2×2 white tile (leans as the tile
+   passes), the statement in a dark tile, Members 30M+, Teachers 26,000 with
+   six small faces, then a wide pills tile (two slow rows) and a photo.
+3. **Discover** — three card tiles, photo on top, words beneath.
+4. **Teachers** — one wide tile with the thirty faces, caption on hover.
+5. **The science** — dark 2×2 tile with the circles drawing on reveal, three
+   source tiles, one photo tile.
+6. **Numbers** — six tiles, numerals sized to their tile (`cqw`) and
+   developing as they count.
+7. **About** — leadership tile, partners tile, dark closing tile with the CTA.
+
 ## Motion budget
 
 Reveal-on-enter (IntersectionObserver → `.is-in`, `--i` stagger), the sticky
@@ -72,20 +92,26 @@ the marquee (edition 1), the EXPO develop (edition 2). Nothing else moves.
 
 - `index.html` / `v2.html` — all the copy lives here, in order.
 - `src/base.css` — shared tokens, type scale, nav, footer, reveal, switch.
-  `src/v1.css` and `src/v2.css` import it and override the tokens they
-  disagree with (edition 2 flips to black and sets `--font-display: Exposure`).
+  `src/v1.css`, `src/v2.css` and `src/v3.css` import it and override the
+  tokens they disagree with (edition 2 flips to black and sets
+  `--font-display: Exposure`; its light theme is a second token block under
+  `:root[data-theme="light"]`).
 - `src/common.js` — nav (with active link), reveal, count-up, footer, the
   1 · 2 switch, the scroll loop, the photo globs.
-- `src/main.js` / `src/v2.js` — each edition's own stamping and scroll states.
-  `window.__it` for scripted checks.
+- `src/exposure.css` — the Exposure `@font-face` and the `.dev` develop rules,
+  imported by editions 2 and 3.
+- `src/main.js` / `src/v2.js` / `src/v3.js` — each edition's own stamping and
+  scroll states. `window.__it` for scripted checks. `v2.js` also owns the
+  dark/light theme (`data-theme` on `<html>`, set before paint by an inline
+  script in `v2.html`).
 - `src/bowl.js` — slim renderer around the scroll piece's `bowlGeo` /
   `bowlMaterial` / `env` modules and `data/bowlPreset.js` (all copied,
   untouched). Sizes the bowl on the stage's shorter side; `exposure`, `lean`,
   `shrink` options.
 - `public/` — bowl GLB (Draco), normal map, teacher portraits, `teachers.json`,
   `fonts/ExposureTrialVAR.woff2`.
-- `vercel.json` — `cleanUrls` so `/v2` serves `v2.html`; `vite.config.js`
-  does the same rewrite in dev.
+- `vercel.json` — `cleanUrls` so `/v2` and `/v3` serve `v2.html` / `v3.html`;
+  `vite.config.js` does the same rewrite in dev.
 
 ## Deploy
 

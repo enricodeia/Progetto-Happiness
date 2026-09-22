@@ -5,8 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Insight Timer — Where practice makes progress · 2</title>
   <meta name="description" content="Insight Timer connects people and trusted teachers, and is building the science around what works and why." />
-  <meta name="color-scheme" content="dark" />
+  <meta name="color-scheme" content="dark light" />
   <meta name="theme-color" content="#000000" />
+  <script>
+    // the theme before first paint: ?theme=light|dark wins, then what was chosen last time
+    (function () { try {
+      var q = new URLSearchParams(location.search).get("theme");
+      var t = q || localStorage.getItem("it-v2-theme");
+      if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+    } catch (e) {} })();
+  </script>
   <meta property="og:title" content="Insight Timer — Where practice makes progress" />
   <meta property="og:description" content="Insight Timer connects people and trusted teachers, and is building the science around what works and why." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27%23b07a35%27/%3E%3Cpath d=%27M7 15h18a9 9 0 0 1-18 0z%27 fill=%27%23f5e6cf%27/%3E%3C/svg%3E" />

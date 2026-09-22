@@ -5,13 +5,7 @@
    scroll. Photographs black and white until you reach for them.
    ═══════════════════════════════════════════════════════════════════════ */
 @import "./base.css";
-
-@font-face {
-  font-family: "Exposure";
-  src: url("/fonts/ExposureTrialVAR.woff2") format("woff2");
-  font-weight: 400;
-  font-display: swap;
-}
+@import "./exposure.css";
 
 :root {
   --paper: #000000;
@@ -36,22 +30,38 @@
   --headline-weight: 400;
   --headline-tracking: -0.012em;
   --headline-lh: 1.06;
-  --expo-from: 100;   /* over-exposed on arrival; 0 is the face at rest */
+  --stroke: rgba(255, 255, 255, 0.85);
+  --stroke-ink: rgba(255, 255, 255, 0.72);
+  --glow: rgba(214, 167, 95, 0.20);
+  --photo-bg: #1a1a1c;
+}
+/* the same edition in light — ?theme=light, key L, the half-moon in the switch */
+:root[data-theme="light"] {
+  --paper: #f4f2ee;
+  --ink: #1d1d1f;
+  --ink-2: #6e6e73;
+  --ink-3: #86868b;
+  --gray: #ebe9e5;
+  --line: rgba(0, 0, 0, 0.1);
+  --accent: #b07a35;
+  --accent-ink: #9a6526;
+  --nav-bg: rgba(244, 242, 238, 0.72);
+  --nav-bg-scrolled: rgba(244, 242, 238, 0.88);
+  --nav-link: rgba(0, 0, 0, 0.82);
+  --nav-link-hover: #000;
+  --btn-bg: #1d1d1f;
+  --btn-ink: #fff;
+  --btn-bg-hover: #000;
+  --stroke: rgba(0, 0, 0, 0.8);
+  --stroke-ink: rgba(0, 0, 0, 0.62);
+  --glow: rgba(176, 122, 53, 0.16);
+  --photo-bg: #e2ded7;
+  color-scheme: light;
 }
 ::selection { background: var(--accent); color: #000; }
+:root[data-theme="light"] ::selection { color: #fff; }
+:root[data-theme="light"] .way-copy h3 { color: #fff; }
 .eyebrow { font-weight: 500; }
-
-/* ── develop: EXPO from over-exposed to rest as the block reveals ──────── */
-.display, .headline, .num { font-variation-settings: "EXPO" 0; }
-.dev {
-  font-variation-settings: "EXPO" var(--expo-from);
-  transition: font-variation-settings 1.7s var(--ease);
-  transition-delay: calc(var(--i, 0) * 110ms);
-}
-.is-in.dev, .is-in .dev { font-variation-settings: "EXPO" 0; }
-@media (prefers-reduced-motion: reduce) {
-  .dev { font-variation-settings: "EXPO" 0; transition: none; }
-}
 
 /* ── hero ──────────────────────────────────────────────────────────────── */
 .hero2 { padding: 64px 0 0; text-align: center; position: relative; overflow: hidden; }
@@ -64,7 +74,7 @@
   position: absolute; left: 50%; top: 54%;
   width: 78vmin; height: 78vmin; transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(214, 167, 95, 0.20), rgba(214, 167, 95, 0.06) 52%, transparent 72%);
+  background: radial-gradient(closest-side, var(--glow), transparent 72%);
   filter: blur(12px);
   pointer-events: none;
 }
@@ -157,8 +167,8 @@
 .sources li.is-on { color: var(--ink); }
 .sources li.is-on i { color: var(--accent-ink); }
 .trio2 { width: 100%; max-width: 520px; margin: 0 auto; display: block; overflow: visible; }
-.trio2 circle { fill: none; stroke: rgba(255, 255, 255, 0.85); stroke-width: 1.2; stroke-dasharray: 1; stroke-dashoffset: 1; }
-.trio2 text { fill: rgba(255, 255, 255, 0.72); font-family: var(--font); font-size: 13px; font-weight: 500; text-anchor: middle; opacity: 0; transition: opacity 0.5s var(--ease); }
+.trio2 circle { fill: none; stroke: var(--stroke); stroke-width: 1.2; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.trio2 text { fill: var(--stroke-ink); font-family: var(--font); font-size: 13px; font-weight: 500; text-anchor: middle; opacity: 0; transition: opacity 0.5s var(--ease); }
 .trio2 text.is-on { opacity: 1; }
 
 /* ── the ledger of numbers ─────────────────────────────────────────────── */
@@ -185,7 +195,7 @@
   border-top: 1px solid var(--line);
 }
 .roster li { display: grid; grid-template-columns: 48px 1fr auto; gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
-.roster img, .roster .initials { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #1a1a1c; }
+.roster img, .roster .initials { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: var(--photo-bg); }
 .roster img { filter: grayscale(1); transition: filter 0.4s var(--ease); }
 .roster li:hover img { filter: none; }
 .roster .initials { display: grid; place-items: center; font-size: 15px; font-weight: 600; color: var(--ink-3); }

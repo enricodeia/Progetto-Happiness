@@ -17,7 +17,31 @@ import {
 
 const navUpdate = mountNav();
 mountReveal();
-mountVersion(2);
+const vswitch = mountVersion(2);
+
+// ── dark | light — the same edition under two exposures ───────────────────
+const THEME_KEY = "it-v2-theme";
+const theme = () => document.documentElement.dataset.theme === "light" ? "light" : "dark";
+function setTheme(t, { remember = true } = {}) {
+  document.documentElement.dataset.theme = t;
+  if (remember) { try { localStorage.setItem(THEME_KEY, t); } catch {} }
+  const url = new URL(location.href);
+  if (t === "light") url.searchParams.set("theme", "light"); else url.searchParams.delete("theme");
+  history.replaceState(null, "", url);
+  themeBtn.setAttribute("aria-label", t === "light" ? "Switch to dark (L)" : "Switch to light (L)");
+  themeBtn.title = themeBtn.getAttribute("aria-label");
+}
+const themeBtn = document.createElement("button");
+themeBtn.type = "button";
+themeBtn.className = "vtheme";
+themeBtn.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 3.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg>';
+themeBtn.addEventListener("click", () => setTheme(theme() === "light" ? "dark" : "light"));
+vswitch.appendChild(themeBtn);
+setTheme(theme(), { remember: false });
+addEventListener("keydown", (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === "l" || e.key === "L") setTheme(theme() === "light" ? "dark" : "light");
+});
 
 // ── the bowl — a touch more exposure on the metal, a gentler lean ─────────
 const heroStage = $("#heroStage");
@@ -149,4 +173,6 @@ window.__it = {
   revealed: () => $$("[data-reveal].is-in").length,
   total: () => $$("[data-reveal]").length,
   preview,
+  get theme() { return theme(); },
+  setTheme,
 };

@@ -1,10 +1,11 @@
 import { defineConfig } from "vite";
 
-// `/v2` is the second edition. Vercel serves it from v2.html through
-// cleanUrls; in dev and preview this little rewrite does the same.
+// `/v2` and `/v3` are the other editions. Vercel serves them from v2.html /
+// v3.html through cleanUrls; in dev and preview this little rewrite does the same.
 function rewrite(req, _res, next) {
   const [path, qs] = req.url.split("?");
-  if (path === "/v2" || path === "/v2/") req.url = "/v2.html" + (qs ? "?" + qs : "");
+  const m = path.match(/^\/(v[23])\/?$/);
+  if (m) req.url = `/${m[1]}.html` + (qs ? "?" + qs : "");
   next();
 }
 const cleanUrls = {
@@ -21,7 +22,7 @@ export default defineConfig({
     target: "es2020",
     chunkSizeWarningLimit: 1200,
     rollupOptions: {
-      input: { main: "index.html", v2: "v2.html" },
+      input: { main: "index.html", v2: "v2.html", v3: "v3.html" },
     },
   },
 });

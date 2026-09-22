@@ -237,6 +237,12 @@ section[id] { scroll-margin-top: var(--nav-h); }
   color: var(--ink);
 }
 .vswitch a.is-current { background: var(--ink); color: var(--paper); }
+.vswitch .vtheme {
+  appearance: none; border: none; background: none; padding: 0; cursor: pointer;
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  color: var(--ink); margin-left: 2px; border-left: 1px solid var(--line); border-radius: 0; padding-left: 6px; width: 32px;
+}
+.vswitch .vtheme svg { width: 16px; height: 16px; display: block; }
 
 /* ── responsive — shared bits ──────────────────────────────────────────── */
 @media (max-width: 760px) {

@@ -1,0 +1,20 @@
+/* Exposure — the display serif, with its real EXPO axis (−100 → +100), and
+   the one motion the editions that use it share: text arrives over-exposed
+   and develops to rest as its block reveals. */
+@font-face {
+  font-family: "Exposure";
+  src: url("/fonts/ExposureTrialVAR.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+:root { --expo-from: 100; }
+.display, .headline, .num { font-variation-settings: "EXPO" 0; }
+.dev {
+  font-variation-settings: "EXPO" var(--expo-from);
+  transition: font-variation-settings 1.7s var(--ease);
+  transition-delay: calc(var(--i, 0) * 110ms);
+}
+.is-in.dev, .is-in .dev { font-variation-settings: "EXPO" 0; }
+@media (prefers-reduced-motion: reduce) {
+  .dev { font-variation-settings: "EXPO" 0; transition: none; }
+}
