@@ -20,7 +20,7 @@ mountVersion(4);
 // ── the object ────────────────────────────────────────────────────────────
 const pinStage = $("#pinStage");
 const chapters = $("#chapters");
-const bowl = createBowl({ canvas: $("#bowl"), host: pinStage, size: 0.72, lean: 26, shrink: 0.1, hover: true, reveal: true, wireAlpha: 0.26 });
+const bowl = createBowl({ canvas: $("#bowl"), host: pinStage, size: 0.6, lean: 14, shrink: 0.08, hover: true, hoverAmount: 0.7, reveal: true, wireAlpha: 0.26, revealRadius: 150 });
 /** 0 at the top of the chapters, 1 when their end reaches the bottom */
 const progress = () => {
   const r = chapters.getBoundingClientRect();
@@ -30,7 +30,7 @@ const progress = () => {
 // ── the chapter index: one line per chapter, filling as it is read ───────
 const chs = $$(".ch");
 const steps = $$("#steps li");
-const stepNum = $("#stepNum"), stepTitle = $("#stepTitle"), stepOf = $("#stepOf");
+const stepNum = $("#stepNum"), stepTitle = $("#stepTitle");
 const pin = $("#pin");
 let active = -1;
 function updateSteps() {
@@ -46,7 +46,6 @@ function updateSteps() {
     const n = String(cur).padStart(2, "0");
     stepNum.textContent = n;
     stepTitle.textContent = steps[cur]?.dataset.t || "";
-    stepOf.textContent = `${n} / ${String(chs.length - 1).padStart(2, "0")}`;
     pin.dataset.ch = String(cur);
   }
 }
@@ -93,13 +92,13 @@ scrollLoop(() => {
   navUpdate();
   const p = progress();
   bowl.setScroll(p);                       // the lean and the slight settle
-  bowl.setTurn(p * Math.PI * 1.5);         // a three-quarter turn over the read
-  bowl.setExposure(0.92 + 0.38 * p);       // more light on the metal, chapter by chapter
+  bowl.setTurn(p * Math.PI);               // a half turn over the read
+  bowl.setExposure(0.95 + 0.25 * p);       // a little more light on the metal, chapter by chapter
   // the ground follows: the bowl rises 6% of the stage and settles to 90%
   const H = pinStage.clientHeight;
   pinStage.style.setProperty("--gy", `${(-0.06 * H * p).toFixed(1)}px`);
-  pinStage.style.setProperty("--gs", (1 - 0.1 * p).toFixed(3));
-  pinStage.style.setProperty("--go", (1 - 0.25 * p).toFixed(3));
+  pinStage.style.setProperty("--gs", (1 - 0.08 * p).toFixed(3));
+  pinStage.style.setProperty("--go", (1 - 0.2 * p).toFixed(3));
   updateSteps();
 });
 

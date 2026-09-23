@@ -1,105 +1,117 @@
 import { createBowl } from "./bowl.js";
 import { TECHNIQUES, CATEGORIES } from "./data/techniques.js";
 import {
-  $, $$, clamp01, reduce,
-  EXPERIENCE_PHOTOS,
-  TEAM, teamPhoto, initials,
-  mountNav, mountReveal, mountCounters, mountFooter, mountVersion, scrollLoop, sectionQ, chapterFills,
+  $, $$, clamp01,
+  TEACHER_PHOTOS, EXPERIENCE_PHOTOS, PEOPLE_PHOTOS,
+  TEAM, PARTNERS, teamPhoto, partnerPhoto, initials,
+  mountNav, mountReveal, mountCounters, mountFooter, mountVersion, scrollLoop, chapterFills,
 } from "./common.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Edition 5 — the film. A sticky stage holds one full-frame photograph per
-// scene; the scenes pass over it with their words bottom left. Which frame
-// shows, how far it has drifted, how full each line of the index is — all
-// pure functions of the scroll. The bowl appears once, at the end, on black.
+// Edition 5 — the book. A contents page, a frontispiece, seven spreads and
+// a colophon. Almost nothing moves: things reveal as they arrive, the
+// leaders of the contents draw once, the numbers count once, the bowl turns
+// slowly and leans with the frontispiece. The folio at the bottom is the
+// one state read off the scroll.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const navUpdate = mountNav();
 mountReveal();
 mountVersion(5);
 
-// ── the frames ────────────────────────────────────────────────────────────
-const stage = $("#stage");
-const scenes = $$(".scene");
-const frameIdx = scenes.map((s) => Number(s.dataset.frame));
-const uniq = [...new Set(frameIdx.filter((i) => i >= 0))];
-stage.innerHTML = uniq.map((i) => `<img class="frame" data-frame="${i}" src="${EXPERIENCE_PHOTOS[i] || EXPERIENCE_PHOTOS[0]}" alt="" decoding="async" ${i === frameIdx[0] ? 'loading="eager"' : ""}>`).join("") + '<div class="scrim"></div>';
-const frames = new Map($$(".frame", stage).map((f) => [Number(f.dataset.frame), f]));
-let activeScene = -1;
-function showScene(i) {
-  if (i === activeScene) return;
-  activeScene = i;
-  const want = frameIdx[i];
-  frames.forEach((f, k) => f.classList.toggle("is-on", k === want));
-}
+// ── plates ────────────────────────────────────────────────────────────────
+const PHOTO = { teachers: TEACHER_PHOTOS, experiences: EXPERIENCE_PHOTOS, people: PEOPLE_PHOTOS };
+const plateSrc = (key) => {
+  const [set, idx] = String(key || "experiences:0").split(":");
+  const list = PHOTO[set] || EXPERIENCE_PHOTOS;
+  return list[Number(idx) || 0] || list[0];
+};
+$$("figure.plate[data-plate]").forEach((f) => { $("img", f).src = plateSrc(f.dataset.plate); });
 
-// ── the index on the right edge ───────────────────────────────────────────
-const steps = $$("#reelSteps li");
+// ── contents: a plate previews at the right while a line is hovered ───────
+const preview = $("#tocPreview");
+const previewImg = $("img", preview);
+const toc = $("#toc");
+toc.addEventListener("mouseover", (e) => {
+  const a = e.target.closest("a[data-plate]");
+  if (!a) return;
+  const src = plateSrc(a.dataset.plate);
+  if (previewImg.src !== src) previewImg.src = src;
+  preview.classList.add("is-on");
+});
+toc.addEventListener("mouseleave", () => preview.classList.remove("is-on"));
+
+// ── frontispiece ──────────────────────────────────────────────────────────
+const band = $("#band");
+const bowl = createBowl({ canvas: $("#bowl"), host: band, size: 0.78, lean: 12, shrink: 0.1, hover: true });
+const bandQ = () => {
+  const r = band.getBoundingClientRect();
+  return clamp01(-r.top / Math.max(1, r.height));
+};
 
 // ── people ────────────────────────────────────────────────────────────────
-const strip = $("#strip");
-const stripCap = $("#stripCap");
-const STRIP_IDLE = stripCap.textContent;
+const facesRow = $("#facesRow");
+const facesCap = $("#facesCap");
+const FACES_IDLE = facesCap.textContent;
 fetch("/teachers.json").then((r) => r.json()).then((list) => {
-  strip.innerHTML = list.slice(0, 10).map((t, i) => `<figure class="mini-face" tabindex="0" data-i="${i}" aria-label="${t.name}"><img src="/${t.img}" alt="" loading="eager" decoding="async" draggable="false"></figure>`).join("");
+  facesRow.innerHTML = list.slice(0, 10).map((t, i) => `<figure class="mini-face" tabindex="0" data-i="${i}" aria-label="${t.name}"><img src="/${t.img}" alt="" loading="eager" decoding="async" draggable="false"></figure>`).join("");
   const caption = (i) => {
     const t = list[i];
-    stripCap.innerHTML = t ? `<b>${t.name}</b>${t.loc ? ` · ${t.loc}` : ""}${t.followers ? ` · ${t.followers} followers` : ""}` : STRIP_IDLE;
+    facesCap.innerHTML = t ? `<b>${t.name}</b>${t.loc ? ` · ${t.loc}` : ""}${t.followers ? ` · ${t.followers} followers` : ""}` : FACES_IDLE;
   };
-  strip.addEventListener("mouseover", (e) => { const f = e.target.closest(".mini-face"); if (f) caption(Number(f.dataset.i)); });
-  strip.addEventListener("mouseleave", () => caption(-1));
-  strip.addEventListener("focusin", (e) => { const f = e.target.closest(".mini-face"); if (f) caption(Number(f.dataset.i)); });
-  strip.addEventListener("focusout", () => caption(-1));
-}).catch(() => { strip.innerHTML = ""; });
+  facesRow.addEventListener("mouseover", (e) => { const f = e.target.closest(".mini-face"); if (f) caption(Number(f.dataset.i)); });
+  facesRow.addEventListener("mouseleave", () => caption(-1));
+  facesRow.addEventListener("focusin", (e) => { const f = e.target.closest(".mini-face"); if (f) caption(Number(f.dataset.i)); });
+  facesRow.addEventListener("focusout", () => caption(-1));
+}).catch(() => { facesRow.innerHTML = ""; });
 
-// ── ways — the twelve biggest categories, and how many more ──────────────
-const top = [...CATEGORIES].sort((a, b) => TECHNIQUES[b].length - TECHNIQUES[a].length).slice(0, 12);
-$("#pills").innerHTML = top.map((c) => `<span class="pill">${c}<i>${TECHNIQUES[c].length}</i></span>`).join("") + `<span class="more">and ${CATEGORIES.length - top.length} more categories</span>`;
+// ── ways — the whole directory as one running index ───────────────────────
+$("#runindex").innerHTML = CATEGORIES.map((c) => `<span>${c}<i>${TECHNIQUES[c].length}</i></span>`).join(" ");
 
-// ── numbers, roster, footer ───────────────────────────────────────────────
+// ── numbers develop as they count; the roster; the footer ─────────────────
 mountCounters(document, {
   duration: 1600,
   onTick: (el, e) => { el.style.fontVariationSettings = `"EXPO" ${(100 * (1 - e)).toFixed(1)}`; },
 });
-$("#teamList").innerHTML = TEAM.map((p) => {
-  const src = teamPhoto(p);
-  return `<li>${src ? `<img src="${src}" alt="" loading="lazy" decoding="async">` : `<div class="initials">${initials(p.name)}</div>`}<div><b>${p.name}</b>${p.role ? `<span>${p.role}</span>` : ""}</div></li>`;
-}).join("");
+function roster(el, list, photo) {
+  el.innerHTML = list.map((p) => {
+    const src = photo(p);
+    return `<li>${src ? `<img src="${src}" alt="" loading="lazy" decoding="async">` : `<div class="initials">${initials(p.name)}</div>`}<div><b>${p.name}</b>${p.role ? `<span>${p.role}</span>` : ""}</div></li>`;
+  }).join("");
+}
+roster($("#teamList"), TEAM, teamPhoto);
+roster($("#partnerList"), PARTNERS, partnerPhoto);
 mountFooter();
 
-// ── the bowl, once, at the end ────────────────────────────────────────────
-const finalStage = $("#finalStage");
-const finalScene = $("#close");
-const bowl = createBowl({ canvas: $("#bowl"), host: finalStage, size: 0.8, exposure: 1.15, lean: 10, shrink: 0.08, hover: true });
-const finalQ = () => {
-  const r = finalScene.getBoundingClientRect();
-  return clamp01(1 - r.top / innerHeight);
-};
+// ── the folio — which page you are on ─────────────────────────────────────
+const pages = [$("#contents"), $("#frontis"), ...$$(".spread"), $("#close")];
+const titles = ["Contents", "Practice", "Wisdom", "People", "Ways", "Science", "Numbers", "Team", "Everybody"];
+const folioN = $("#folioN"), folioT = $("#folioT");
+let page = -1;
+function updateFolio() {
+  const fills = chapterFills(pages, 0.5);
+  let cur = 0;
+  for (let i = 0; i < fills.length; i++) if (fills[i] > 0) cur = i;
+  if (cur === page) return;
+  page = cur;
+  // contents and frontispiece are both page 00
+  folioN.textContent = String(Math.max(0, cur - 1)).padStart(2, "0");
+  folioT.textContent = titles[cur] || "";
+}
 
 // ── one scroll loop ───────────────────────────────────────────────────────
 scrollLoop(() => {
   navUpdate();
-  const fills = chapterFills(scenes, 0.5);
-  let cur = 0;
-  for (let i = 0; i < fills.length; i++) {
-    steps[i]?.style.setProperty("--f", fills[i].toFixed(3));
-    if (fills[i] > 0) cur = i;
-  }
-  steps.forEach((li, k) => li.classList.toggle("is-on", k === cur));
-  showScene(cur);
-  // the active frame drifts a little as its scene is read
-  const f = frames.get(frameIdx[cur]);
-  if (f && !reduce) f.style.setProperty("--kb", (1 + 0.06 * fills[cur]).toFixed(4));
-  bowl.setScroll(finalQ());
+  bowl.setScroll(bandQ());
+  updateFolio();
 });
 
 // for a scripted check
 window.__it = {
   bowl,
   edition: 5,
-  get scene() { return activeScene; },
-  scenes: () => scenes.length,
-  frames: () => frames.size,
+  get page() { return page; },
+  pages: () => pages.length,
   revealed: () => $$("[data-reveal].is-in").length,
   total: () => $$("[data-reveal]").length,
 };

@@ -15,17 +15,20 @@ photographs, same bowl, none of the choreography.
   page, everything said in lightest-grey tiles, one fact per tile — the bowl
   alive in one, the numbers in Exposure in others, faces, pills, circles.
 - **Edition 4** (`/v4`, key `4`) — the object. Apple's product-page grammar:
-  the bowl pinned on the left for the whole read, turning three quarters,
-  leaning to show its inside and taking more light as the chapters pass on
-  the right. White, system sans, Exposure only for numerals. Under the bowl,
-  one line per chapter fills as it is read. The cursor pulls the object a
-  little anywhere on the page and, over it, reveals the wireframe under the
-  metal (a soft disc, a fragment-shader mask on the bowl's own materials).
-- **Edition 5** (`/v5`, key `5`) — the film. Every chapter a full-frame
-  photograph held on a sticky stage while the words pass over it, bottom
-  left, white on a scrim; frames cross-fade and drift with the scroll. The
-  bowl appears once, at the end, on black. Chapter index as vertical lines
-  on the right edge, filling.
+  the bowl pinned on the left for the whole read, turning half way, leaning
+  a little and taking more light as the chapters pass on the right. White,
+  system sans, Exposure only for numerals. Every chapter sits on one
+  two-column grid (a narrow label column, a 520px text column) and says one
+  thing. Under the bowl, eight short strokes fill as the chapters are read.
+  The cursor pulls the object a little anywhere on the page and, over it,
+  reveals the wireframe under the metal (a soft disc, a fragment-shader mask
+  on the bowl's own materials).
+- **Edition 5** (`/v5`, key `5`) — the book. A contents page first: every
+  chapter a line in Exposure with a dotted leader running to its figure
+  (hover a line, its plate appears in the margin). The bowl as a
+  frontispiece in a wide band. Then spreads: a narrow margin with the
+  numeral, a small plate and its caption; a wide column with the words. A
+  folio at the bottom keeps the page. Warm paper #faf9f6.
 
 Keys `1` … `5` switch edition (also the small switch bottom left; bottom
 right on edition 4, where the chapter index owns the corner).
@@ -110,12 +113,11 @@ On phones the object pins on top and the chapters slide under it.
 
 ## Edition 5, top to bottom
 
-A sticky full-viewport stage with one `<img class="frame">` per distinct
-photograph; eight scenes scroll over it (00 Practice … 07 Everybody), each
-naming its frame with `data-frame`. Which frame is on, its slow drift
-(`--kb` scale), and the fill of each index line are pure functions of the
-scroll. The final scene is black with the bowl (glow behind, cursor pull) and
-the close.
+Contents (eight `.toc` lines, `data-plate` names the hover plate), the
+frontispiece band with the bowl and "Plate I" caption, the display title,
+then seven `.spread` sections (`.margin` numeral + label + `figure.plate`,
+`.body` headline + lead + `.module`), and the colophon. The folio reads the
+page off `chapterFills()`. Plates are `set:index` into the photo globs.
 
 ## Motion budget
 

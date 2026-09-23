@@ -17,6 +17,7 @@ const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 export function createBowl({
   canvas, host, size = 0.66, exposure = 1, lean = 14, shrink = 0.18,
   hover = false,            // the object tilts a little toward the cursor, wherever it is
+  hoverAmount = 1,          // how much — 1 is the default pull
   reveal = false,           // a soft disc around the cursor turns the metal into its wireframe
   wireColor = 0x1d1d1f, wireAlpha = 0.32, revealRadius = 170,
 }) {
@@ -149,10 +150,10 @@ float revealMask() {
       state.hx += (state.tx - state.hx) * 0.06;
       state.hy += (state.ty - state.hy) * 0.06;
       state.reveal += (state.revealTarget - state.reveal) * 0.1;
-      group.rotation.x = rad(P.model.rotX + lean * q) - state.hy * 0.07;
-      group.rotation.z = rad(P.model.rotZ || 0) + state.hx * 0.03;
+      group.rotation.x = rad(P.model.rotX + lean * q) - state.hy * 0.07 * hoverAmount;
+      group.rotation.z = rad(P.model.rotZ || 0) + state.hx * 0.03 * hoverAmount;
       group.position.y = 0.06 * H * q;
-      norm.rotation.y = state.spin + state.turn + state.hx * 0.16;
+      norm.rotation.y = state.spin + state.turn + state.hx * 0.16 * hoverAmount;
       if (reveal) {
         const r = canvas.getBoundingClientRect();
         const dpr = renderer.getPixelRatio();
