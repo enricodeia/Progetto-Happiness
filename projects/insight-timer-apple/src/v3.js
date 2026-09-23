@@ -20,7 +20,7 @@ mountVersion(3);
 
 // ── the bowl, in its tile ─────────────────────────────────────────────────
 const bowlTile = $("#bowlTile");
-const bowl = createBowl({ canvas: $("#bowl"), host: bowlTile, size: 0.74, lean: 12, shrink: 0.1 });
+const bowl = createBowl({ canvas: $("#bowl"), host: bowlTile, size: 0.74, lean: 12, shrink: 0.1, hover: true });
 const tileQ = () => {
   // 0 while the tile's centre sits at or below 60% of the viewport, 1 once it
   // has risen to the top

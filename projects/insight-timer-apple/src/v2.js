@@ -45,7 +45,7 @@ addEventListener("keydown", (e) => {
 
 // ── the bowl — a touch more exposure on the metal, a gentler lean ─────────
 const heroStage = $("#heroStage");
-const bowl = createBowl({ canvas: $("#bowl"), host: heroStage, size: 0.86, exposure: 1.18, lean: 10, shrink: 0.14 });
+const bowl = createBowl({ canvas: $("#bowl"), host: heroStage, size: 0.86, exposure: 1.18, lean: 10, shrink: 0.14, hover: true });
 const heroQ = () => {
   const r = heroStage.getBoundingClientRect();
   return clamp01(-r.top / Math.max(1, r.height * 0.8));

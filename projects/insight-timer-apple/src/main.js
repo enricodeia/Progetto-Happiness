@@ -20,7 +20,7 @@ mountVersion(1);
 
 // ── the bowl ─────────────────────────────────────────────────────────────
 const heroStage = $("#heroStage");
-const bowl = createBowl({ canvas: $("#bowl"), host: heroStage, size: 0.82 });
+const bowl = createBowl({ canvas: $("#bowl"), host: heroStage, size: 0.82, hover: true });
 function heroQ() {
   const r = heroStage.getBoundingClientRect();
   // 0 until the stage's top reaches the top of the viewport, 1 once most of

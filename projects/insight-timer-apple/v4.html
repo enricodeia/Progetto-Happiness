@@ -6,7 +6,7 @@
   <title>Insight Timer — Where practice makes progress · 4</title>
   <meta name="description" content="Insight Timer connects people and trusted teachers, and is building the science around what works and why." />
   <meta name="color-scheme" content="light" />
-  <meta name="theme-color" content="#f3f0ea" />
+  <meta name="theme-color" content="#ffffff" />
   <meta property="og:title" content="Insight Timer — Where practice makes progress" />
   <meta property="og:description" content="Insight Timer connects people and trusted teachers, and is building the science around what works and why." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27%23b07a35%27/%3E%3Cpath d=%27M7 15h18a9 9 0 0 1-18 0z%27 fill=%27%23f5e6cf%27/%3E%3C/svg%3E" />
@@ -45,22 +45,22 @@
         <div class="pin-stage" id="pinStage">
           <canvas class="pin-canvas" id="bowl" aria-label="A hand-hammered singing bowl"></canvas>
         </div>
-        <ol class="toc" id="toc" aria-label="Chapters">
-          <li class="is-on"><i>00</i>Practice</li>
-          <li><i>01</i>Wisdom</li>
-          <li><i>02</i>People</li>
-          <li><i>03</i>Ways</li>
-          <li><i>04</i>Science</li>
-          <li><i>05</i>Numbers</li>
-          <li><i>06</i>Team</li>
-          <li><i>07</i>Everybody</li>
-        </ol>
+        <div class="steps" aria-label="Chapters">
+          <ol class="steps-lines" id="steps">
+            <li class="is-on" data-t="Practice"></li><li data-t="Wisdom"></li><li data-t="People"></li><li data-t="Ways"></li>
+            <li data-t="Science"></li><li data-t="Numbers"></li><li data-t="Team"></li><li data-t="Everybody"></li>
+          </ol>
+          <div class="steps-cap">
+            <span class="now"><i id="stepNum">00</i><span id="stepTitle">Practice</span></span>
+            <span id="stepOf">00 / 07</span>
+          </div>
+        </div>
       </aside>
 
       <!-- ── the chapters ──────────────────────────────────────────────── -->
       <div class="chapters" id="chapters">
 
-        <section class="ch" id="hero">
+        <section class="ch is-hero" id="hero">
           <h1 class="display" data-reveal>Where practice makes progress.</h1>
           <p class="lead" data-reveal style="--i:1">As users find practices that help them, we’re building the science around what works and why.</p>
           <div class="links" data-reveal style="--i:2">
@@ -70,32 +70,40 @@
         </section>
 
         <section class="ch" id="statement">
-          <span class="k" data-reveal>01</span>
+          <header class="ch-head" data-reveal><span class="k">01</span><span class="t">Wisdom</span><span class="of">01 / 07</span></header>
           <h2 class="headline" data-reveal style="--i:1">Across traditions and cultures, people have found practices that improve wellbeing.</h2>
           <p class="lead" data-reveal style="--i:2">But we’ve never had a full picture of what works for each of us and why. It’s time we help this wisdom work for everybody.</p>
         </section>
 
         <section class="ch" id="guided">
-          <span class="k" data-reveal>02</span>
+          <header class="ch-head" data-reveal><span class="k">02</span><span class="t">People</span><span class="of">02 / 07</span></header>
           <h2 class="headline" data-reveal style="--i:1">We connect people and trusted teachers.</h2>
           <p class="lead" data-reveal style="--i:2"><b class="num" data-count="26,000">0</b> teachers, from psychologists to Buddhist monks, sharing the practices they live by.</p>
-          <div class="faces-row" id="facesRow" data-reveal style="--i:3"></div>
-          <p class="faces-cap" id="facesCap" aria-live="polite">The ten most followed. Hover a face.</p>
-          <div class="links" data-reveal style="--i:4"><a class="link" href="#">See all 26,000 teachers<span class="chev">›</span></a></div>
+          <div class="module" data-reveal style="--i:3">
+            <div class="module-label"><b>The ten most followed</b><span>of 26,000</span></div>
+            <div class="faces-row" id="facesRow"></div>
+            <p class="faces-cap" id="facesCap" aria-live="polite">Hover a face.</p>
+            <div class="links"><a class="link" href="#">See all 26,000 teachers<span class="chev">›</span></a></div>
+          </div>
         </section>
 
         <section class="ch" id="techniques">
-          <span class="k" data-reveal>03</span>
+          <header class="ch-head" data-reveal><span class="k">03</span><span class="t">Ways</span><span class="of">03 / 07</span></header>
           <h2 class="headline" data-reveal style="--i:1">With thousands of ways to feel good.</h2>
           <p class="lead" data-reveal style="--i:2">970 techniques across 45 categories, from box breathing to Tibetan singing bowls, each one described, taught and tracked.</p>
-          <p class="runindex" id="runindex" data-reveal style="--i:3"></p>
+          <div class="module" data-reveal style="--i:3">
+            <div class="module-label"><b>The directory</b><span>45 categories · 970 techniques</span></div>
+            <p class="runindex" id="runindex"></p>
+          </div>
         </section>
 
         <section class="ch" id="evidence">
-          <span class="k" data-reveal>04</span>
+          <header class="ch-head" data-reveal><span class="k">04</span><span class="t">Science</span><span class="of">04 / 07</span></header>
           <h2 class="headline" data-reveal style="--i:1">Three sources of evidence come together.</h2>
           <p class="lead" data-reveal style="--i:2">By combining research and individual outcomes at scale, we can understand which practice will help someone and when.</p>
-          <div class="sci" data-reveal style="--i:3">
+          <div class="module" data-reveal style="--i:3">
+            <div class="module-label"><b>Three sources</b><span>one map</span></div>
+          <div class="sci">
             <ol class="sources4">
               <li><i>01</i><div><b>Validated practices</b>Data from peer-reviewed research is mapped to every technique in our library.</div></li>
               <li><i>02</i><div><b>Member feedback</b>Self-reported data from users shows impact over time.</div></li>
@@ -114,13 +122,16 @@
               </g>
             </svg>
           </div>
+          </div>
         </section>
 
         <section class="ch" id="numbers">
-          <span class="k" data-reveal>05</span>
+          <header class="ch-head" data-reveal><span class="k">05</span><span class="t">Numbers</span><span class="of">05 / 07</span></header>
           <h2 class="headline" data-reveal style="--i:1">Practices that people actually live by.</h2>
           <p class="lead" data-reveal style="--i:2">We organize millions of context‑rich data points into a clearer understanding of what works.</p>
-          <div class="stats4" data-reveal style="--i:3">
+          <div class="module" data-reveal style="--i:3">
+            <div class="module-label"><b>By the numbers</b><span>2026</span></div>
+          <div class="stats4">
             <div><b data-count="30M+">0</b><span>members</span></div>
             <div><b data-count="26,000">0</b><span>teachers</span></div>
             <div><b data-count="350,000">0</b><span>recordings</span></div>
@@ -128,21 +139,25 @@
             <div><b data-count="125,000">0</b><span>therapists</span></div>
             <div><b data-count="17">0</b><span>years of practice</span></div>
           </div>
+          </div>
         </section>
 
         <section class="ch" id="team">
-          <span class="k" data-reveal>06</span>
+          <header class="ch-head" data-reveal><span class="k">06</span><span class="t">Team</span><span class="of">06 / 07</span></header>
           <h2 class="headline" data-reveal style="--i:1">The People Leading Insight</h2>
           <p class="lead" data-reveal style="--i:2">Our small but dedicated team of 70 people has transformed a basic meditation timer into a community of 30 million people and 20,000 teachers.</p>
-          <ul class="roster4" id="teamList" data-reveal style="--i:3"></ul>
-          <div class="partners4" data-reveal style="--i:4">
-            <p class="sub">Partners</p>
+          <div class="module" data-reveal style="--i:3">
+            <div class="module-label"><b>Leadership</b><span>12 people</span></div>
+            <ul class="roster4" id="teamList"></ul>
+          </div>
+          <div class="module partners4" data-reveal style="--i:4">
+            <div class="module-label"><b>Partners</b><span>6</span></div>
             <ul class="roster4" id="partnerList"></ul>
           </div>
         </section>
 
         <section class="ch" id="close">
-          <span class="k" data-reveal>07</span>
+          <header class="ch-head" data-reveal><span class="k">07</span><span class="t">Everybody</span><span class="of">07 / 07</span></header>
           <h2 class="display" data-reveal style="--i:1">Insight Timer is making the impact of practice clear for everybody.</h2>
           <div class="links" data-reveal style="--i:2">
             <a class="btn" href="#">Get the app</a>

@@ -14,7 +14,12 @@ import { BOWL_PRESET as P } from "./data/bowlPreset.js";
 const rad = (d) => (d * Math.PI) / 180;
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-export function createBowl({ canvas, host, size = 0.66, exposure = 1, lean = 14, shrink = 0.18 }) {
+export function createBowl({
+  canvas, host, size = 0.66, exposure = 1, lean = 14, shrink = 0.18,
+  hover = false,            // the object tilts a little toward the cursor, wherever it is
+  reveal = false,           // a soft disc around the cursor turns the metal into its wireframe
+  wireColor = 0x1d1d1f, wireAlpha = 0.32, revealRadius = 170,
+}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setClearColor(0x000000, 0);
@@ -50,7 +55,39 @@ export function createBowl({ canvas, host, size = 0.66, exposure = 1, lean = 14,
   relief.userData.kind = "normal";
   relief.userData.name = "bowl-normal.webp";
 
-  const state = { ready: false, shown: false, q: 0, spin: 0, turn: 0, exposure: 1, visible: true };
+  const state = {
+    ready: false, shown: false, q: 0, spin: 0, turn: 0, exposure: 1, visible: true,
+    // pointer: target and eased, in −1…1 across the window; client px for the mask
+    tx: 0, ty: 0, hx: 0, hy: 0, cx: -1e4, cy: -1e4, revealTarget: 0, reveal: 0,
+  };
+  // the mask lives in device pixels of this canvas — shared by every material
+  const maskU = {
+    uPointer: { value: new THREE.Vector2(-1e4, -1e4) },
+    uRadius: { value: revealRadius },
+    uReveal: { value: 0 },
+  };
+  const MASK_GLSL = `
+uniform vec2 uPointer; uniform float uRadius; uniform float uReveal;
+float revealMask() {
+  float d = distance(gl_FragCoord.xy, uPointer);
+  return uReveal * (1.0 - smoothstep(uRadius * 0.55, uRadius, d));
+}`;
+  // chain onto a material's own onBeforeCompile (the bowl materials already inject the relief)
+  function withMask(mat, expr) {
+    const prev = mat.onBeforeCompile;
+    mat.onBeforeCompile = (shader, renderer) => {
+      prev?.(shader, renderer);
+      Object.assign(shader.uniforms, maskU);
+      shader.fragmentShader = shader.fragmentShader
+        .replace("#include <common>", "#include <common>\n" + MASK_GLSL)
+        .replace("#include <opaque_fragment>", "#include <opaque_fragment>\n  " + expr);
+    };
+    mat.customProgramCacheKey = () => (mat.name || "m") + ":mask:" + expr;
+    mat.transparent = true;
+  }
+  const wireMat = new THREE.MeshBasicMaterial({ color: wireColor, wireframe: true, transparent: true, depthWrite: false });
+  wireMat.name = "wire";
+  if (reveal) withMask(wireMat, `gl_FragColor.a *= revealMask() * ${wireAlpha.toFixed(3)};`);
   const baseExposure = renderer.toneMappingExposure;
 
   bowlGeometries(P.model).then((parts) => {
@@ -63,8 +100,15 @@ export function createBowl({ canvas, host, size = 0.66, exposure = 1, lean = 14,
       s.relief.imageRepeat ??= [1, 1];
       const mat = makeSlotMaterial(part.slot);
       applySlot(mat, s, P.model.noiseSpace, { relief });
+      if (reveal) withMask(mat, "gl_FragColor.a *= 1.0 - revealMask();");
       const mesh = new THREE.Mesh(part.geometry, mat);
       norm.add(mesh);
+      if (reveal) {
+        // the same shell drawn as lines, visible only inside the disc
+        const wire = new THREE.Mesh(part.geometry, wireMat);
+        wire.renderOrder = 2;
+        norm.add(wire);
+      }
       box.union(part.geometry.boundingBox);
     }
     // the parts arrive with the widest span 2 and sitting on y = 0 — centre
@@ -101,10 +145,21 @@ export function createBowl({ canvas, host, size = 0.66, exposure = 1, lean = 14,
       const H = worldH();
       const s = size * (1 - shrink * q);
       group.scale.setScalar(s * worldMin());
-      group.rotation.x = rad(P.model.rotX + lean * q);
-      group.rotation.z = rad(P.model.rotZ || 0);
+      // the cursor's pull, eased so it never snaps
+      state.hx += (state.tx - state.hx) * 0.06;
+      state.hy += (state.ty - state.hy) * 0.06;
+      state.reveal += (state.revealTarget - state.reveal) * 0.1;
+      group.rotation.x = rad(P.model.rotX + lean * q) - state.hy * 0.07;
+      group.rotation.z = rad(P.model.rotZ || 0) + state.hx * 0.03;
       group.position.y = 0.06 * H * q;
-      norm.rotation.y = state.spin + state.turn;
+      norm.rotation.y = state.spin + state.turn + state.hx * 0.16;
+      if (reveal) {
+        const r = canvas.getBoundingClientRect();
+        const dpr = renderer.getPixelRatio();
+        maskU.uPointer.value.set((state.cx - r.left) * dpr, (r.height - (state.cy - r.top)) * dpr);
+        maskU.uRadius.value = revealRadius * dpr;
+        maskU.uReveal.value = state.reveal;
+      }
       renderer.toneMappingExposure = baseExposure * state.exposure;
       renderer.render(scene, camera);
       // the first frame with the metal on it: let the canvas fade in
@@ -121,6 +176,19 @@ export function createBowl({ canvas, host, size = 0.66, exposure = 1, lean = 14,
   resize();
   addEventListener("resize", resize);
 
+  // the cursor, anywhere in the window
+  if ((hover || reveal) && matchMedia("(hover: hover)").matches) {
+    addEventListener("pointermove", (e) => {
+      if (hover) {
+        state.tx = (e.clientX / innerWidth) * 2 - 1;
+        state.ty = (e.clientY / innerHeight) * 2 - 1;
+      }
+      state.cx = e.clientX; state.cy = e.clientY;
+      state.revealTarget = 1;
+    }, { passive: true });
+    document.addEventListener("mouseleave", () => { state.revealTarget = 0; state.tx = 0; state.ty = 0; });
+  }
+
   return {
     /** 0 at the top of the page, 1 once the hero has scrolled past */
     setScroll(q) { state.q = clamp01(q); },
@@ -130,6 +198,6 @@ export function createBowl({ canvas, host, size = 0.66, exposure = 1, lean = 14,
     setExposure(mult) { state.exposure = Math.max(0.05, mult || 1); },
     resize,
     get ready() { return state.ready; },
-    probe() { return { ready: state.ready, q: state.q, meshes: norm.children.length, size: group.scale.x }; },
+    probe() { return { ready: state.ready, q: state.q, meshes: norm.children.length, size: group.scale.x, reveal: +state.reveal.toFixed(2), hx: +state.hx.toFixed(3) }; },
   };
 }

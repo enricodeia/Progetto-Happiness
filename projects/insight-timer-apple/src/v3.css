@@ -8,13 +8,14 @@
 @import "./exposure.css";
 
 :root {
-  --paper: #f5f5f7;
-  --tile: #ffffff;
+  /* inverted 2026-09-23: white page, the tiles the lightest grey */
+  --paper: #ffffff;
+  --tile: #f5f5f7;
   --tile-dark: #1d1d1f;
-  --gray: #ffffff;
+  --gray: #f5f5f7;
   --line: rgba(0, 0, 0, 0.08);
-  --nav-bg: rgba(245, 245, 247, 0.72);
-  --nav-bg-scrolled: rgba(245, 245, 247, 0.88);
+  --nav-bg: rgba(255, 255, 255, 0.72);
+  --nav-bg-scrolled: rgba(255, 255, 255, 0.88);
   --font-display: "Exposure", Georgia, "Times New Roman", serif;
   --display-weight: 400;
   --display-tracking: -0.015em;
@@ -25,7 +26,6 @@
   --gap: 18px;
 }
 .footer { background: var(--paper); border-top: 1px solid var(--line); }
-.vswitch { background: rgba(255, 255, 255, 0.9); }
 
 /* ── hero ──────────────────────────────────────────────────────────────── */
 .hero3 { padding: 96px 0 56px; text-align: center; }
@@ -117,7 +117,7 @@ main { padding-bottom: 96px; }
 /* faces — a small crowd, colour on hover */
 .t-faces .faces { display: grid; grid-template-columns: repeat(10, 1fr); gap: 10px; margin-top: 22px; }
 .t-faces .faces.is-mini { grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 18px; }
-.mini-face { aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: #e6e6ea; margin: 0; transition: transform 0.4s var(--ease); }
+.mini-face { aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: #e8e8ec; margin: 0; transition: transform 0.4s var(--ease); }
 .mini-face img { width: 100%; height: 100%; object-fit: cover; }
 .mini-face:hover { transform: scale(1.1); }
 .faces-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-top: 18px; flex-wrap: wrap; }
@@ -131,7 +131,7 @@ main { padding-bottom: 96px; }
 .t-pills .marquee-row.is-reverse { animation-direction: reverse; animation-duration: 96s; }
 @keyframes marquee { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
 .t-pills:hover .marquee-row { animation-play-state: paused; }
-.pill { display: inline-flex; align-items: baseline; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--paper); font-size: 15px; font-weight: 500; letter-spacing: -0.01em; white-space: nowrap; }
+.pill { display: inline-flex; align-items: baseline; gap: 8px; padding: 10px 16px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-size: 15px; font-weight: 500; letter-spacing: -0.01em; white-space: nowrap; }
 .pill i { font-style: normal; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 @media (prefers-reduced-motion: reduce) { .t-pills .marquee-row { animation: none; } }
 

@@ -113,7 +113,7 @@ export function mountFooter() {
 }
 
 // ── 1 · 2 — two editions, two URLs, two keys ──────────────────────────────
-const EDITIONS = { 1: "/", 2: "/v2", 3: "/v3", 4: "/v4" };
+const EDITIONS = { 1: "/", 2: "/v2", 3: "/v3", 4: "/v4", 5: "/v5" };
 export function mountVersion(current) {
   const el = document.createElement("nav");
   el.className = "vswitch";
@@ -148,4 +148,14 @@ export function sectionQ(el) {
   const r = el.getBoundingClientRect();
   const span = Math.max(1, r.height - innerHeight);
   return clamp01(-r.top / span);
+}
+
+/** how far a reading line (a viewport fraction) has travelled through each
+ *  section: 0 before it, 1 after it — the fills of a chapter index */
+export function chapterFills(sections, lineFrac = 0.5) {
+  const line = innerHeight * lineFrac;
+  return sections.map((el) => {
+    const r = el.getBoundingClientRect();
+    return clamp01((line - r.top) / Math.max(1, r.height));
+  });
 }

@@ -3,7 +3,7 @@ import { TECHNIQUES, CATEGORIES } from "./data/techniques.js";
 import {
   $, $$, clamp01,
   TEAM, PARTNERS, teamPhoto, partnerPhoto, initials,
-  mountNav, mountReveal, mountCounters, mountFooter, mountVersion, scrollLoop,
+  mountNav, mountReveal, mountCounters, mountFooter, mountVersion, scrollLoop, chapterFills,
 } from "./common.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -20,29 +20,35 @@ mountVersion(4);
 // ── the object ────────────────────────────────────────────────────────────
 const pinStage = $("#pinStage");
 const chapters = $("#chapters");
-const bowl = createBowl({ canvas: $("#bowl"), host: pinStage, size: 0.72, lean: 26, shrink: 0.1 });
+const bowl = createBowl({ canvas: $("#bowl"), host: pinStage, size: 0.72, lean: 26, shrink: 0.1, hover: true, reveal: true, wireAlpha: 0.26 });
 /** 0 at the top of the chapters, 1 when their end reaches the bottom */
 const progress = () => {
   const r = chapters.getBoundingClientRect();
   return clamp01(-r.top / Math.max(1, r.height - innerHeight));
 };
 
-// ── which chapter is being read ───────────────────────────────────────────
+// ── the chapter index: one line per chapter, filling as it is read ───────
 const chs = $$(".ch");
-const toc = $$("#toc li");
+const steps = $$("#steps li");
+const stepNum = $("#stepNum"), stepTitle = $("#stepTitle"), stepOf = $("#stepOf");
 const pin = $("#pin");
 let active = -1;
-function activeChapter() {
-  const line = innerHeight * 0.5;
+function updateSteps() {
+  const fills = chapterFills(chs, 0.5);
   let cur = 0;
-  for (let i = 0; i < chs.length; i++) if (chs[i].getBoundingClientRect().top <= line) cur = i;
-  return cur;
-}
-function setActive(i) {
-  if (i === active) return;
-  active = i;
-  toc.forEach((li, k) => li.classList.toggle("is-on", k === i));
-  pin.dataset.ch = String(i);
+  for (let i = 0; i < fills.length; i++) {
+    steps[i]?.style.setProperty("--f", fills[i].toFixed(3));
+    if (fills[i] > 0) cur = i;
+  }
+  if (cur !== active) {
+    active = cur;
+    steps.forEach((li, k) => li.classList.toggle("is-on", k === cur));
+    const n = String(cur).padStart(2, "0");
+    stepNum.textContent = n;
+    stepTitle.textContent = steps[cur]?.dataset.t || "";
+    stepOf.textContent = `${n} / ${String(chs.length - 1).padStart(2, "0")}`;
+    pin.dataset.ch = String(cur);
+  }
 }
 
 // ── people — ten faces ────────────────────────────────────────────────────
@@ -94,7 +100,7 @@ scrollLoop(() => {
   pinStage.style.setProperty("--gy", `${(-0.06 * H * p).toFixed(1)}px`);
   pinStage.style.setProperty("--gs", (1 - 0.1 * p).toFixed(3));
   pinStage.style.setProperty("--go", (1 - 0.25 * p).toFixed(3));
-  setActive(activeChapter());
+  updateSteps();
 });
 
 // for a scripted check
