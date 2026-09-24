@@ -9,6 +9,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 @import "./base.css";
 @import "./exposure.css";
+@import "./editorial.css";
 
 :root {
   --paper: #ffffff;
@@ -17,6 +18,10 @@
   --nav-bg: rgba(255, 255, 255, 0.72);
   --nav-bg-scrolled: rgba(255, 255, 255, 0.9);
   --font-num: "Exposure", Georgia, "Times New Roman", serif;
+  --font-display: var(--font-num);
+  --ways-size: 21px;
+  --bignum-size: clamp(56px, 5.2vw, 88px);
+  --figrow-size: 24px;
 }
 .footer { background: var(--paper); border-top: 1px solid var(--line); }
 /* the edition switch moves right here: the chapter index owns the bottom left */
@@ -83,8 +88,13 @@
 .ch + .ch { border-top: 1px solid var(--line); }
 .ch .lbl { padding-top: 6px; }
 .ch .lbl i { display: block; font-style: normal; font-family: var(--font-num); font-size: 26px; line-height: 1; color: var(--accent-ink); margin-top: 12px; font-variation-settings: "EXPO" 0; }
-.ch .display { font-size: clamp(40px, 3.8vw, 60px); line-height: 1.02; font-weight: 600; letter-spacing: -0.028em; }
-.ch .headline { font-size: clamp(28px, 2.6vw, 40px); line-height: 1.1; font-weight: 600; letter-spacing: -0.022em; }
+.ch .display { font-family: var(--font); font-size: clamp(40px, 3.8vw, 60px); line-height: 1.02; font-weight: 600; letter-spacing: -0.028em; }
+.ch .headline { font-family: var(--font); font-size: clamp(28px, 2.6vw, 40px); line-height: 1.1; font-weight: 600; letter-spacing: -0.022em; }
+.ch .bignum-cap { font-size: 15px; }
+.ch .figrow { margin-top: 24px; }
+.ch .masthead { grid-template-columns: 1fr; }
+.ch .masthead div { font-size: 14px; padding: 8px 0; }
+.ch .masthead dd { font-size: 12px; }
 .ch .lead { font-size: 17px; line-height: 1.5; margin-top: 14px; max-width: 46ch; }
 .ch .links { margin-top: 22px; }
 .ch .link { font-size: 17px; }

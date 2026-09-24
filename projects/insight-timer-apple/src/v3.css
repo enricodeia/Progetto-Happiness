@@ -1,21 +1,18 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   Edition 3 — the bento (2026-09-22). Apple's keynote grammar: a light
-   grey page, everything said in white tiles, one fact per tile — the bowl
-   alive in one, the numbers in Exposure in others, faces, pills, circles.
-   Motion: tiles arrive in a stagger, then each tile's own small state.
+   Edition 3 — the essay (2026-09-24; the bento was set aside). Narrative
+   led: one measured column of reading, Exposure for what is said, the
+   system sans for how; between chapters a single wide photograph with a
+   caption. Nothing repeats, nothing is a grid. Motion: reveal, the titles
+   developing, one count, the circles drawing.
    ═══════════════════════════════════════════════════════════════════════ */
 @import "./base.css";
 @import "./exposure.css";
+@import "./editorial.css";
 
 :root {
-  /* inverted 2026-09-23: white page, the tiles the lightest grey */
   --paper: #ffffff;
-  --tile: #f5f5f7;
-  --tile-dark: #1d1d1f;
   --gray: #f5f5f7;
-  --line: rgba(0, 0, 0, 0.08);
-  --nav-bg: rgba(255, 255, 255, 0.72);
-  --nav-bg-scrolled: rgba(255, 255, 255, 0.88);
+  --line: rgba(0, 0, 0, 0.1);
   --font-display: "Exposure", Georgia, "Times New Roman", serif;
   --display-weight: 400;
   --display-tracking: -0.015em;
@@ -23,164 +20,66 @@
   --headline-weight: 400;
   --headline-tracking: -0.012em;
   --headline-lh: 1.06;
-  --gap: 18px;
+  --measure: 680px;
+  --ways-size: clamp(24px, 2.3vw, 30px);
+  --bignum-size: clamp(88px, 11vw, 160px);
+  --figrow-size: 28px;
 }
 .footer { background: var(--paper); border-top: 1px solid var(--line); }
+.small { font-size: 12px; color: var(--accent-ink); letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500; margin-bottom: 18px; }
+.measure { width: min(var(--measure), calc(100% - 48px)); margin: 0 auto; }
+.measure .lead { max-width: none; }
+.center .lead, .center .bignum-cap { margin-left: auto; margin-right: auto; }
 
 /* ── hero ──────────────────────────────────────────────────────────────── */
-.hero3 { padding: 96px 0 56px; text-align: center; }
-.hero3-copy { width: min(var(--narrow), calc(100% - 48px)); margin: 0 auto; }
-.hero3 .lead { margin-left: auto; margin-right: auto; }
-.hero3 .links { justify-content: center; }
+.hero { padding: 88px 0 0; text-align: center; }
+.hero .measure, .close .measure { max-width: 920px; width: min(920px, calc(100% - 48px)); }
+.hero .display { font-size: clamp(48px, 6.6vw, 96px); }
+.hero .lead, .close .lead { max-width: 680px; }
+.hero .lead { font-size: clamp(19px, 1.5vw, 22px); }
+.hero .links { justify-content: center; }
+.hero-stage { position: relative; height: min(56vh, 620px); margin-top: 24px; }
+.hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 1.2s var(--ease); }
+.hero-canvas.is-ready { opacity: 1; }
 
-/* ── bento grid ────────────────────────────────────────────────────────── */
-.bento3 {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  grid-auto-rows: minmax(236px, auto);
-  grid-auto-flow: dense;
-  gap: var(--gap);
-}
-/* one grid after another: the same gap between grids as between tiles */
-.bento3 + .bento3 { margin-top: var(--gap); }
-main { padding-bottom: 96px; }
-.bento-head { padding: 96px 0 32px; }
-.bento-head .lead { margin-top: 14px; }
-.bento-head.center .lead { margin-left: auto; margin-right: auto; }
-.bento-head + .bento3 { margin-top: 0; }
-.tile3 {
-  position: relative;
-  grid-column: span var(--c, 4);
-  grid-row: span var(--r, 1);
-  background: var(--tile);
-  border-radius: var(--radius);
-  padding: 28px 30px;
-  overflow: hidden;
-  display: flex; flex-direction: column;
-  min-width: 0;
-  container-type: inline-size;
-}
-.tile3.is-dark { background: var(--tile-dark); color: #fff; }
-.tile3.is-dark .lead, .tile3.is-dark .t-label { color: var(--dark-ink-2); }
-.tile3.is-dark .eyebrow { color: #e0b06f; }
-.tile3.is-dark .headline { color: #fff; }
-.tile3.is-flush { padding: 0; }
-.t-label { font-size: 15px; color: var(--ink-2); letter-spacing: -0.008em; }
-.t-title { font-size: 22px; font-weight: 600; letter-spacing: -0.016em; margin-top: 6px; }
-.t-title.serif { font-family: var(--font-display); font-weight: 400; font-size: clamp(24px, 2vw, 30px); line-height: 1.1; }
-.t-text { color: var(--ink-2); font-size: 16px; margin-top: 10px; line-height: 1.45; max-width: 44ch; }
-.tile3 .headline { font-size: clamp(26px, 2.6vw, 40px); }
-.tile3 .display { font-size: clamp(40px, 4.6vw, 72px); }
-.t-foot { margin-top: auto; padding-top: 18px; }
-.t-num {
-  font-family: var(--font-display);
-  /* sized to the tile it sits in, so "350,000" fits a narrow one */
-  font-size: clamp(40px, 22cqw, 104px);
-  line-height: 0.92; letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-  font-variation-settings: "EXPO" 100;
-  margin-top: auto;
-}
-.t-num + .t-label { margin-top: 12px; }
-.t-badge { position: absolute; top: 22px; left: 26px; font-size: 13px; font-weight: 600; color: var(--accent-ink); letter-spacing: 0.02em; z-index: 2; }
+/* ── the reading ───────────────────────────────────────────────────────── */
+.chapter { padding: 128px 0; }
+.chapter .headline { font-size: clamp(34px, 4vw, 56px); }
+.chapter .lead { font-size: clamp(18px, 1.4vw, 21px); margin-top: 22px; }
+.chapter .links { margin-top: 24px; }
+.statement .headline { font-size: clamp(36px, 4.6vw, 66px); }
 
-/* the bowl, alive in its tile */
-.t-bowl { min-height: 480px; }
-.t-bowl::before {
-  /* a soft ground under the metal, so it sits rather than floats */
-  content: ""; position: absolute; left: 50%; bottom: 26%;
-  width: 46%; height: 8%; transform: translateX(-50%);
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.12), transparent);
-  filter: blur(6px);
-  pointer-events: none;
-}
-.t-bowl canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 1.2s var(--ease); }
-.t-bowl canvas.is-ready { opacity: 1; }
-.t-bowl .t-caption { position: absolute; left: 30px; bottom: 26px; right: 30px; display: flex; justify-content: space-between; gap: 16px; font-size: 13px; color: var(--ink-3); z-index: 2; }
+/* a wide photograph between chapters */
+.figure { margin: 0 auto; width: min(var(--wrap), calc(100% - 48px)); }
+.figure img { width: 100%; aspect-ratio: 21 / 9; object-fit: cover; display: block; border-radius: 6px; background: var(--gray); }
+.figure figcaption { margin-top: 12px; font-size: 13px; color: var(--ink-3); display: flex; justify-content: space-between; gap: 16px; }
 
-/* photos */
-.t-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 1.4s var(--ease); }
-.t-photo:hover img { transform: scale(1.04); }
-.t-photo .t-cap { position: absolute; left: 24px; bottom: 22px; right: 24px; color: #fff; font-size: 14px; font-weight: 500; text-shadow: 0 1px 12px rgba(0, 0, 0, 0.4); z-index: 1; }
-.t-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.45), transparent 45%); }
-
-/* a card: photo on top, words beneath */
-.t-card .t-media { overflow: hidden; }
-.t-card img { width: 100%; aspect-ratio: 16 / 11; object-fit: cover; display: block; transition: transform 1.4s var(--ease); }
-.t-card:hover img { transform: scale(1.04); }
-.t-card .t-body { padding: 22px 26px 26px; }
-.t-card .t-body .k { font-size: 13px; color: var(--accent-ink); font-weight: 600; letter-spacing: 0.02em; }
-.t-card .t-body h3 { font-family: var(--font-display); font-weight: 400; font-size: clamp(22px, 1.9vw, 28px); line-height: 1.1; margin-top: 8px; letter-spacing: -0.01em; }
-.t-card .t-body p { color: var(--ink-2); font-size: 15px; margin-top: 8px; }
-
-/* faces — a small crowd, colour on hover */
-.t-faces .faces { display: grid; grid-template-columns: repeat(10, 1fr); gap: 10px; margin-top: 22px; }
-.t-faces .faces.is-mini { grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 18px; }
-.mini-face { aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: #e8e8ec; margin: 0; transition: transform 0.4s var(--ease); }
-.mini-face img { width: 100%; height: 100%; object-fit: cover; }
-.mini-face:hover { transform: scale(1.1); }
-.faces-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-top: 18px; flex-wrap: wrap; }
-.faces-caption { font-size: 15px; color: var(--ink-2); min-height: 1.5em; margin: 0; }
-.faces-foot .link { font-size: 15px; }
-.faces-caption b { color: var(--ink); font-weight: 600; }
-
-/* pills — one slow row inside its tile */
-.t-pills .marquee { margin-top: 22px; overflow: hidden; display: grid; gap: 10px; -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent); }
-.t-pills .marquee-row { display: flex; gap: 10px; width: max-content; animation: marquee 80s linear infinite; }
-.t-pills .marquee-row.is-reverse { animation-direction: reverse; animation-duration: 96s; }
-@keyframes marquee { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
-.t-pills:hover .marquee-row { animation-play-state: paused; }
-.pill { display: inline-flex; align-items: baseline; gap: 8px; padding: 10px 16px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-size: 15px; font-weight: 500; letter-spacing: -0.01em; white-space: nowrap; }
-.pill i { font-style: normal; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-@media (prefers-reduced-motion: reduce) { .t-pills .marquee-row { animation: none; } }
-
-/* the three circles, drawn as the tile reveals */
-.t-trio { align-items: center; justify-content: center; }
-.t-trio .trio { width: 100%; max-width: 380px; margin: 0 auto; display: block; overflow: visible; }
-.trio circle { fill: none; stroke: rgba(255, 255, 255, 0.85); stroke-width: 1.2; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.6s var(--ease); }
-.is-in .trio circle:nth-child(1) { stroke-dashoffset: 0; transition-delay: 0.3s; }
-.is-in .trio circle:nth-child(2) { stroke-dashoffset: 0; transition-delay: 0.8s; }
-.is-in .trio circle:nth-child(3) { stroke-dashoffset: 0; transition-delay: 1.3s; }
-.trio text { fill: rgba(255, 255, 255, 0.72); font-family: var(--font); font-size: 13px; font-weight: 500; text-anchor: middle; opacity: 0; transition: opacity 0.8s var(--ease) 2s; }
+/* the modules, in the measure */
+.byline { margin-top: 32px; }
+.ways { margin-top: 36px; }
+.fig-trio { margin: 56px auto 0; width: min(440px, calc(100% - 48px)); text-align: center; }
+.fig-trio .trio { width: 100%; display: block; overflow: visible; }
+.trio circle { fill: none; stroke: rgba(0, 0, 0, 0.8); stroke-width: 1.2; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.6s var(--ease); }
+.is-in .trio circle:nth-child(1) { stroke-dashoffset: 0; transition-delay: 0.2s; }
+.is-in .trio circle:nth-child(2) { stroke-dashoffset: 0; transition-delay: 0.7s; }
+.is-in .trio circle:nth-child(3) { stroke-dashoffset: 0; transition-delay: 1.2s; }
+.trio text { fill: var(--ink-2); font-family: var(--font); font-size: 13px; font-weight: 500; text-anchor: middle; opacity: 0; transition: opacity 0.8s var(--ease) 1.9s; }
 .is-in .trio text { opacity: 1; }
+.fig-trio figcaption { margin: 20px auto 0; font-size: 14px; color: var(--ink-2); line-height: 1.5; max-width: 420px; }
+.fig-trio figcaption i { font-style: normal; font-family: var(--font-display); color: var(--ink); }
+.bignum { margin-top: 48px; }
+.numbers .figrow { text-align: left; max-width: 560px; margin-left: auto; margin-right: auto; }
+.masthead { margin-top: 36px; }
 
-/* people inside a tile */
-.t-people .people { display: grid; grid-template-columns: repeat(6, 1fr); gap: 20px 16px; margin-top: 26px; }
-.person img, .person .initials { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: #e6e6ea; }
-.person .initials { display: grid; place-items: center; font-weight: 600; color: var(--ink-3); font-size: 18px; }
-.person b { display: block; font-size: 15px; font-weight: 600; margin-top: 10px; letter-spacing: -0.012em; }
-.person span { display: block; font-size: 13px; color: var(--ink-2); margin-top: 2px; }
-.t-people.is-partners .people { grid-template-columns: repeat(6, 1fr); }
-
-/* the closing tile */
-.t-cta { justify-content: center; }
-.t-cta .links { margin-top: 22px; }
-.t-cta .btn { background: #fff; color: #000; }
-.t-cta .btn:hover { background: #f5f5f7; }
-.t-cta .link { color: #e0b06f; }
+/* ── close ─────────────────────────────────────────────────────────────── */
+.close { padding: 160px 0 170px; border-top: 1px solid var(--line); }
+.close .display { font-size: clamp(40px, 5.2vw, 76px); }
 
 /* ── responsive ────────────────────────────────────────────────────────── */
-@media (max-width: 1000px) {
-  .bento3 { grid-template-columns: repeat(6, 1fr); grid-auto-rows: minmax(200px, auto); }
-  .tile3 { grid-column: span var(--ct, 3); }
-  .t-people .people { grid-template-columns: repeat(4, 1fr); }
-  .t-faces .faces { grid-template-columns: repeat(6, 1fr); }
-  .t-bowl { min-height: 420px; }
-}
 @media (max-width: 760px) {
-  .hero3 { padding: 64px 0 40px; }
-  .bento-head { padding: 72px 0 24px; }
-  :root { --gap: 12px; }
-  .bento3 { grid-template-columns: repeat(2, 1fr); grid-auto-rows: minmax(160px, auto); gap: var(--gap); }
-  main { padding-bottom: 64px; }
-  .tile3 { grid-column: span var(--cm, 2); grid-row: span 1; padding: 22px 22px; }
-  .t-bowl { min-height: 360px; }
-  .t-num { font-size: 48px; }
-  .t-people .people { grid-template-columns: repeat(3, 1fr); gap: 16px 10px; }
-  .person img, .person .initials { width: 56px; height: 56px; }
-  .t-faces .faces { grid-template-columns: repeat(5, 1fr); gap: 8px; }
-  .t-faces .faces.is-mini { grid-template-columns: repeat(6, 1fr); }
-  .t-trio { padding-top: 64px; }
-  .t-trio .trio { max-width: 280px; }
+  .hero { padding-top: 56px; }
+  .hero-stage { height: 44vh; }
+  .chapter { padding: 88px 0; }
+  .figure img { aspect-ratio: 4 / 3; }
+  .close { padding: 110px 0 120px; }
 }

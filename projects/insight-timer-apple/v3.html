@@ -22,8 +22,8 @@
     <div class="nav-in">
       <a class="nav-logo" href="/v3" aria-label="Insight Timer"></a>
       <nav class="nav-links" aria-label="Primary">
-        <a href="#guided">Discover</a>
-        <a href="#teachers">Teachers</a>
+        <a href="#statement">Discover</a>
+        <a href="#guided">Teachers</a>
         <a href="#evidence">Research</a>
         <a href="#numbers">For therapists</a>
         <a href="#team">About</a>
@@ -40,95 +40,69 @@
   <main id="main">
 
     <!-- ── 1 · Hero ─────────────────────────────────────────────────────── -->
-    <section class="hero3" id="hero">
-      <div class="hero3-copy">
-        <h1 class="display dev" data-reveal>Where practice<br>makes progress.</h1>
-        <p class="lead" data-reveal style="--i:1">As users find practices that help them, we’re building the science around what works and why.</p>
-        <div class="links" data-reveal style="--i:2">
+    <section class="hero" id="hero">
+      <div class="measure center">
+        <p class="small" data-reveal>Insight Timer</p>
+        <h1 class="display dev" data-reveal style="--i:1">Where practice<br>makes progress.</h1>
+        <p class="lead" data-reveal style="--i:2">As users find practices that help them, we’re building the science around what works and why.</p>
+        <div class="links" data-reveal style="--i:3">
           <a class="link" href="#">Get the app<span class="chev">›</span></a>
-          <a class="link" href="#teachers">Become a teacher<span class="chev">›</span></a>
+          <a class="link" href="#guided">Become a teacher<span class="chev">›</span></a>
         </div>
+      </div>
+      <div class="hero-stage" id="heroStage">
+        <canvas class="hero-canvas" id="bowl" aria-label="A hand-hammered singing bowl"></canvas>
       </div>
     </section>
 
-    <!-- ── 2 · What it is — the first bento ─────────────────────────────── -->
-    <section class="wrap bento3" id="statement">
-      <article class="tile3 t-bowl is-flush" style="--c:6;--r:2;--ct:6;--cm:2" data-reveal id="bowlTile">
-        <canvas id="bowl" aria-label="A hand-hammered singing bowl"></canvas>
-        <div class="t-caption"><span>Insight Timer</span><span>Since 2009</span></div>
-      </article>
-      <article class="tile3 is-dark" style="--c:6;--ct:6;--cm:2;--i:1" data-reveal>
-        <h2 class="headline dev">Across traditions and cultures, people have found practices that improve wellbeing.</h2>
-        <p class="t-text t-foot" style="color:var(--dark-ink-2)">But we’ve never had a full picture of what works for each of us and why. It’s time we help this wisdom work for everybody.</p>
-      </article>
-      <article class="tile3" style="--c:3;--ct:3;--cm:1;--i:2" data-reveal>
-        <span class="t-label">Members</span>
-        <b class="t-num" data-count="30M+">0</b>
-        <span class="t-label">practise here every day</span>
-      </article>
-      <article class="tile3 t-faces" style="--c:3;--ct:3;--cm:1;--i:3" data-reveal>
-        <span class="t-label">Teachers</span>
-        <b class="t-num" data-count="26,000">0</b>
-        <div class="faces is-mini" id="miniFaces"></div>
-      </article>
+    <!-- ── 2 · Statement ────────────────────────────────────────────────── -->
+    <section class="chapter statement" id="statement">
+      <div class="measure center">
+        <h2 class="headline dev" data-reveal>Across traditions and cultures, people have found practices that improve wellbeing.</h2>
+        <p class="lead" data-reveal style="--i:1">But we’ve never had a full picture of what works for each of us and why. It’s time we help this wisdom work for everybody.</p>
+      </div>
     </section>
 
-    <section class="wrap bento3" aria-label="Techniques">
-      <article class="tile3 t-pills" style="--c:8;--ct:6;--cm:2" data-reveal id="techniques">
-        <span class="t-label">Techniques</span>
-        <h3 class="t-title serif">970 ways to feel good, in 45 categories.</h3>
-        <div class="marquee"><div class="marquee-row" id="pillRow"></div><div class="marquee-row is-reverse" id="pillRowB"></div></div>
-      </article>
-      <article class="tile3 t-photo is-flush" style="--c:4;--ct:6;--cm:2;--i:1" data-reveal data-photo="experiences:1">
-        <img alt="" loading="lazy" decoding="async">
-        <span class="t-cap">Cold water, Norway</span>
-      </article>
+    <figure class="figure" data-reveal data-plate="experiences:1">
+      <img alt="" loading="lazy" decoding="async">
+      <figcaption><span>Cold water, a lake in the north.</span><span>Insight Timer</span></figcaption>
+    </figure>
+
+    <!-- ── 3 · People ───────────────────────────────────────────────────── -->
+    <section class="chapter" id="guided">
+      <div class="measure">
+        <p class="small" data-reveal>People</p>
+        <h2 class="headline dev" data-reveal style="--i:1">We connect people and trusted teachers.</h2>
+        <p class="lead" data-reveal style="--i:2">26,000 teachers, from psychologists to Buddhist monks, sharing the practices they live by.</p>
+        <p class="byline" id="byline" data-reveal style="--i:3"></p>
+        <div class="links" data-reveal style="--i:4"><a class="link" href="#">See all teachers<span class="chev">›</span></a></div>
+      </div>
     </section>
 
-    <!-- ── 3 · Guided by people ─────────────────────────────────────────── -->
-    <div class="wrap bento-head" id="guided">
-      <p class="eyebrow" data-reveal>Discover</p>
-      <h2 class="headline dev" data-reveal style="--i:1">On a platform guided by people.</h2>
-    </div>
-    <section class="wrap bento3" aria-label="Discover">
-      <article class="tile3 t-card is-flush" style="--c:4;--ct:6;--cm:2" data-reveal data-photo="teachers:4">
-        <div class="t-media"><img alt="" loading="lazy" decoding="async"></div>
-        <div class="t-body"><span class="k">01</span><h3>We connect people and trusted teachers.</h3><p>26,000 teachers, from psychologists to Buddhist monks, sharing the practices they live by.</p></div>
-      </article>
-      <article class="tile3 t-card is-flush" style="--c:4;--ct:6;--cm:2;--i:1" data-reveal data-photo="experiences:0">
-        <div class="t-media"><img alt="" loading="lazy" decoding="async"></div>
-        <div class="t-body"><span class="k">02</span><h3>With thousands of ways to feel good.</h3><p>Breathwork, sound healing, somatics, yoga nidra. 970 techniques, each mapped to what it helps with.</p></div>
-      </article>
-      <article class="tile3 t-card is-flush" style="--c:4;--ct:6;--cm:2;--i:2" data-reveal data-photo="experiences:3">
-        <div class="t-media"><img alt="" loading="lazy" decoding="async"></div>
-        <div class="t-body"><span class="k">03</span><h3>Practices that people actually live by.</h3><p>Thirty million members practise here every day. What helps them is what we learn from.</p></div>
-      </article>
+    <figure class="figure" data-reveal data-plate="experiences:3">
+      <img alt="" loading="lazy" decoding="async">
+      <figcaption><span>Practice, together.</span><span>Insight Timer</span></figcaption>
+    </figure>
+
+    <!-- ── 4 · Ways ─────────────────────────────────────────────────────── -->
+    <section class="chapter" id="techniques">
+      <div class="measure">
+        <p class="small" data-reveal>Ways</p>
+        <h2 class="headline dev" data-reveal style="--i:1">With thousands of ways to feel good.</h2>
+        <p class="lead" data-reveal style="--i:2">970 techniques across 45 categories, from box breathing to Tibetan singing bowls, each one described, taught and tracked.</p>
+        <p class="ways dev" id="ways" data-reveal style="--i:3"></p>
+        <div class="links" data-reveal style="--i:4"><a class="link" href="#">Browse the directory<span class="chev">›</span></a></div>
+      </div>
     </section>
 
-    <!-- ── 4 · Teachers ─────────────────────────────────────────────────── -->
-    <div class="wrap bento-head" id="teachers">
-      <p class="eyebrow" data-reveal>Teachers</p>
-      <h2 class="headline dev" data-reveal style="--i:1">Real people. Real practice.</h2>
-    </div>
-    <section class="wrap bento3" aria-label="Teachers">
-      <article class="tile3 t-faces" style="--c:12;--ct:6;--cm:2" data-reveal>
-        <span class="t-label">The thirty most followed on Insight Timer</span>
-        <div class="faces" id="faces"></div>
-        <div class="faces-foot">
-          <p class="faces-caption" id="facesCaption" aria-live="polite">Hover a face.</p>
-          <a class="link" href="#">See all 26,000 teachers<span class="chev">›</span></a>
-        </div>
-      </article>
-    </section>
-
-    <!-- ── 5 · The science ──────────────────────────────────────────────── -->
-    <div class="wrap bento-head" id="evidence">
-      <p class="eyebrow" data-reveal>The science</p>
-      <h2 class="headline dev" data-reveal style="--i:1">By combining research and individual outcomes at scale, we can understand which practice will help someone and when.</h2>
-    </div>
-    <section class="wrap bento3" aria-label="The science">
-      <article class="tile3 is-dark t-trio" style="--c:6;--r:2;--ct:6;--cm:2" data-reveal>
-        <span class="t-badge">Three sources of evidence</span>
+    <!-- ── 5 · Science ──────────────────────────────────────────────────── -->
+    <section class="chapter" id="evidence">
+      <div class="measure center">
+        <p class="small" data-reveal>Science</p>
+        <h2 class="headline dev" data-reveal style="--i:1">Three sources of evidence come together.</h2>
+        <p class="lead" data-reveal style="--i:2">By combining research and individual outcomes at scale, we can understand which practice will help someone and when.</p>
+      </div>
+      <figure class="fig-trio" data-reveal>
         <svg class="trio" viewBox="0 0 440 400" aria-hidden="true">
           <g class="trio-circles">
             <circle cx="170" cy="150" r="110" pathLength="1"></circle>
@@ -141,64 +115,51 @@
             <text x="220" y="386">Therapist reports</text>
           </g>
         </svg>
-      </article>
-      <article class="tile3" style="--c:3;--ct:3;--cm:1;--i:1" data-reveal>
-        <span class="t-label">01</span>
-        <h3 class="t-title">Validated practices</h3>
-        <p class="t-text">Data from peer-reviewed research is mapped to every technique in our library.</p>
-      </article>
-      <article class="tile3" style="--c:3;--ct:3;--cm:1;--i:2" data-reveal>
-        <span class="t-label">02</span>
-        <h3 class="t-title">Member feedback</h3>
-        <p class="t-text">Self-reported data from users shows impact over time.</p>
-      </article>
-      <article class="tile3" style="--c:3;--ct:3;--cm:1;--i:3" data-reveal>
-        <span class="t-label">03</span>
-        <h3 class="t-title">Therapist reporting</h3>
-        <p class="t-text">Clinical observation tells us what works in context.</p>
-      </article>
-      <article class="tile3 t-photo is-flush" style="--c:3;--ct:3;--cm:1;--i:4" data-reveal data-photo="experiences:4">
-        <img alt="" loading="lazy" decoding="async">
-        <span class="t-cap">A first-of-its-kind map of helpful practices.</span>
-      </article>
+        <figcaption><i>Fig. 1</i> · Validated practices, member feedback and therapist reporting. Together they show which practice works best in real circumstances.</figcaption>
+      </figure>
     </section>
+
+    <figure class="figure" data-reveal data-plate="experiences:4">
+      <img alt="" loading="lazy" decoding="async">
+      <figcaption><span>A mat, a morning.</span><span>Insight Timer</span></figcaption>
+    </figure>
 
     <!-- ── 6 · Numbers ──────────────────────────────────────────────────── -->
-    <div class="wrap bento-head" id="numbers">
-      <p class="eyebrow" data-reveal>For therapists</p>
-      <h2 class="headline dev" data-reveal style="--i:1">We organize millions of context‑rich data points into a clearer understanding of what works.</h2>
-    </div>
-    <section class="wrap bento3" aria-label="Numbers">
-      <article class="tile3" style="--c:6;--ct:6;--cm:2" data-reveal><b class="t-num" data-count="350,000">0</b><span class="t-label">recordings</span></article>
-      <article class="tile3" style="--c:3;--ct:3;--cm:1;--i:1" data-reveal><b class="t-num" data-count="970">0</b><span class="t-label">techniques</span></article>
-      <article class="tile3" style="--c:3;--ct:3;--cm:1;--i:2" data-reveal><b class="t-num" data-count="17">0</b><span class="t-label">years of practice</span></article>
-      <article class="tile3" style="--c:3;--ct:3;--cm:1;--i:3" data-reveal><b class="t-num" data-count="125,000">0</b><span class="t-label">therapists</span></article>
-      <article class="tile3" style="--c:6;--ct:6;--cm:2;--i:4" data-reveal><b class="t-num" data-count="30M+">0</b><span class="t-label">members</span></article>
-      <article class="tile3" style="--c:3;--ct:3;--cm:1;--i:5" data-reveal><b class="t-num" data-count="26,000">0</b><span class="t-label">teachers</span></article>
+    <section class="chapter numbers" id="numbers">
+      <div class="measure center">
+        <p class="small" data-reveal>Numbers</p>
+        <h2 class="headline dev" data-reveal style="--i:1">Practices that people actually live by.</h2>
+        <p class="lead" data-reveal style="--i:2">We organize millions of context‑rich data points into a clearer understanding of what works.</p>
+        <b class="bignum" data-count="30M+" data-reveal style="--i:3">0</b>
+        <p class="bignum-cap" data-reveal style="--i:3">members practise here every day.</p>
+        <ul class="figrow" data-reveal style="--i:4">
+          <li><b>26,000</b><span>teachers</span></li>
+          <li><b>970</b><span>techniques</span></li>
+          <li><b>125,000</b><span>therapists</span></li>
+        </ul>
+      </div>
     </section>
 
-    <!-- ── 7 · Team ─────────────────────────────────────────────────────── -->
-    <div class="wrap bento-head" id="team">
-      <p class="eyebrow" data-reveal>About</p>
-      <h2 class="headline dev" data-reveal style="--i:1">The People Leading Insight</h2>
-      <p class="lead" data-reveal style="--i:2">Our small but dedicated team of 70 people has transformed a basic meditation timer into a community of 30 million people and 20,000 teachers.</p>
-    </div>
-    <section class="wrap bento3" aria-label="Team">
-      <article class="tile3 t-people" style="--c:12;--ct:6;--cm:2" data-reveal>
-        <span class="t-label">Leadership</span>
-        <div class="people" id="teamGrid"></div>
-      </article>
-      <article class="tile3 t-people is-partners" style="--c:8;--ct:6;--cm:2" data-reveal>
-        <span class="t-label">Partners</span>
-        <div class="people" id="partnersGrid"></div>
-      </article>
-      <article class="tile3 is-dark t-cta" style="--c:4;--ct:6;--cm:2;--i:1" data-reveal id="close">
-        <h3 class="headline dev">Insight Timer is making the impact of practice clear for everybody.</h3>
-        <div class="links">
+    <!-- ── 7 · Masthead ─────────────────────────────────────────────────── -->
+    <section class="chapter" id="team">
+      <div class="measure">
+        <p class="small" data-reveal>Masthead</p>
+        <h2 class="headline dev" data-reveal style="--i:1">The People Leading Insight</h2>
+        <p class="lead" data-reveal style="--i:2">Our small but dedicated team of 70 people has transformed a basic meditation timer into a community of 30 million people and 20,000 teachers.</p>
+        <dl class="masthead" id="masthead" data-reveal style="--i:3"></dl>
+        <p class="partners-line" id="partners" data-reveal style="--i:4"></p>
+      </div>
+    </section>
+
+    <!-- ── 8 · Close ────────────────────────────────────────────────────── -->
+    <section class="chapter close" id="close">
+      <div class="measure center">
+        <h2 class="display dev" data-reveal>Insight Timer is making the impact of practice clear for everybody.</h2>
+        <div class="links center" data-reveal style="--i:1">
           <a class="btn" href="#">Get the app</a>
-          <a class="link" href="#teachers">Become a teacher<span class="chev">›</span></a>
+          <a class="link" href="#guided">Become a teacher<span class="chev">›</span></a>
         </div>
-      </article>
+      </div>
     </section>
   </main>
 

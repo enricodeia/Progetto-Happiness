@@ -1,0 +1,56 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Editorial modules shared by editions 3, 4 and 5 (2026-09-24). The
+   feedback was "narrative, not product; less busy": so a byline of three
+   faces instead of a wall of thirty, a sentence instead of an index, one
+   big number instead of a grid of six, a masthead instead of a grid of
+   portraits. Each edition sets --ways-size / --bignum-size to taste.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* three faces and a sentence */
+.byline { display: flex; align-items: center; gap: 16px; margin: 0; font-size: 15px; color: var(--ink-2); line-height: 1.45; }
+.byline-faces { display: flex; flex: none; padding-left: 10px; }
+.byline-faces img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--paper); margin-left: -10px; background: var(--gray); }
+.byline b { color: var(--ink); font-weight: 500; }
+
+/* the directory as one sentence */
+.ways {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--ways-size, 26px);
+  line-height: 1.32;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-wrap: pretty;
+  font-variation-settings: "EXPO" 0;
+}
+.ways i { font-style: normal; color: var(--ink-3); }
+
+/* one number, then three small ones */
+.bignum {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--bignum-size, clamp(72px, 9vw, 140px));
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  font-variation-settings: "EXPO" 100;
+  color: var(--ink);
+}
+.bignum-cap { margin: 12px 0 0; font-size: 17px; color: var(--ink-2); }
+.figrow { list-style: none; padding: 18px 0 0; margin: 32px 0 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; border-top: 1px solid var(--line); }
+.figrow b { display: block; font-family: var(--font-display); font-weight: 400; font-size: var(--figrow-size, 28px); line-height: 1; font-variant-numeric: tabular-nums; font-variation-settings: "EXPO" 0; color: var(--ink); }
+.figrow span { display: block; margin-top: 6px; font-size: 13px; color: var(--ink-2); }
+
+/* names and roles, no portraits */
+.masthead { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0 36px; }
+.masthead div { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.masthead dt { font-weight: 600; margin: 0; color: var(--ink); }
+.masthead dd { margin: 0; color: var(--ink-2); text-align: right; font-size: 13px; }
+.partners-line { margin: 24px 0 0; font-size: 14px; color: var(--ink-2); line-height: 1.6; }
+.partners-line b { color: var(--ink); font-weight: 500; }
+
+@media (max-width: 760px) {
+  .masthead { grid-template-columns: 1fr; }
+  .figrow { gap: 12px; }
+  .byline { align-items: flex-start; }
+}

@@ -1,6 +1,7 @@
 import logoSvg from "./assets/insight-timer-logo.svg?raw";
 import { TEAM } from "./data/team.js";
 import { PARTNERS } from "./data/partners.js";
+import { TECHNIQUES, CATEGORIES } from "./data/techniques.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // What both editions share: the nav, the reveal observer, the count-up, the
@@ -158,4 +159,31 @@ export function chapterFills(sections, lineFrac = 0.5) {
     const r = el.getBoundingClientRect();
     return clamp01((line - r.top) / Math.max(1, r.height));
   });
+}
+
+// ── editorial modules (editions 3, 4, 5) ──────────────────────────────────
+const lowerCat = (c) => c.split(" ").map((w) => (/^[A-Z]{2,}$/.test(w) ? w : w.toLowerCase())).join(" ");
+/** the directory as one sentence: the n biggest categories, then how many more */
+export function waysSentence(n = 10) {
+  const top = [...CATEGORIES].sort((a, b) => TECHNIQUES[b].length - TECHNIQUES[a].length).slice(0, n).map(lowerCat);
+  top[0] = top[0][0].toUpperCase() + top[0].slice(1);
+  const more = CATEGORIES.length - n;
+  return `${top.slice(0, -1).join(", ")} and ${top[top.length - 1]}. <i>Plus ${more} more categories.</i>`;
+}
+/** three faces and a sentence, from the real most-followed list */
+export function mountByline(el, { n = 3, total = 26000 } = {}) {
+  return fetch("/teachers.json").then((r) => r.json()).then((list) => {
+    const top = list.slice(0, n);
+    const names = top.map((t) => `<b>${t.name}</b>`);
+    const more = (total - n).toLocaleString("en-US");
+    el.innerHTML = `<span class="byline-faces">${top.map((t) => `<img src="/${t.img}" alt="${t.name}" loading="lazy" decoding="async">`).join("")}</span><span>${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}, with ${more} more teachers.</span>`;
+    return list;
+  }).catch(() => { el.textContent = ""; });
+}
+/** names and roles, no portraits */
+export function masthead(el, list) {
+  el.innerHTML = list.map((p) => `<div><dt>${p.name}</dt><dd>${p.role || ""}</dd></div>`).join("");
+}
+export function partnersLine(el, list) {
+  el.innerHTML = `<b>Partners</b> · ${list.map((p) => `${p.name}${p.role ? ` (${p.role})` : ""}`).join(", ")}.`;
 }

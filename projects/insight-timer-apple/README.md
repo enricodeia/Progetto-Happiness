@@ -11,15 +11,19 @@ photographs, same bowl, none of the choreography.
   arrives over-exposed and develops to rest, on entry or under the scroll.
   Photographs black and white until you reach for them. Also in light:
   `/v2?theme=light`, key `L`, or the half-moon in the switch (remembered).
-- **Edition 3** (`/v3`, key `3`) — the bento. Apple's keynote grammar: white
-  page, everything said in lightest-grey tiles, one fact per tile — the bowl
-  alive in one, the numbers in Exposure in others, faces, pills, circles.
+- **Edition 3** (`/v3`, key `3`) — the essay. Narrative led: one measured
+  column of reading in Exposure, a wide captioned photograph between
+  chapters, and the four editorial modules — a byline of three faces instead
+  of a wall of thirty, the directory as one sentence, one big number, a
+  masthead of names and roles. Nothing is a grid. (The bento was set aside
+  after the "too busy" note.)
 - **Edition 4** (`/v4`, key `4`) — the object. Apple's product-page grammar:
   the bowl pinned on the left for the whole read, turning half way, leaning
   a little and taking more light as the chapters pass on the right. White,
   system sans, Exposure only for numerals. Every chapter sits on one
   two-column grid (a narrow label column, a 520px text column) and says one
-  thing. Under the bowl, eight short strokes fill as the chapters are read.
+  thing, with the same editorial modules as edition 3. Under the bowl, eight
+  short strokes fill as the chapters are read.
   The cursor pulls the object a little anywhere on the page and, over it,
   reveals the wireframe under the metal (a soft disc, a fragment-shader mask
   on the bowl's own materials).
@@ -27,8 +31,9 @@ photographs, same bowl, none of the choreography.
   chapter a line in Exposure with a dotted leader running to its figure
   (hover a line, its plate appears in the margin). The bowl as a
   frontispiece in a wide band. Then spreads: a narrow margin with the
-  numeral, a small plate and its caption; a wide column with the words. A
-  folio at the bottom keeps the page. Warm paper #faf9f6.
+  numeral, a small plate and its caption; a wide column with the words and
+  the same editorial modules. A folio at the bottom keeps the page. Warm
+  paper #faf9f6.
 
 Keys `1` … `5` switch edition (also the small switch bottom left; bottom
 right on edition 4, where the chapter index owns the corner).
@@ -88,17 +93,20 @@ node shots/fontprobe.mjs [url...]           # is Exposure actually loaded + whic
 
 ## Edition 3, top to bottom
 
-1. **Hero** — Exposure title developing on load, no object.
-2. **Bento 1** — the bowl alive in a 2×2 white tile (leans as the tile
-   passes), the statement in a dark tile, Members 30M+, Teachers 26,000 with
-   six small faces, then a wide pills tile (two slow rows) and a photo.
-3. **Discover** — three card tiles, photo on top, words beneath.
-4. **Teachers** — one wide tile with the thirty faces, caption on hover.
-5. **The science** — dark 2×2 tile with the circles drawing on reveal, three
-   source tiles, one photo tile.
-6. **Numbers** — six tiles, numerals sized to their tile (`cqw`) and
-   developing as they count.
-7. **About** — leadership tile, partners tile, dark closing tile with the CTA.
+Hero (Exposure title developing, the bowl below), statement, a wide
+photograph, People (byline), a photograph, Ways (the sentence), Science (the
+three circles as "Fig. 1" with a caption), a photograph, Numbers (30M+ then
+three small figures), Masthead (names and roles, partners as a line), close.
+Everything in a 680px measure; photographs at the 1120px wrap.
+
+## The editorial modules (`src/editorial.css`, helpers in `common.js`)
+
+- `.byline` — `mountByline(el)`: three faces from the real most-followed
+  list and "Sarah Blondin, davidji and Tara Brach, with 25,997 more teachers."
+- `.ways` — `waysSentence(10)`: the ten biggest categories as one Exposure
+  sentence, "Plus 35 more categories."
+- `.bignum` + `.figrow` — one counted number, three small figures under a rule.
+- `.masthead` + `.partners-line` — `masthead(el, TEAM)`, `partnersLine(el, PARTNERS)`.
 
 ## Edition 4, top to bottom
 
@@ -137,7 +145,8 @@ the marquee (edition 1), the EXPO develop (edition 2). Nothing else moves.
 - `src/common.js` — nav (with active link), reveal, count-up, footer, the
   1 · 2 switch, the scroll loop, the photo globs.
 - `src/exposure.css` — the Exposure `@font-face` and the `.dev` develop rules,
-  imported by editions 2 and 3.
+  imported by editions 2 to 5.
+- `src/editorial.css` — the four editorial modules, imported by editions 3 to 5.
 - `src/main.js` / `src/v2.js` / `src/v3.js` / `src/v4.js` / `src/v5.js` —
   each edition's own stamping and scroll states. `window.__it` for scripted checks. `v2.js` also owns the
   dark/light theme (`data-theme` on `<html>`, set before paint by an inline

@@ -1,10 +1,10 @@
 import { createBowl } from "./bowl.js";
-import { TECHNIQUES, CATEGORIES } from "./data/techniques.js";
 import {
   $, $$, clamp01,
   TEACHER_PHOTOS, EXPERIENCE_PHOTOS, PEOPLE_PHOTOS,
-  TEAM, PARTNERS, teamPhoto, partnerPhoto, initials,
+  TEAM, PARTNERS,
   mountNav, mountReveal, mountCounters, mountFooter, mountVersion, scrollLoop, chapterFills,
+  waysSentence, mountByline, masthead, partnersLine,
 } from "./common.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -49,38 +49,17 @@ const bandQ = () => {
   return clamp01(-r.top / Math.max(1, r.height));
 };
 
-// ── people ────────────────────────────────────────────────────────────────
-const facesRow = $("#facesRow");
-const facesCap = $("#facesCap");
-const FACES_IDLE = facesCap.textContent;
-fetch("/teachers.json").then((r) => r.json()).then((list) => {
-  facesRow.innerHTML = list.slice(0, 10).map((t, i) => `<figure class="mini-face" tabindex="0" data-i="${i}" aria-label="${t.name}"><img src="/${t.img}" alt="" loading="eager" decoding="async" draggable="false"></figure>`).join("");
-  const caption = (i) => {
-    const t = list[i];
-    facesCap.innerHTML = t ? `<b>${t.name}</b>${t.loc ? ` · ${t.loc}` : ""}${t.followers ? ` · ${t.followers} followers` : ""}` : FACES_IDLE;
-  };
-  facesRow.addEventListener("mouseover", (e) => { const f = e.target.closest(".mini-face"); if (f) caption(Number(f.dataset.i)); });
-  facesRow.addEventListener("mouseleave", () => caption(-1));
-  facesRow.addEventListener("focusin", (e) => { const f = e.target.closest(".mini-face"); if (f) caption(Number(f.dataset.i)); });
-  facesRow.addEventListener("focusout", () => caption(-1));
-}).catch(() => { facesRow.innerHTML = ""; });
-
-// ── ways — the whole directory as one running index ───────────────────────
-$("#runindex").innerHTML = CATEGORIES.map((c) => `<span>${c}<i>${TECHNIQUES[c].length}</i></span>`).join(" ");
+// ── people, ways: a byline and a sentence ────────────────────────────────
+mountByline($("#byline"));
+$("#ways").innerHTML = waysSentence(10);
 
 // ── numbers develop as they count; the roster; the footer ─────────────────
 mountCounters(document, {
   duration: 1600,
   onTick: (el, e) => { el.style.fontVariationSettings = `"EXPO" ${(100 * (1 - e)).toFixed(1)}`; },
 });
-function roster(el, list, photo) {
-  el.innerHTML = list.map((p) => {
-    const src = photo(p);
-    return `<li>${src ? `<img src="${src}" alt="" loading="lazy" decoding="async">` : `<div class="initials">${initials(p.name)}</div>`}<div><b>${p.name}</b>${p.role ? `<span>${p.role}</span>` : ""}</div></li>`;
-  }).join("");
-}
-roster($("#teamList"), TEAM, teamPhoto);
-roster($("#partnerList"), PARTNERS, partnerPhoto);
+masthead($("#masthead"), TEAM);
+partnersLine($("#partners"), PARTNERS);
 mountFooter();
 
 // ── the folio — which page you are on ─────────────────────────────────────

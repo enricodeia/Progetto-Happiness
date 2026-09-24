@@ -8,6 +8,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 @import "./base.css";
 @import "./exposure.css";
+@import "./editorial.css";
 
 :root {
   --paper: #faf9f6;
@@ -24,6 +25,9 @@
   --headline-tracking: -0.012em;
   --headline-lh: 1.06;
   --book: 1180px;
+  --ways-size: clamp(22px, 2vw, 28px);
+  --bignum-size: clamp(72px, 8vw, 128px);
+  --figrow-size: 28px;
 }
 .footer { background: var(--paper); border-top: 1px solid var(--line); }
 .wrap.book { width: min(var(--book), calc(100% - 48px)); }
