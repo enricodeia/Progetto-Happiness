@@ -114,7 +114,7 @@ export function mountFooter() {
 }
 
 // ── 1 · 2 — two editions, two URLs, two keys ──────────────────────────────
-const EDITIONS = { 1: "/", 2: "/v2", 3: "/v3", 4: "/v4", 5: "/v5" };
+const EDITIONS = { 1: "/", 2: "/v2", 3: "/v3", 4: "/v4", 5: "/v5", 6: "/v6" };
 export function mountVersion(current) {
   const el = document.createElement("nav");
   el.className = "vswitch";

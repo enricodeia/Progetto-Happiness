@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Insight Timer — The instrument · 6</title>
+  <meta name="description" content="Strike the bowl. Circle the rim. Insight Timer, read by playing." />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#000000" />
+  <meta property="og:title" content="Insight Timer — The instrument" />
+  <meta property="og:description" content="Strike the bowl. Circle the rim." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27%23b07a35%27/%3E%3Cpath d=%27M7 15h18a9 9 0 0 1-18 0z%27 fill=%27%23f5e6cf%27/%3E%3C/svg%3E" />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/ExposureTrialVAR.woff2" crossorigin />
+  <link rel="preload" as="fetch" href="/models/bowl-option-c.glb" crossorigin />
+  <link rel="preload" as="image" href="/images/bowl-normal.webp" />
+  <link rel="stylesheet" href="/src/v6.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" id="nav">
+    <div class="nav-in">
+      <a class="nav-logo" href="/v6" aria-label="Insight Timer"></a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="/v3#statement">Discover</a>
+        <a href="/v3#guided">Teachers</a>
+        <a href="/v3#evidence">Research</a>
+        <a href="/v3#numbers">For therapists</a>
+        <a href="/v3#team">About</a>
+      </nav>
+      <div class="nav-right">
+        <button class="nav-icon" type="button" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        </button>
+        <a class="nav-cta" href="#">Get the app</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="stage" id="stage" aria-label="A singing bowl you can play">
+      <div class="glow" id="glow"></div>
+      <canvas id="bowl" aria-label="A hand-hammered singing bowl"></canvas>
+      <canvas id="waves" aria-hidden="true"></canvas>
+
+      <div class="story" aria-live="polite">
+        <h1 class="line" id="line">Where practice makes progress.</h1>
+        <p class="count"><i id="lineN">01</i> <span id="lineOf">/ 08</span></p>
+        <div class="links" id="ctaRow">
+          <a class="btn" href="#">Get the app</a>
+          <a class="link" href="/v3#guided">Become a teacher<span class="chev">›</span></a>
+        </div>
+      </div>
+
+      <div class="cursor" id="cursor" aria-hidden="true"></div>
+      <div class="meta">
+        <span></span>
+        <p class="hint" id="hint">Strike the bowl.</p>
+        <p class="keys"><span>Space to strike · ← → to sing · M mute</span><button class="sound" id="sound" type="button" aria-pressed="false"><i></i><b id="soundLabel">Sound off</b></button></p>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="/src/v6.js"></script>
+</body>
+</html>

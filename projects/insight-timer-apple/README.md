@@ -35,7 +35,17 @@ photographs, same bowl, none of the choreography.
   the same editorial modules. A folio at the bottom keeps the page. Warm
   paper #faf9f6.
 
-Keys `1` … `5` switch edition (also the small switch bottom left; bottom
+- **Edition 6** (`/v6`, key `6`) — the instrument. One black stage: the bowl
+  and a mallet. Strike it and it rings for real (Web Audio: the six radial
+  modes of a Tibetan bowl, each a beating pair of sines, with a mallet tick
+  and a room); the metal vibrates (the same modes as a vertex displacement,
+  slowed down so the eye can follow, antinode at the strike); the sound is
+  drawn as rings leaving the rim and as a circular oscilloscope of the real
+  waveform. Circle the rim and it sings. The story is read by playing:
+  every strike, once the last one is past its peak, brings the next line,
+  which develops (EXPO 100 → 0) while the sound lasts and fades as it decays.
+
+Keys `1` … `6` switch edition (also the small switch bottom left; bottom
 right on edition 4, where the chapter index owns the corner).
 
 ## Run
@@ -50,6 +60,9 @@ node shots/tour3.mjs [url] [w] [h] [outDir] # edition 3
 node shots/tour4.mjs [url] [w] [h] [outDir] # edition 4
 node shots/hover4.mjs [url] [outDir]        # edition 4: cursor tilt + wireframe reveal
 node shots/tour5.mjs [url] [w] [h] [outDir] # edition 5
+node shots/tour6.mjs [url] [w] [h] [outDir] # edition 6: attract, hover, strike, sing, next line, keys (prints levels/energies)
+node shots/voice-probe.mjs                  # the synth alone: strike decay, waveform, rub build
+node shots/waves-probe.mjs                  # the overlay alone: ring growth, scope circle
 node shots/mobile.mjs [url] 390 844         # edition 1 at phone width
 node shots/fontprobe.mjs [url...]           # is Exposure actually loaded + which family the h1 got
 ```
@@ -126,6 +139,32 @@ frontispiece band with the bowl and "Plate I" caption, the display title,
 then seven `.spread` sections (`.margin` numeral + label + `figure.plate`,
 `.body` headline + lead + `.module`), and the colophon. The folio reads the
 page off `chapterFills()`. Plates are `set:index` into the photo globs.
+
+## Edition 6, how it is built
+
+- `src/bowlVoice.js` — the synth. `createBowlVoice({ f0 })` → `ensure()` (from
+  a gesture), `strike({ strength, brightness })`, `rub(rate)` per frame,
+  `update(dt)` per frame, `energies()` (six 0..1), `level`, `waveform(out)`,
+  `setMuted()`. Six partials at [1, 2.78, 5.31, 8.55, 12.3, 16.6] × f0, each a
+  pair of sines split by a beat of 1.3 … 7.5 Hz; decay taus 11 … 1.1 s; a
+  JS energy model per partial writes the gains; compressor → dry + convolver
+  (2.6 s synthesised room, wet 0.28) → master → analyser.
+- `src/waves.js` — the overlay. `createWaves(canvas)` → `resize()`,
+  `setCenter(x, y, r)`, `strike()`, `pulse(level)`, `scope(samples, gain)`,
+  `draw(dt)`. Rings pooled (24), one colour, alpha only.
+- `src/bowl.js` with `ring: true` — `withRing(mat)` chains a vertex
+  displacement onto the bowl materials' own `onBeforeCompile` (after their
+  `vBsPos = transformed;`, so the relief stays welded): mode k bends the
+  wall into cos((k+2)θ), weighted to the rim. `setModes(energies, theta)`,
+  `pulse()` (a strike squash on the group scale), `pick(x, y)` (raycast on
+  the shells + the rim plane: `theta`, `planeR` where 1 = the rim),
+  `toScreen()`, and `rim / group / norm` exposed for the mallet.
+- `src/v6.js` — the mallet (a felt head and a wooden handle in the bowl's
+  group, riding the rim at the pointer's angle: hovering, pressed, laid
+  down), pointer → strike (on the metal or just inside the rim) and rub
+  (moving on the rim band 0.78 … 1.5, rate from angular speed), keys (Space,
+  ← →, M), the silent attract strike, the story rule, and one frame loop
+  that reads the voice and writes the bowl, the waves, the text and the glow.
 
 ## Motion budget
 
