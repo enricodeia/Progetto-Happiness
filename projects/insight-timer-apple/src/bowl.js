@@ -21,6 +21,7 @@ export function createBowl({
   reveal = false,           // a soft disc around the cursor turns the metal into its wireframe
   wireColor = 0x1d1d1f, wireAlpha = 0.32, revealRadius = 170,
   ring = false,             // the shells can vibrate: the (2,0), (3,0)... modes of a real bowl, as a vertex displacement
+  ringScale = 1,            // how far the shells bend (0 keeps them still, for reduced motion)
   offsetY = 0,              // the object's resting height, as a share of the visible height
 }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
@@ -174,8 +175,36 @@ vec3 ringDisp(vec3 p) {
     rim.foot = (box.min.y - c.y) * 0.5;
     rim.height = (box.max.y - box.min.y) * 0.5;
     ringU.uYRange.value.set(box.min.y + (box.max.y - box.min.y) * 0.25, box.max.y);
+    // picking never touches the two million triangles of the shells: the
+    // outer shell's profile, sampled once, becomes a 6k-triangle lathe
+    const outer = parts.find((p) => p.slot === "A") || parts[0];
+    proxy = latheProxy(outer.geometry, box);
     state.ready = true;
   });
+
+  let proxy = null;
+  function latheProxy(geometry, box) {
+    const pos = geometry.attributes.position;
+    const BINS = 48;
+    const y0 = box.min.y, span = Math.max(1e-6, box.max.y - box.min.y);
+    const maxR = new Float32Array(BINS).fill(-1);
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      const b = Math.min(BINS - 1, Math.max(0, Math.floor(((y - y0) / span) * BINS)));
+      const r = Math.hypot(x, z);
+      if (r > maxR[b]) maxR[b] = r;
+    }
+    // an empty bin borrows its neighbour, so the profile has no holes
+    for (let b = 0; b < BINS; b++) if (maxR[b] < 0) maxR[b] = b > 0 ? maxR[b - 1] : 0;
+    for (let b = BINS - 2; b >= 0; b--) if (maxR[b] <= 0) maxR[b] = maxR[b + 1];
+    const pts = [new THREE.Vector2(0, y0)];
+    for (let b = 0; b < BINS; b++) pts.push(new THREE.Vector2(Math.max(0.001, maxR[b]), y0 + ((b + 0.5) / BINS) * span));
+    pts.push(new THREE.Vector2(Math.max(0.001, maxR[BINS - 1]), y0 + span));
+    const geo = new THREE.LatheGeometry(pts, 64);
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+    m.matrixAutoUpdate = false;   // it is never in the scene; it borrows norm's matrix at pick time
+    return m;
+  }
 
   const worldH = () => 2 * P.cam.dist * Math.tan(rad(P.cam.fov) / 2);
   // the shorter side of the stage, in world units — so a phone gets a bowl
@@ -186,6 +215,8 @@ vec3 ringDisp(vec3 p) {
     const r = host.getBoundingClientRect();
     const w = Math.max(1, Math.round(r.width));
     const h = Math.max(1, Math.round(r.height));
+    // a window dragged to another display changes the ratio with it
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -218,7 +249,7 @@ vec3 ringDisp(vec3 p) {
         ringU.uModeOsc.value.set(ringState.osc);
         // the strike itself: a quick squash that springs back
         const pt = ringState.pulseT;
-        const squash = pt < 1 ? 0.02 * ringState.pulse * Math.cos(2 * Math.PI * 5.5 * pt) * Math.exp(-pt / 0.22) : 0;
+        const squash = pt < 1 ? 0.02 * ringScale * ringState.pulse * Math.cos(2 * Math.PI * 5.5 * pt) * Math.exp(-pt / 0.22) : 0;
         group.scale.setScalar(s * worldMin() * (1 - squash));
       }
       if (reveal) {
@@ -258,6 +289,7 @@ vec3 ringDisp(vec3 p) {
   }
 
   // ── picking: where on the bowl (or on the plane of its rim) the pointer is ─
+  // Runs against the lathe proxy only, with nothing allocated per call.
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
   const planeN = new THREE.Vector3();
@@ -265,22 +297,28 @@ vec3 ringDisp(vec3 p) {
   const plane = new THREE.Plane();
   const hitP = new THREE.Vector3();
   const tmp = new THREE.Vector3();
+  const lw = new THREE.Vector3(), gw = new THREE.Vector3();
+  const hits = [];
+  const out = { hit: false, plane: false, theta: 0, thetaGroup: 0, rLocal: 0, y: 0, planeTheta: 0, planeThetaGroup: 0, planeR: 0 };
   function pick(clientX, clientY) {
     const r = canvas.getBoundingClientRect();
     ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
-    const out = { hit: false, plane: false, theta: 0, thetaGroup: 0, rLocal: 0, y: 0, point: null, planePoint: null };
-    const shells = norm.children.filter((m) => m.userData.shell);
-    const hits = raycaster.intersectObjects(shells, false);
-    if (hits.length) {
-      out.hit = true;
-      out.point = hits[0].point.clone();
-      const l = norm.worldToLocal(hits[0].point.clone());
-      out.theta = Math.atan2(l.z, l.x);
-      out.y = l.y;
-      const g = group.worldToLocal(hits[0].point.clone());
-      out.thetaGroup = Math.atan2(g.z, g.x);
-      out.rLocal = Math.hypot(l.x, l.z);
+    out.hit = false; out.plane = false;
+    if (proxy) {
+      proxy.matrixWorld.copy(norm.matrixWorld);
+      hits.length = 0;
+      proxy.raycast(raycaster, hits);
+      if (hits.length) {
+        hits.sort((a, b) => a.distance - b.distance);
+        out.hit = true;
+        lw.copy(hits[0].point); norm.worldToLocal(lw);
+        gw.copy(hits[0].point); group.worldToLocal(gw);
+        out.theta = Math.atan2(lw.z, lw.x);
+        out.y = lw.y;
+        out.thetaGroup = Math.atan2(gw.z, gw.x);
+        out.rLocal = Math.hypot(lw.x, lw.z);
+      }
     }
     // the plane of the rim, in the world
     planeP.set(0, rim.y, 0); group.localToWorld(planeP);
@@ -288,12 +326,11 @@ vec3 ringDisp(vec3 p) {
     plane.setFromNormalAndCoplanarPoint(planeN, planeP);
     if (raycaster.ray.intersectPlane(plane, hitP)) {
       out.plane = true;
-      out.planePoint = hitP.clone();
-      const l = norm.worldToLocal(hitP.clone());
-      const g = group.worldToLocal(hitP.clone());
-      out.planeTheta = Math.atan2(l.z, l.x);
-      out.planeThetaGroup = Math.atan2(g.z, g.x);
-      out.planeR = Math.hypot(l.x, l.z);          // 1 = the rim, in shell units
+      lw.copy(hitP); norm.worldToLocal(lw);
+      gw.copy(hitP); group.worldToLocal(gw);
+      out.planeTheta = Math.atan2(lw.z, lw.x);
+      out.planeThetaGroup = Math.atan2(gw.z, gw.x);
+      out.planeR = Math.hypot(lw.x, lw.z);          // 1 = the rim, in shell units
       if (!out.hit) { out.theta = out.planeTheta; out.thetaGroup = out.planeThetaGroup; out.rLocal = out.planeR; }
     }
     return out;
@@ -311,7 +348,7 @@ vec3 ringDisp(vec3 p) {
     /** the six modes' energies (0..1) and the angle (shell space) the antinode should sit at */
     setModes(energies, theta = null) {
       const a = ringU.uModeAmp.value;
-      for (let k = 0; k < 6; k++) a[k] = clamp01(energies[k] || 0) * RING_AMP[k];
+      for (let k = 0; k < 6; k++) a[k] = clamp01(energies[k] || 0) * RING_AMP[k] * ringScale;
       if (theta !== null) { const ph = ringU.uModePhase.value; for (let k = 0; k < 6; k++) ph[k] = (k + 2) * theta; }
     },
     /** the squash of a strike, 0..1 */
@@ -325,6 +362,6 @@ vec3 ringDisp(vec3 p) {
     setExposure(mult) { state.exposure = Math.max(0.05, mult || 1); },
     resize,
     get ready() { return state.ready; },
-    probe() { return { ready: state.ready, q: state.q, meshes: norm.children.length, size: group.scale.x, reveal: +state.reveal.toFixed(2), hx: +state.hx.toFixed(3), modes: Array.from(ringU.uModeAmp.value, (v) => +v.toFixed(4)), rimY: +rim.y.toFixed(3) }; },
+    probe() { return { ready: state.ready, q: state.q, meshes: norm.children.length, size: group.scale.x, reveal: +state.reveal.toFixed(2), hx: +state.hx.toFixed(3), modes: Array.from(ringU.uModeAmp.value, (v) => +v.toFixed(4)), rimY: +rim.y.toFixed(3), proxyTris: proxy ? proxy.geometry.index.count / 3 : 0 }; },
   };
 }

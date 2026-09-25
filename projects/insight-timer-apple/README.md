@@ -158,13 +158,21 @@ page off `chapterFills()`. Plates are `set:index` into the photo globs.
   wall into cos((k+2)θ), weighted to the rim. `setModes(energies, theta)`,
   `pulse()` (a strike squash on the group scale), `pick(x, y)` (raycast on
   the shells + the rim plane: `theta`, `planeR` where 1 = the rim),
-  `toScreen()`, and `rim / group / norm` exposed for the mallet.
+  `toScreen()`, and `rim / group / norm` exposed for the mallet. Picking
+  never touches the two million triangles of the shells: the outer shell's
+  profile is sampled once into a 6k-triangle lathe proxy (0.2 ms per pick).
 - `src/v6.js` — the mallet (a felt head and a wooden handle in the bowl's
   group, riding the rim at the pointer's angle: hovering, pressed, laid
   down), pointer → strike (on the metal or just inside the rim) and rub
-  (moving on the rim band 0.78 … 1.5, rate from angular speed), keys (Space,
-  ← →, M), the silent attract strike, the story rule, and one frame loop
-  that reads the voice and writes the bowl, the waves, the text and the glow.
+  (moving on the rim band 0.78 … 1.5, rate from angular speed, read once per
+  frame, decaying when the mallet is held still), keys (Space, ← →, M), the
+  silent attract strike (until anything is touched), the story rule (each
+  strike, given 2.5 s since the last, brings the next line), and one frame
+  loop that reads the voice and writes the bowl, the waves, the text and the
+  glow. Input is never gated on the AudioContext: strike and press happen
+  synchronously, `ensure()` is fire-and-forget from the same gesture (and
+  from pointerup, the activation event on touch). A hidden tab ramps the
+  master out and suspends the context; blur lets go of every held key.
 
 ## Motion budget
 

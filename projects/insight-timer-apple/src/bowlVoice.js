@@ -217,6 +217,32 @@ export function createBowlVoice({ f0 = 246, master = 0.6 } = {}) {
     g.linearRampToValueAtTime(muted ? 0 : master, now + 0.03);
   }
 
+  // the tab goes away: the model stops (no frames), so the graph must not
+  // hold its last gains as a drone. Ramp out, then suspend; resume restores.
+  let asleep = false;
+  async function suspend() {
+    if (!built || destroyed || asleep) return;
+    asleep = true;
+    rate = 0;
+    const now = ctx.currentTime;
+    const g = masterGain.gain;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(g.value, now);
+    g.linearRampToValueAtTime(0, now + 0.03);
+    await new Promise((r) => setTimeout(r, 40));
+    if (asleep && ctx.state === "running") await ctx.suspend().catch(() => {});
+  }
+  async function resume() {
+    if (!built || destroyed || !asleep) return;
+    asleep = false;
+    if (ctx.state !== "running") await ctx.resume().catch(() => {});
+    const now = ctx.currentTime;
+    const g = masterGain.gain;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(0, now);
+    g.linearRampToValueAtTime(muted ? 0 : master, now + 0.05);
+  }
+
   function destroy() {
     if (destroyed) return;
     destroyed = true;
@@ -240,6 +266,8 @@ export function createBowlVoice({ f0 = 246, master = 0.6 } = {}) {
     energies,
     waveform,
     setMuted,
+    suspend,
+    resume,
     destroy,
     get ready() { return running(); },
     get level() { return level; },
