@@ -61,6 +61,8 @@ export function createBowl({
 
   const state = {
     ready: false, shown: false, q: 0, spin: 0, turn: 0, exposure: 1, visible: true,
+    shiftX: 0, shiftY: 0,   // where the object sits, as shares of the visible height
+    size,                   // the diameter as a share of the shorter side
     // pointer: target and eased, in −1…1 across the window; client px for the mask
     tx: 0, ty: 0, hx: 0, hy: 0, cx: -1e4, cy: -1e4, revealTarget: 0, reveal: 0,
   };
@@ -232,7 +234,7 @@ vec3 ringDisp(vec3 p) {
       // the diameter as a share of the visible height; it eases down a touch
       // as the hero scrolls away, and leans forward with it
       const H = worldH();
-      const s = size * (1 - shrink * q);
+      const s = state.size * (1 - shrink * q);
       group.scale.setScalar(s * worldMin());
       // the cursor's pull, eased so it never snaps
       state.hx += (state.tx - state.hx) * 0.06;
@@ -240,7 +242,7 @@ vec3 ringDisp(vec3 p) {
       state.reveal += (state.revealTarget - state.reveal) * 0.1;
       group.rotation.x = rad(P.model.rotX + lean * q) - state.hy * 0.07 * hoverAmount;
       group.rotation.z = rad(P.model.rotZ || 0) + state.hx * 0.03 * hoverAmount;
-      group.position.y = (offsetY + 0.06 * q) * H;
+      group.position.set(state.shiftX * H, (offsetY + state.shiftY + 0.06 * q) * H, 0);
       norm.rotation.y = state.spin + state.turn + state.hx * 0.16 * hoverAmount;
       if (ring) {
         ringState.t += dt;
@@ -345,6 +347,10 @@ vec3 ringDisp(vec3 p) {
   return {
     /** 0 at the top of the page, 1 once the hero has scrolled past */
     setScroll(q) { state.q = clamp01(q); },
+    /** move the object off centre, in shares of the visible height (x right, y up) */
+    setShift(x = 0, y = 0) { state.shiftX = x; state.shiftY = y; },
+    /** the diameter as a share of the stage's shorter side */
+    setSize(v) { if (v > 0) state.size = v; },
     /** the six modes' energies (0..1) and the angle (shell space) the antinode should sit at */
     setModes(energies, theta = null) {
       const a = ringU.uModeAmp.value;

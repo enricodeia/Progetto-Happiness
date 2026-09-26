@@ -1,7 +1,7 @@
-import * as THREE from "three";
 import { createBowl } from "./bowl.js";
 import { createBowlVoice } from "./bowlVoice.js";
 import { createWaves } from "./waves.js";
+import { createMallet } from "./mallet.js";
 import { $, $$, clamp01, reduce, mountNav, mountVersion } from "./common.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -91,45 +91,15 @@ soundBtn.addEventListener("click", () => {
   if (!voice.ready) wake(); else { voice.setMuted(!voice.muted); soundUI(); }
 });
 
-// ── the mallet: lives in the bowl's group, so it leans with it, not spins ──
-const mallet = new THREE.Group();
-const wood = new THREE.MeshStandardMaterial({ color: 0x6f4a2e, roughness: 0.55, metalness: 0 });
-const felt = new THREE.MeshStandardMaterial({ color: 0x4a2f22, roughness: 0.95, metalness: 0 });
-const head = new THREE.Mesh(new THREE.SphereGeometry(0.072, 28, 20), felt);
-head.scale.set(1, 0.86, 1);
-const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.017, 0.46, 16), wood);
-mallet.add(head, handle);
-bowl.group.add(mallet);
+// ── the mallet ────────────────────────────────────────────────────────────
 const REST = 0.6;   // front-right of the rim, where a mallet is laid down
-// on a phone there is no room beside the bowl, so it rests close to the rim
-const TOUCH = matchMedia("(hover: none)").matches;
-const REST_LIFT = TOUCH ? 0.12 : 0.09, REST_OUT = TOUCH ? 0.13 : 0.27;
-const M = { theta: REST, lift: 0.16, out: 0.15, hitT: 9, target: { theta: REST, pressed: false, present: false } };
-const up = new THREE.Vector3(0, 1, 0), dir = new THREE.Vector3(), q = new THREE.Quaternion();
+const mallet = createMallet(bowl, { rest: REST });
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
-function placeMallet(dt) {
-  const t = M.target;
-  M.theta = wrap(M.theta + wrap(t.theta - M.theta) * Math.min(1, dt * 12));
-  const hit = M.hitT < 0.12;
-  const pressed = t.pressed || hit;
-  const liftTo = !t.present ? REST_LIFT : pressed ? 0.028 : 0.15;
-  const outTo = !t.present ? REST_OUT : pressed ? 0.045 : 0.15;
-  M.lift += (liftTo - M.lift) * Math.min(1, dt * (hit ? 40 : 10));
-  M.out += (outTo - M.out) * Math.min(1, dt * (hit ? 40 : 10));
-  const R = bowl.rim.r + M.out;
-  const y = bowl.rim.y + M.lift;
-  head.position.set(Math.cos(M.theta) * R, y, Math.sin(M.theta) * R);
-  dir.set(Math.cos(M.theta), 0, Math.sin(M.theta)).multiplyScalar(0.9).addScaledVector(up, 0.44).normalize();
-  handle.position.copy(head.position).addScaledVector(dir, 0.26);
-  q.setFromUnitVectors(up, dir);
-  handle.quaternion.copy(q);
-  M.hitT += dt;
-}
 
 // ── playing ───────────────────────────────────────────────────────────────
 let lastStrikeAt = -1e9;
 /** a strike at a group angle; the shell angle (where the antinode sits) is derived */
-function strike({ thetaGroup = M.theta, theta = null, brightness = 0.5, strength = 1, silent = false } = {}) {
+function strike({ thetaGroup = mallet.theta, theta = null, brightness = 0.5, strength = 1, silent = false } = {}) {
   const now = performance.now() / 1000;
   if (now - lastStrikeAt < 0.06) return;   // a real mallet cannot bounce faster than this
   lastStrikeAt = now;
@@ -137,7 +107,7 @@ function strike({ thetaGroup = M.theta, theta = null, brightness = 0.5, strength
   bowl.setModes(voice.energies(), theta ?? thetaGroup + bowl.spin);
   bowl.pulse(strength);
   waves.strike(strength);
-  M.target.theta = thetaGroup; M.hitT = 0;
+  mallet.hit(thetaGroup);
   if (silent) return;
   // the story: the first strike shows the first line; each later strike,
   // given a breath since the last, brings the next
@@ -148,14 +118,14 @@ function strike({ thetaGroup = M.theta, theta = null, brightness = 0.5, strength
 let press = null, rubRate = 0, pointerOn = false;
 const ptr = { x: 0, y: 0, dirty: false, mouse: false };
 const cursor = $("#cursor");
-stage.addEventListener("pointerenter", () => { pointerOn = true; M.target.present = true; });
+stage.addEventListener("pointerenter", () => { pointerOn = true; mallet.target.present = true; });
 stage.addEventListener("pointerleave", () => {
   pointerOn = false; stage.classList.remove("is-pointer");
-  if (!press) { M.target.present = false; M.target.theta = REST; }
+  if (!press) mallet.lay();
 });
 stage.addEventListener("pointermove", (e) => {
   ptr.x = e.clientX; ptr.y = e.clientY; ptr.dirty = true; ptr.mouse = e.pointerType === "mouse";
-  M.target.present = true;
+  mallet.target.present = true;
 });
 stage.addEventListener("pointerdown", (e) => {
   // the buttons and links in the stage keep their own clicks
@@ -167,8 +137,8 @@ stage.addEventListener("pointerdown", (e) => {
   const p = bowl.pick(e.clientX, e.clientY);
   const now = performance.now() / 1000;
   press = { theta: p.planeThetaGroup, t: now, id: e.pointerId };
-  M.target.pressed = true;
-  M.target.present = true;
+  mallet.target.pressed = true;
+  mallet.target.present = true;
   ptr.x = e.clientX; ptr.y = e.clientY; ptr.dirty = false;
   // a strike lands on the metal, or just inside the rim
   if (p.hit || (p.plane && p.planeR < 1.12)) {
@@ -178,8 +148,8 @@ stage.addEventListener("pointerdown", (e) => {
   }
 });
 function release() {
-  press = null; M.target.pressed = keys.size > 0; rubRate = keys.size ? rubRate : 0;
-  if (!pointerOn) { M.target.present = false; M.target.theta = REST; }
+  press = null; mallet.target.pressed = keys.size > 0; rubRate = keys.size ? rubRate : 0;
+  if (!pointerOn && !keys.size) mallet.lay();
 }
 stage.addEventListener("pointerup", () => { wake(); release(); });   // on touch this is the activation event
 stage.addEventListener("pointercancel", release);
@@ -189,11 +159,11 @@ const keys = new Set();
 addEventListener("keydown", (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.target.closest("button, a, input, textarea, [contenteditable]")) return;
-  if (e.key === " ") { e.preventDefault(); wake(); strike({ thetaGroup: M.theta, brightness: 0.5 }); }
-  else if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); wake(); keys.add(e.key); M.target.present = true; M.target.pressed = true; }
+  if (e.key === " ") { e.preventDefault(); wake(); strike({ thetaGroup: mallet.theta, brightness: 0.5 }); }
+  else if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); wake(); keys.add(e.key); mallet.target.present = true; mallet.target.pressed = true; }
   else if (e.key === "m" || e.key === "M") { if (voice.ready) { voice.setMuted(!voice.muted); soundUI(); } }
 });
-addEventListener("keyup", (e) => { keys.delete(e.key); if (!keys.size && !press) { M.target.pressed = false; rubRate = 0; } });
+addEventListener("keyup", (e) => { keys.delete(e.key); if (!keys.size && !press) { mallet.target.pressed = false; rubRate = 0; } });
 // the window goes away: nothing stays held, nothing keeps droning
 function letGo() { keys.clear(); release(); rubRate = 0; }
 addEventListener("blur", letGo);
@@ -218,7 +188,7 @@ function frame(now) {
       stage.classList.add("is-pointer");
     }
     const p = bowl.pick(ptr.x, ptr.y);
-    if (p.plane) M.target.theta = p.planeThetaGroup;
+    if (p.plane) mallet.target.theta = p.planeThetaGroup;
     if (press && p.plane) {
       const dth = wrap(p.planeThetaGroup - press.theta);
       const omega = Math.abs(dth) / Math.max(1e-3, dt);
@@ -234,14 +204,14 @@ function frame(now) {
   if (press && tNow - press.t > 0.08) rubRate *= Math.exp(-dt / 0.12);
   // the arrows: a steady circle of the rim
   if (keys.has("ArrowLeft") || keys.has("ArrowRight")) {
-    M.target.theta += (keys.has("ArrowRight") ? 1 : -1) * 1.7 * dt;
+    mallet.target.theta += (keys.has("ArrowRight") ? 1 : -1) * 1.7 * dt;
     rubRate = rubRate * 0.8 + 0.8 * 0.2;
   }
   voice.rub(rubRate);
   if (rubRate > 0.3 && !rubbedOnce) { rubbedOnce = true; setHint(""); }
   voice.update(dt);
   // the attract: a silent strike now and then, until anyone touches anything
-  if (!interacted && !reduce && !M.target.present && tSinceLoad > demoAt && bowl.ready) {
+  if (!interacted && !reduce && !mallet.target.present && tSinceLoad > demoAt && bowl.ready) {
     strike({ thetaGroup: REST, strength: 0.7, silent: true });
     demoAt = tSinceLoad + 8;
   }
@@ -265,7 +235,7 @@ function frame(now) {
     waves.scope(wave, 6 + 44 * clamp01(level * 2.2));
   }
   waves.draw(dt);
-  placeMallet(dt);
+  mallet.place(dt);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
@@ -281,6 +251,6 @@ window.__it = {
   get rub() { return +rubRate.toFixed(3); },
   get struck() { return struckOnce; },
   get interacted() { return interacted; },
-  get mallet() { return { theta: +M.theta.toFixed(3), lift: +M.lift.toFixed(3), present: M.target.present, pressed: M.target.pressed }; },
+  get mallet() { return { theta: +mallet.theta.toFixed(3), lift: +mallet.lift.toFixed(3), present: mallet.target.present, pressed: mallet.target.pressed }; },
   energies: () => Array.from(voice.energies(), (v) => +v.toFixed(3)),
 };

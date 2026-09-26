@@ -45,7 +45,18 @@ photographs, same bowl, none of the choreography.
   every strike, once the last one is past its peak, brings the next line,
   which develops (EXPO 100 → 0) while the sound lasts and fades as it decays.
 
-Keys `1` … `6` switch edition (also the small switch bottom left; bottom
+- **Edition 7** (`/v7`, key `7`) — the ripple. The instrument of edition 6,
+  and around it, built chapter by chapter as you scroll, the whole of Insight
+  Timer laid out on the table: the 45 categories as a crown of lines on the
+  rim (length = techniques, each sings in its own note), the thirty most
+  followed teachers standing round the bowl (grey until the sound reaches
+  them), the three sources of evidence as three circles meeting under it,
+  thirty million members as 3,000 points of light. Every strike sends a
+  ripple through all of it. The panel on the left shows the chapter, and
+  whatever is under the pointer: a category and its techniques, a teacher, a
+  source, the team.
+
+Keys `1` … `7` switch edition (also the small switch bottom left; bottom
 right on edition 4, where the chapter index owns the corner).
 
 ## Run
@@ -61,6 +72,7 @@ node shots/tour4.mjs [url] [w] [h] [outDir] # edition 4
 node shots/hover4.mjs [url] [outDir]        # edition 4: cursor tilt + wireframe reveal
 node shots/tour5.mjs [url] [w] [h] [outDir] # edition 5
 node shots/tour6.mjs [url] [w] [h] [outDir] # edition 6: attract, hover, strike, sing, next line, keys (prints levels/energies)
+node shots/tour7.mjs [url] [w] [h] [outDir] # edition 7: every chapter, crown aim + strike + note, teacher hover, ripple lighting, sources, members, rail, singing
 node shots/voice-probe.mjs                  # the synth alone: strike decay, waveform, rub build
 node shots/waves-probe.mjs                  # the overlay alone: ring growth, scope circle
 node shots/mobile.mjs [url] 390 844         # edition 1 at phone width
@@ -173,6 +185,29 @@ page off `chapterFills()`. Plates are `set:index` into the photo globs.
   synchronously, `ensure()` is fire-and-forget from the same gesture (and
   from pointerup, the activation event on touch). A hidden tab ramps the
   master out and suspends the context; blur lets go of every held key.
+
+## Edition 7, how it is built
+
+- `v7.html` — one `.ripple` section eight stage-heights tall with a sticky
+  `.stage`; seven `.chap` articles in the left panel, one on at a time; a
+  `.live` block the frame loop rewrites; a rail of seven filling strokes.
+- `src/field.js` — the table, in 2D on two canvases that sandwich the WebGL
+  one. It projects group-space points with the bowl's own camera; a point
+  behind the bowl's centre goes on the back canvas (the metal hides it), the
+  rest on the front one. `ring`, `scope`, `segment`, `dots` (alpha-binned so
+  3,000 points are a dozen fills) and `label` (clamped to the stage).
+- `src/mallet.js` — the mallet of edition 6 as a module (`target`, `hit`,
+  `lay`, `place`), now shared by editions 6 and 7.
+- `src/bowlVoice.js` — `banks: 3`: a strike at a new pitch takes the
+  quietest bank and retunes it, so the note still ringing keeps its pitch.
+  `strike({ f0 })`, `voice.f0`.
+- `src/bowl.js` — `setShift(x, y)` and `setSize(v)`, so edition 7 can frame
+  the object off centre and grow the lean with the scroll.
+- `src/v7.js` — the data (categories sorted by count, longest at the back;
+  teachers by followers, most followed at the front; the notes D3 … G4 by
+  count), the ripples (`waveAt(r)`: what any layer at radius r gets lit by),
+  the chapter maths (`rv.dial/teachers/science/dots` are smoothsteps of the
+  scroll), hit tests in screen space, and one frame loop.
 
 ## Motion budget
 

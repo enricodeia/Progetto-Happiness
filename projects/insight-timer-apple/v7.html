@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Insight Timer — The ripple · 7</title>
+  <meta name="description" content="Strike the bowl and watch the sound reach 45 categories of practice, thirty teachers, three sources of evidence and thirty million members." />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#000000" />
+  <meta property="og:title" content="Insight Timer — The ripple" />
+  <meta property="og:description" content="One strike, and the whole of Insight Timer answers." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27%23b07a35%27/%3E%3Cpath d=%27M7 15h18a9 9 0 0 1-18 0z%27 fill=%27%23f5e6cf%27/%3E%3C/svg%3E" />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/ExposureTrialVAR.woff2" crossorigin />
+  <link rel="preload" as="fetch" href="/models/bowl-option-c.glb" crossorigin />
+  <link rel="preload" as="image" href="/images/bowl-normal.webp" />
+  <link rel="stylesheet" href="/src/v7.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" id="nav">
+    <div class="nav-in">
+      <a class="nav-logo" href="/v7" aria-label="Insight Timer"></a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="/v3#statement">Discover</a>
+        <a href="/v3#guided">Teachers</a>
+        <a href="/v3#evidence">Research</a>
+        <a href="/v3#numbers">For therapists</a>
+        <a href="/v3#team">About</a>
+      </nav>
+      <div class="nav-right">
+        <button class="nav-icon" type="button" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        </button>
+        <a class="nav-cta" href="#">Get the app</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="ripple" id="ripple" aria-label="Insight Timer, told around a singing bowl you can play">
+      <div class="stage" id="stage">
+        <canvas id="fieldBack" aria-hidden="true"></canvas>
+        <div class="glow" id="glow" aria-hidden="true"></div>
+        <canvas id="bowl" aria-label="A hand-hammered singing bowl"></canvas>
+        <canvas id="fieldFront" aria-hidden="true"></canvas>
+        <div class="scrim" aria-hidden="true"></div>
+        <div class="pad" id="pad" aria-hidden="true"></div>
+        <div class="cursor" id="cursor" aria-hidden="true"></div>
+
+        <aside class="panel" id="panel">
+          <div class="chaps">
+            <article class="chap">
+              <p class="k"><i>00</i>Practice</p>
+              <h1 class="line dev">Where practice makes progress.</h1>
+              <p class="lead">As users find practices that help them, we’re building the science around what works and why.</p>
+            </article>
+            <article class="chap">
+              <p class="k"><i>01</i>Ways</p>
+              <h2 class="line dev">With thousands of ways to feel good.</h2>
+              <p class="lead">Across traditions and cultures, people have found practices that improve wellbeing. Around the rim, one line for each of the 45 categories, as long as the techniques it holds. Each sings in its own note.</p>
+            </article>
+            <article class="chap">
+              <p class="k"><i>02</i>People</p>
+              <h2 class="line dev">We connect people and trusted teachers.</h2>
+              <p class="lead">26,000 teachers, from psychologists to Buddhist monks, sharing the practices they live by. The thirty most followed stand around the bowl.</p>
+            </article>
+            <article class="chap">
+              <p class="k"><i>03</i>Science</p>
+              <h2 class="line dev">Three sources of evidence come together.</h2>
+              <p class="lead">By combining research and individual outcomes at scale, we can understand which practice will help someone and when. The bowl stands where the three meet.</p>
+            </article>
+            <article class="chap">
+              <p class="k"><i>04</i>Members</p>
+              <h2 class="line dev">Practices that people actually live by.</h2>
+              <p class="lead">We organize millions of context‑rich data points into a clearer understanding of what works.</p>
+            </article>
+            <article class="chap">
+              <p class="k"><i>05</i>Team</p>
+              <h2 class="line dev">The People Leading Insight</h2>
+              <p class="lead">Our small but dedicated team of 70 people has transformed a basic meditation timer into a community of 30 million people and 20,000 teachers.</p>
+            </article>
+            <article class="chap">
+              <p class="k"><i>06</i>Everybody</p>
+              <h2 class="line dev">Insight Timer is making the impact of practice clear for everybody.</h2>
+            </article>
+          </div>
+
+          <div class="live" id="live"></div>
+          <p class="sr" id="status" aria-live="polite"></p>
+
+          <nav class="rail" aria-label="Chapters">
+            <ol id="rail">
+              <li><button type="button" aria-label="Practice"><span></span></button></li>
+              <li><button type="button" aria-label="Ways"><span></span></button></li>
+              <li><button type="button" aria-label="People"><span></span></button></li>
+              <li><button type="button" aria-label="Science"><span></span></button></li>
+              <li><button type="button" aria-label="Members"><span></span></button></li>
+              <li><button type="button" aria-label="Team"><span></span></button></li>
+              <li><button type="button" aria-label="Everybody"><span></span></button></li>
+            </ol>
+            <p class="rail-cap"><i id="railN">00</i><span id="railT">Practice</span></p>
+          </nav>
+        </aside>
+
+        <div class="meta">
+          <p class="keys"><span>Space strike · ← → choose · hold S to sing · M mute</span><button class="sound" id="sound" type="button" aria-pressed="false"><i></i><b id="soundLabel">Sound off</b></button></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-cols" id="footerCols"></div>
+    <div class="wrap footer-bottom">
+      <p>Copyright © <span id="year"></span> Insight Network Inc. All rights reserved.</p>
+      <nav aria-label="Legal"><a href="#">Terms &amp; Conditions</a><a href="#">Privacy Policy</a><a href="#">Cookie Policy</a></nav>
+    </div>
+  </footer>
+
+  <script type="module" src="/src/v7.js"></script>
+</body>
+</html>

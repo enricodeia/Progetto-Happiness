@@ -23,8 +23,13 @@ const LEVEL_SMOOTH = 0.06;                            // s, a little lag on the 
 
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-export function createBowlVoice({ f0 = 246, master = 0.6 } = {}) {
-  const e = new Float32Array(N);       // energy per partial, 0..1
+export function createBowlVoice({ f0 = 246, master = 0.6, banks: bankCount = 1 } = {}) {
+  // a bank is one bowl: six partials, its own tuning, its own energies. With
+  // more than one, a strike at a new pitch takes the quietest bank, so the
+  // bowl that is still ringing keeps its note instead of sliding to the new one
+  const banks = Array.from({ length: Math.max(1, bankCount | 0) }, () => ({ e: new Float32Array(N), f0, gain: [], osc: [] }));
+  let cur = 0;
+  let e = banks[0].e;                  // energy per partial of the bank being played, 0..1
   const snapshot = new Float32Array(N);
   let rate = 0;                        // rub speed, 0..1
   let level = 0;
@@ -37,8 +42,7 @@ export function createBowlVoice({ f0 = 246, master = 0.6 } = {}) {
   let built = false;
   let noise = null;                    // 1 s of white noise shared by every burst
   let oscs = [];
-  let partialGain = [];
-  let sum, rubGain, masterGain, analyser;
+  let sum, rubGain, rubBp, masterGain, analyser;
 
   function whiteNoise(seconds) {
     const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * seconds), ctx.sampleRate);
@@ -89,22 +93,27 @@ export function createBowlVoice({ f0 = 246, master = 0.6 } = {}) {
 
     // the partials: a pair of sines each, split by half the beat either
     // side, each at half gain, into one gain the energy model drives
-    for (let k = 0; k < N; k++) {
-      const g = ctx.createGain();
-      g.gain.value = 0;
-      g.connect(sum);
-      partialGain.push(g);
-      const half = ctx.createGain();
-      half.gain.value = 0.5;
-      half.connect(g);
-      const f = f0 * RATIO[k];
-      for (const sign of [-1, 1]) {
-        const o = ctx.createOscillator();
-        o.type = "sine";
-        o.frequency.value = f + (sign * BEAT[k]) / 2;
-        o.connect(half);
-        o.start(now);
-        oscs.push(o);
+    for (const bank of banks) {
+      for (let k = 0; k < N; k++) {
+        const g = ctx.createGain();
+        g.gain.value = 0;
+        g.connect(sum);
+        bank.gain.push(g);
+        const half = ctx.createGain();
+        half.gain.value = 0.5;
+        half.connect(g);
+        const f = bank.f0 * RATIO[k];
+        const pair = [];
+        for (const sign of [-1, 1]) {
+          const o = ctx.createOscillator();
+          o.type = "sine";
+          o.frequency.value = f + (sign * BEAT[k]) / 2;
+          o.connect(half);
+          o.start(now);
+          oscs.push(o);
+          pair.push(o);
+        }
+        bank.osc.push(pair);
       }
     }
 
@@ -115,8 +124,9 @@ export function createBowlVoice({ f0 = 246, master = 0.6 } = {}) {
     src.loop = true;
     const bp = ctx.createBiquadFilter();
     bp.type = "bandpass";
-    bp.frequency.value = f0;
+    bp.frequency.value = banks[cur].f0;
     bp.Q.value = 10;
+    rubBp = bp;
     rubGain = ctx.createGain();
     rubGain.gain.value = 0;
     src.connect(bp);
@@ -166,8 +176,39 @@ export function createBowlVoice({ f0 = 246, master = 0.6 } = {}) {
     // nothing holds these, they go with the GC once stopped
   }
 
-  function strike({ strength = 1, brightness = 0.5 } = {}) {
+  // silence a bank in a few milliseconds, then move its oscillators
+  function retune(bank, f) {
+    bank.e.fill(0);
+    bank.f0 = f;
+    if (!built) return;
+    const now = ctx.currentTime;
+    for (let k = 0; k < N; k++) {
+      const g = bank.gain[k].gain;
+      g.cancelScheduledValues(now);
+      g.setTargetAtTime(0, now, 0.003);
+      const [lo, hi] = bank.osc[k];
+      lo.frequency.setValueAtTime(f * RATIO[k] - BEAT[k] / 2, now + 0.012);
+      hi.frequency.setValueAtTime(f * RATIO[k] + BEAT[k] / 2, now + 0.012);
+    }
+  }
+  const bankEnergy = (b) => { let t = 0; for (let k = 0; k < N; k++) t += b.e[k] * AMP[k]; return t; };
+  function pickBank(f) {
+    if (!f || Math.abs(f - banks[cur].f0) < 0.5) return;
+    // the same note may still be ringing in another bank: strike that one
+    let idx = banks.findIndex((b) => Math.abs(b.f0 - f) < 0.5);
+    if (idx < 0) {
+      idx = 0;
+      for (let i = 1; i < banks.length; i++) if (bankEnergy(banks[i]) < bankEnergy(banks[idx])) idx = i;
+      retune(banks[idx], f);
+    }
+    cur = idx;
+    e = banks[cur].e;
+    if (built) rubBp.frequency.setTargetAtTime(f, ctx.currentTime, 0.02);
+  }
+
+  function strike({ strength = 1, brightness = 0.5, f0: f = null } = {}) {
     if (destroyed) return;
+    pickBank(f);
     const s = Math.max(0, strength);
     const b = clamp01(brightness);
     for (let k = 0; k < N; k++) e[k] = clamp01(e[k] + s * (SOFT[k] + (HARD[k] - SOFT[k]) * b));
@@ -182,23 +223,28 @@ export function createBowlVoice({ f0 = 246, master = 0.6 } = {}) {
     if (destroyed) return;
     dt = dt > 0.1 ? 0.1 : dt > 0 ? dt : 0;
     let weighted = 0;
-    for (let k = 0; k < N; k++) {
-      // each mode rings down on its own clock; the rub feeds the low ones
-      // toward full and no further
-      let d = -e[k] / TAU[k];
-      if (rate > 0) d += (rate * RUB[k] * (1 - e[k])) / RUB_RISE;
-      e[k] = clamp01(e[k] + d * dt);
-      weighted += e[k] * AMP[k];
+    for (let b = 0; b < banks.length; b++) {
+      const be = banks[b].e;
+      for (let k = 0; k < N; k++) {
+        // each mode rings down on its own clock; the rub feeds the low ones
+        // of the bank being played toward full and no further
+        let d = -be[k] / TAU[k];
+        if (rate > 0 && b === cur) d += (rate * RUB[k] * (1 - be[k])) / RUB_RISE;
+        be[k] = clamp01(be[k] + d * dt);
+        weighted += be[k] * AMP[k];
+      }
     }
-    level += (weighted / AMP_SUM - level) * (1 - Math.exp(-dt / LEVEL_SMOOTH));
+    level += (clamp01(weighted / AMP_SUM) - level) * (1 - Math.exp(-dt / LEVEL_SMOOTH));
     if (!built) return;
     const now = ctx.currentTime;
-    for (let k = 0; k < N; k++) partialGain[k].gain.setTargetAtTime(e[k] * AMP[k], now, 0.02);
+    for (const bank of banks) for (let k = 0; k < N; k++) bank.gain[k].gain.setTargetAtTime(bank.e[k] * AMP[k], now, 0.02);
     rubGain.gain.setTargetAtTime(0.05 * rate, now, 0.02);
   }
 
+  // the picture follows the loudest of the banks, mode by mode
   function energies() {
-    snapshot.set(e);
+    snapshot.set(banks[0].e);
+    for (let b = 1; b < banks.length; b++) for (let k = 0; k < N; k++) if (banks[b].e[k] > snapshot[k]) snapshot[k] = banks[b].e[k];
     return snapshot;
   }
 
@@ -247,11 +293,10 @@ export function createBowlVoice({ f0 = 246, master = 0.6 } = {}) {
     if (destroyed) return;
     destroyed = true;
     rate = 0;
-    e.fill(0);
+    for (const b of banks) { b.e.fill(0); b.gain = []; b.osc = []; }
     if (built) {
       for (const o of oscs) { try { o.stop(); } catch {} }
       oscs = [];
-      partialGain = [];
     }
     built = false;
     ctx?.close().catch(() => {});
@@ -272,5 +317,6 @@ export function createBowlVoice({ f0 = 246, master = 0.6 } = {}) {
     get ready() { return running(); },
     get level() { return level; },
     get muted() { return muted; },
+    get f0() { return banks[cur].f0; },
   };
 }
